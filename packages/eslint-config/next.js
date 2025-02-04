@@ -38,17 +38,19 @@ export const nextJsConfig = [
     rules: {
       ...pluginNext.configs.recommended.rules,
       ...pluginNext.configs['core-web-vitals'].rules,
-      // A11y Rules
-      'jsx-a11y/alt-text': 'warn',
-      'jsx-a11y/aria-props': 'warn',
-      'jsx-a11y/aria-proptypes': 'warn',
-      'jsx-a11y/aria-unsupported-elements': 'warn',
-      'jsx-a11y/role-has-required-aria-props': 'warn',
+      // Critical A11y Rules (changed to error)
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/aria-props': 'error',
+      'jsx-a11y/aria-proptypes': 'error',
+      'jsx-a11y/aria-unsupported-elements': 'error',
+      'jsx-a11y/role-has-required-aria-props': 'error',
+      'jsx-a11y/html-has-lang': 'error',
+
+      // Keep as warnings (UX improvements but might need exceptions)
       'jsx-a11y/anchor-has-content': 'warn',
       'jsx-a11y/anchor-is-valid': 'warn',
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/heading-has-content': 'warn',
-      'jsx-a11y/html-has-lang': 'warn',
       'jsx-a11y/iframe-has-title': 'warn',
       'jsx-a11y/img-redundant-alt': 'warn',
       'jsx-a11y/interactive-supports-focus': 'warn',
