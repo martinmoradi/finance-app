@@ -1,0 +1,63 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:17.2-alpine
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    container_name: api
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finance_app
+      - PORT=3001
+    depends_on:
+      - postgres
+    networks:
+      - app_network
+
+  web:
+    container_name: web
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      # Using container name as hostname since they're on the same network
+      - API_URL=http://api:3001
+    depends_on:
+      - api
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+    name: finance_app_postgres_data
+
+# Define our network but keep it internal
+networks:
+  app_network:
+    driver: bridge
