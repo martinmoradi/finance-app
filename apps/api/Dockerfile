@@ -41,5 +41,5 @@ COPY --from=build /app/apps/api/dist /app/apps/api/dist
 COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
 
 # Expose port and start application
-EXPOSE 3000
+EXPOSE 3001
 CMD [ "node", "apps/api/dist/main.js" ]
