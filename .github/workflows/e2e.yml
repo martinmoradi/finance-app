@@ -1,7 +1,5 @@
-# GitHub Actions workflow for End-to-End testing
 name: E2E Tests
 
-# Trigger workflow on push to main/develop branches and PR events
 on:
   push:
     branches: [main, develop]
@@ -14,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Set up PostgreSQL service container for E2E tests
     services:
       postgres:
         image: postgres:17.2-alpine
@@ -24,14 +21,12 @@ jobs:
           POSTGRES_DB: finance_app_test
         ports:
           - 5432:5432
-        # Health check ensures PostgreSQL is ready before tests run
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
-    # Environment variables available to all steps in this job
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
       NEXT_PUBLIC_APP_URL: http://localhost:3000
@@ -40,9 +35,11 @@ jobs:
       PLAYWRIGHT_API_URL: http://localhost:3001
 
     steps:
-      # Check out repository code
+      # Check out our repository code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       # Set up pnpm package manager
       - name: Setup pnpm
@@ -50,30 +47,45 @@ jobs:
         with:
           version: 10.2.0
 
-      # Setup Node.js environment with pnpm caching
+      # Cache turbo build artifacts for faster subsequent runs
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+
+      # Setup Node.js with pnpm caching
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       # Install project dependencies
       - name: Install dependencies
         run: pnpm install
 
-      # Build all packages in the monorepo
+      # Build all projects in the monorepo
       - name: Build
         run: pnpm build
 
-      # Install Playwright and its dependencies
-      - name: Install Playwright Browsers
-        run: pnpm playwright install --with-deps
+      # Install Playwright package
+      - name: Install Playwright
+        run: pnpm add -D @playwright/test --filter=playwright-web
 
-      # Execute end-to-end tests using Playwright
+      # Install Playwright Browsers
+      - name: Install Playwright Browsers
+        run: pnpm --filter=playwright-web exec playwright install --with-deps
+
+      # Start the project
+      - name: Start the project
+        run: pnpm start
+
+      # Run the E2E tests
       - name: Run E2E Tests
         run: pnpm test:e2e
 
-      # Upload test artifacts if tests fail for debugging
+      # Upload test artifacts on failure
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
