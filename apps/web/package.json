@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest",
-    "test:ci": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage"
   },
   "dependencies": {
     "next": "15.1.6",

@@ -10,6 +10,17 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "test": {
+      "dependsOn": ["^test"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:ci": {
+      "dependsOn": ["^test:ci"],
+      "outputs": ["coverage/**"]
+    },
     "check-types": {
       "dependsOn": ["^check-types"]
     },
