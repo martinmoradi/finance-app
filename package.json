@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "start": "turbo start",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "test": "turbo test --filter=@repo/playwright-web --only",
