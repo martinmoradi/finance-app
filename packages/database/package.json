@@ -1,0 +1,24 @@
+{
+  "name": "@repo/database",
+  "type": "module",
+  "scripts": {
+    "db:seed": "tsx scripts/seed.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "generate": "drizzle-kit generate:pg"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.39.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@repo/validation": "workspace:*",
+    "drizzle-kit": "^0.30.4",
+    "eslint": "^9.19.0"
+  }
+}
