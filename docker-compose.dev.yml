@@ -1,71 +1,71 @@
 services:
-  # Database service
+  # PostgreSQL Database Service
   postgres:
     container_name: postgres_dev
-    image: postgres:17.2-alpine
-    restart: unless-stopped
+    image: postgres:17.2-alpine # Using Alpine-based image for smaller footprint
+    restart: unless-stopped # Ensures container restarts on failure
     ports:
-      - '5432:5432'
+      - '5432:5432' # Expose PostgreSQL default port
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: finance_app_dev
+      POSTGRES_USER: postgres # Database superuser
+      POSTGRES_PASSWORD: postgres # WARNING: Change in production
+      POSTGRES_DB: finance_app_dev # Development database name
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql/data # Persist database data
     networks:
       - app_network_dev
-    healthcheck:
+    healthcheck: # Ensure database is ready for connections
       test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Database management UI
+  # pgAdmin Database Management Interface
   pgadmin:
     container_name: pgadmin_dev
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4 # Web-based PostgreSQL admin tool
     restart: unless-stopped
     ports:
-      - '5050:80'
+      - '5050:80' # Access pgAdmin at http://localhost:5050
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com # Default admin login
+      PGADMIN_DEFAULT_PASSWORD: admin # WARNING: Change in production
     networks:
       - app_network_dev
     depends_on:
-      - postgres
+      - postgres # Ensure database is started first
 
-  # Backend API service
+  # NestJS Backend API Service
   api:
     container_name: api_dev
     build:
-      context: .
+      context: . # Build from repository root
       dockerfile: ./apps/api/Dockerfile.dev
     restart: unless-stopped
     ports:
-      - '3001:3001'
-      - '9229:9229'
+      - '3001:3001' # Main API port
+      - '9229:9229' # Node.js debug port
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@postgres_dev:5432/finance_app_dev
       - PORT=3001
-      - DEBUG=true
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true # Add this for better file watching
+      - DEBUG=true # Enable debug logging
+      - CHOKIDAR_USEPOLLING=true # Enable file watching in Docker
+      - WATCHPACK_POLLING=true # Enable webpack file watching
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/apps/api/node_modules
-      - /app/packages/eslint-config/node_modules
+      - .:/app # Mount entire project for development
+      - /app/node_modules # Prevent mounting host node_modules
+      - /app/apps/api/node_modules # Prevent mounting host API node_modules
+      - /app/packages/eslint-config/node_modules # Prevent mounting shared package node_modules
       - /app/packages/typescript-config/node_modules
-    command: nodemon --watch apps/api/src -e ts,js --exec pnpm dev --filter api # Override CMD from Dockerfile
+    command: nodemon --watch apps/api/src -e ts,js --exec pnpm dev --filter api # Hot reload for development
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_healthy # Wait for database to be ready
     networks:
       - app_network_dev
 
-  # Frontend web application
+  # Next.js Frontend Web Application
   web:
     container_name: web_dev
     build:
@@ -73,32 +73,32 @@ services:
       dockerfile: ./apps/web/Dockerfile.dev
     restart: unless-stopped
     ports:
-      - '3000:3000'
+      - '3000:3000' # Access frontend at http://localhost:3000
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:3001 # Public API URL for browser requests
-      - API_URL=http://api_dev:3001 # Internal API URL for server-side requests
-      - NEXT_WEBPACK_USEPOLLING=1 # Enable webpack polling for hot reload
+      - NEXT_PUBLIC_API_URL=http://localhost:3001 # API URL for client-side requests
+      - API_URL=http://api_dev:3001 # API URL for server-side requests (internal network)
+      - NEXT_WEBPACK_USEPOLLING=1 # Enable webpack hot reload in Docker
     volumes:
-      - .:/app # Mount entire project
-      - /app/node_modules # Exclude root node_modules
-      - /app/apps/web/node_modules # Exclude web node_modules
-      - /app/apps/web/.next # Exclude Next.js build
-      - /app/packages/eslint-config/node_modules # Exclude shared package node_modules
+      - .:/app # Mount entire project for development
+      - /app/node_modules # Prevent mounting host node_modules
+      - /app/apps/web/node_modules # Prevent mounting host web node_modules
+      - /app/apps/web/.next # Prevent mounting Next.js build cache
+      - /app/packages/eslint-config/node_modules # Prevent mounting shared package node_modules
       - /app/packages/typescript-config/node_modules
-    command: pnpm dev --filter web
+    command: pnpm dev --filter web # Start Next.js dev server
     depends_on:
-      - api
+      - api # Ensure API is started first
     networks:
       - app_network_dev
 
-# Persistent storage for PostgreSQL data
+# Docker Volumes Configuration
 volumes:
   postgres_dev_data:
-    name: finance_app_postgres_dev_data
+    name: finance_app_postgres_dev_data # Named volume for database persistence
 
-# Network configuration for service communication
+# Docker Network Configuration
 networks:
   app_network_dev:
-    driver: bridge
-    name: finance_app_dev_network
+    driver: bridge # Standard bridge network for container communication
+    name: finance_app_dev_network # Custom network name for development
