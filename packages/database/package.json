@@ -15,10 +15,12 @@
     "pg": "^8.13.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.4.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@repo/validation": "workspace:*",
     "drizzle-kit": "^0.30.4",
-    "eslint": "^9.19.0"
+    "eslint": "^9.19.0",
+    "tsx": "^4.19.2"
   }
 }
