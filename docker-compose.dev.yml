@@ -1,4 +1,5 @@
 services:
+  # Database service
   postgres:
     container_name: postgres_dev
     image: postgres:17.2-alpine
@@ -8,7 +9,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: finance_app_dev # Changed to dev database
+      POSTGRES_DB: finance_app_dev
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     networks:
@@ -19,7 +20,8 @@ services:
       timeout: 5s
       retries: 5
 
-  pgadmin: # Added for database management
+  # Database management UI
+  pgadmin:
     container_name: pgadmin_dev
     image: dpage/pgadmin4
     restart: unless-stopped
@@ -33,58 +35,69 @@ services:
     depends_on:
       - postgres
 
+  # Backend API service
   api:
     container_name: api_dev
     build:
       context: .
-      dockerfile: ./apps/api/Dockerfile
-      target: build # Stop at build stage for development
+      dockerfile: ./apps/api/Dockerfile.dev
     restart: unless-stopped
     ports:
       - '3001:3001'
-      - '9229:9229' # Node.js debug port
+      - '9229:9229'
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@postgres_dev:5432/finance_app_dev
       - PORT=3001
       - DEBUG=true
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true # Add this for better file watching
     volumes:
-      - ./apps/api:/app/apps/api
+      - .:/app
+      - /app/node_modules
       - /app/apps/api/node_modules
-    command: pnpm dev # Development command instead of production start
+      - /app/packages/eslint-config/node_modules
+      - /app/packages/typescript-config/node_modules
+    command: nodemon --watch apps/api/src -e ts,js --exec pnpm dev --filter api # Override CMD from Dockerfile
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - app_network_dev
 
+  # Frontend web application
   web:
     container_name: web_dev
     build:
       context: .
-      dockerfile: ./apps/web/Dockerfile
-      target: installer # Stop at installer stage for development
+      dockerfile: ./apps/web/Dockerfile.dev
     restart: unless-stopped
     ports:
       - '3000:3000'
     environment:
       - NODE_ENV=development
-      - API_URL=http://api_dev:3001
+      - NEXT_PUBLIC_API_URL=http://localhost:3001 # Public API URL for browser requests
+      - API_URL=http://api_dev:3001 # Internal API URL for server-side requests
       - NEXT_WEBPACK_USEPOLLING=1 # Enable webpack polling for hot reload
     volumes:
-      - ./apps/web:/app/apps/web
-      - /app/apps/web/node_modules
-      - ./apps/web/.next:/app/.next
-    command: pnpm dev
+      - .:/app # Mount entire project
+      - /app/node_modules # Exclude root node_modules
+      - /app/apps/web/node_modules # Exclude web node_modules
+      - /app/apps/web/.next # Exclude Next.js build
+      - /app/packages/eslint-config/node_modules # Exclude shared package node_modules
+      - /app/packages/typescript-config/node_modules
+    command: pnpm dev --filter web
     depends_on:
       - api
     networks:
       - app_network_dev
 
+# Persistent storage for PostgreSQL data
 volumes:
   postgres_dev_data:
     name: finance_app_postgres_dev_data
 
+# Network configuration for service communication
 networks:
   app_network_dev:
     driver: bridge

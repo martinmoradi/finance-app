@@ -1,0 +1,28 @@
+FROM node:23-slim
+
+# Install pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN npm install -g pnpm
+
+# Set Node environment
+ENV NODE_ENV=development
+
+# Install nodemon globally for better hot reloading
+RUN npm install -g nodemon
+
+WORKDIR /app
+
+# Copy workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+
+# Install dependencies
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install
+
+EXPOSE 3001
+
+# Use nodemon instead of nest start --watch
+CMD ["nodemon", "--watch", "apps/api/src", "-e", "ts,js", "--exec", "pnpm", "dev", "--filter", "api"]
