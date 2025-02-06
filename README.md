@@ -1,84 +1,165 @@
-# Turborepo starter
+# Personal Finance Application
 
-This Turborepo starter is maintained by the Turborepo core team.
+A comprehensive personal finance management solution built with enterprise-grade architecture and modern web technologies.
+This project demonstrates professional full-stack development capabilities with a focus on TypeScript, testing practices, and scalable architecture patterns.
 
-## Using this example
+## Project Overview
 
-Run the following command:
+This application helps users manage their personal finances through:
 
-```sh
-npx create-turbo@latest
+- Transaction tracking and categorization
+- Budget planning and monitoring
+- Savings goals management
+- Recurring bill tracking
+- Comprehensive financial analytics
+- Multi-language support (French/English)
+
+## Technical Stack
+
+### Frontend
+
+- Next.js 15 (App Router)
+- TypeScript (strict mode)
+- TanStack Query for server state
+- Zustand for client state
+- Tailwind CSS with shadcn/ui
+- Internationalization with next-intl
+- Testing: Vitest, Playwright, React Testing Library
+
+### Backend
+
+- NestJS with TypeScript
+- PostgreSQL with Drizzle ORM
+- Custom JWT authentication
+- REST API with OpenAPI documentation
+- Testing: Jest, SuperTest
+
+### DevOps
+
+- Turborepo monorepo
+- Docker
+- GitHub Actions CI/CD
+- Deployed on Vercel (Frontend), Render (Backend), and Neon (Database)
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22+
+- Docker and Docker Compose
+- pnpm (recommended)
+
+### Development Setup
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/personal-finance-app.git
+cd personal-finance-app
 ```
 
-## What's inside?
+2. Install dependencies:
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm build
+```bash
+pnpm install
 ```
 
-### Develop
+3. Start the development environment:
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm dev
+```bash
+docker:dev:build
 ```
 
-### Remote Caching
+4. Access the application:
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+- API Documentation: http://localhost:4000/api
 
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## Project Structure
 
 ```
-npx turbo link
+├── apps/
+│   ├── web/                 # Next.js frontend
+│   └── api/                 # NestJS backend
+├── packages/
+│   ├── shared/             # Shared types and utilities
+│   ├── database/           # Database schemas and migrations
+└── package.json
 ```
 
-## Useful Links
+## Key Features
 
-Learn more about the power of Turborepo:
+### Secure Authentication
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+- Framework-agnostic Better-Auth implementation
+- Cookie-based secure session management
+- Built-in rate limiting and security features
+- Direct database integration through Drizzle adapter
+
+### Transaction Management
+
+- CRUD operations with real-time updates
+- Advanced filtering and search
+- Category-based organization
+- CSV export functionality
+
+### Budget Tracking
+
+- Category-based budgets
+- Progress monitoring
+- Automated calculations
+- Visual representations
+
+### Savings Goals
+
+- Goal creation and tracking
+- Progress visualization
+- Milestone tracking
+- Projection calculations
+
+## Development Workflow
+
+### Branch Strategy
+
+- `main`: Production-ready code
+- `develop`: Integration branch
+- Feature branches: `feature/*`
+- Bug fixes: `fix/*`
+- Documentation: `docs/*`
+
+### Testing Requirements
+
+- Unit tests for business logic
+- Component tests for UI
+- E2E tests for critical paths
+- API endpoint testing
+
+### PR Guidelines
+
+All PRs must:
+
+- Pass automated tests
+- Include relevant tests
+- Follow conventional commits
+- Have proper documentation
+- Pass accessibility checks
+
+## License
+
+MIT License - see LICENSE.md
+
+## Contact
+
+Martin Moradi - [moradi.martin@gmail.com]
+
+Project Link: WIP
+
+## Acknowledgments
+
+- Frontend Mentor for the initial design inspiration
+- shadcn/ui for the component foundation
+
+---
+
+_This project was developed as a portfolio piece demonstrating full-stack development capabilities, with a focus on enterprise-grade patterns and practices._

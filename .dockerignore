@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+build
+dist
+
+# Development files
+.git
+.github
+.vscode
+*.log
+.env*
+!.env.example
+
+# Testing
+coverage
+*.test.*
+test
+
+# Turborepo
+.turbo
+
+# Misc
+.DS_Store
+README.md
+*.md
