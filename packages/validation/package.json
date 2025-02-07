@@ -1,6 +1,5 @@
 {
   "name": "@repo/validation",
-  "type": "module",
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc"
@@ -9,10 +8,6 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./env": {
-      "types": "./src/env.ts",
-      "default": "./dist/env.js"
     }
   },
   "dependencies": {
