@@ -16,6 +16,7 @@
     "sourceMap": true,
     "strictNullChecks": false,
     "strictBindCallApply": false,
+    "allowJs": true,
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
