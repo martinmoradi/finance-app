@@ -17,16 +17,16 @@
     "db:seed": "tsx src/seed.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "db:reset": "drizzle-kit drop --force && drizzle-kit generate:pg && drizzle-kit migrate && tsx scripts/seed.ts"
+    "db:reset": "drizzle-kit drop --force && drizzle-kit generate && drizzle-kit migrate && tsx src/seed.ts"
   },
   "dependencies": {
+    "@repo/env-validation": "workspace:*",
     "drizzle-orm": "^0.39.2",
     "pg": "^8.13.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@repo/validation": "workspace:*",
     "@types/node": "^22.13.1",
     "@types/pg": "^8.11.11",
     "dotenv": "^16.4.7",

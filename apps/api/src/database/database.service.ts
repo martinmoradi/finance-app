@@ -2,7 +2,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import type { DatabaseClient, DatabaseConnection } from '@repo/database';
 import { createDatabaseClient } from '@repo/database';
-import { getRequiredEnvVar } from '@repo/validation';
+import { getRequiredEnvVar } from '@repo/env-validation';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {

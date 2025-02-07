@@ -1,5 +1,5 @@
 import type { Config } from 'drizzle-kit';
-import { getRequiredEnvVar } from '@repo/validation';
+import { getRequiredEnvVar } from '@repo/env-validation';
 
 export default {
   schema: './src/schema',

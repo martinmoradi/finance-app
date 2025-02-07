@@ -18,6 +18,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/env-validation/package.json ./packages/env-validation/
+COPY packages/types/package.json ./packages/types/
 COPY packages/validation/package.json ./packages/validation/
 COPY packages/database/package.json ./packages/database/
 
