@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { eq, InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
+// Table definition
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
@@ -9,12 +10,17 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Define relations
+// Types
+export type UserSelect = InferSelectModel<typeof users>;
+export type UserInsert = InferInsertModel<typeof users>;
+export type UserUpdate = Partial<UserInsert>;
+
+// Relations
 // export const usersRelations = relations(users, ({ many }) => ({
 //   posts: many(posts),
 // }));
 
-// We can export common queries
+// Common queries
 export const queries = {
   byId: (id: string) => ({
     where: eq(users.id, id),

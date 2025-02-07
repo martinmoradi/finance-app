@@ -1,6 +1,5 @@
-import { users } from './user';
-
-export { users };
+import { users } from './users';
+export * from './users';
 
 export const schema = {
   users,
