@@ -1,4 +1,4 @@
-import { getRequiredEnvVar } from '@repo/validation';
+import { getRequiredEnvVar } from '@repo/env-validation';
 import 'dotenv/config';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { drizzle } from 'drizzle-orm/node-postgres';

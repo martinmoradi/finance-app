@@ -1,6 +1,6 @@
 import { createDatabaseClient } from '@/client';
 import { schema } from '@/schema';
-import { getRequiredEnvVar } from '@repo/validation';
+import { getRequiredEnvVar } from '@repo/env-validation';
 import 'dotenv/config';
 import { seed } from 'drizzle-seed';
 
