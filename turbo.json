@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/*.ts", "**/*.tsx", "**/*.json"],
   "globalEnv": ["NODE_ENV"],
   "tasks": {
     "build": {
@@ -59,6 +60,25 @@
       "cache": false,
       "persistent": true,
       "dependsOn": ["^build"]
+    },
+    "db:generate": {
+      "dependsOn": ["^build"]
+    },
+    "db:migrate": {
+      "dependsOn": ["^build"]
+    },
+    "db:seed": {
+      "dependsOn": ["^build"]
+    },
+    "db:studio": {
+      "dependsOn": ["^build"]
+    },
+    "db:push": {
+      "dependsOn": ["^build"]
+    },
+    "db:reset": {
+      "dependsOn": ["^build"],
+      "cache": false
     }
   }
 }
