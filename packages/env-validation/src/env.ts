@@ -11,8 +11,12 @@ import { z } from 'zod';
  * const PORT = getRequiredEnvVar('PORT');
  */
 export const getRequiredEnvVar = (key: string): string => {
-  return z
-    .string()
-    .min(1, `Environment variable ${key} is required but was empty`)
-    .parse(process.env[key]);
+  try {
+    return z
+      .string()
+      .min(1, `Environment variable ${key} is required but was empty`)
+      .parse(process.env[key]);
+  } catch (error) {
+    throw new Error(`Environment variable ${key} is required but was empty`);
+  }
 };
