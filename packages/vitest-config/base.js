@@ -5,5 +5,8 @@ export const baseConfig = defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     environment: 'node',
+    environment: 'node',
+    include: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    passWithNoTests: true,
   },
 });
