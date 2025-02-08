@@ -8,6 +8,7 @@ async function main() {
   const { db, pool } = await createDatabaseClient({
     connectionString: getRequiredEnvVar('DATABASE_URL'),
   });
+
   try {
     console.log('🌱 Starting seeding...');
     await seed(db, { users: schema.users }).refine((f) => ({

@@ -11,9 +11,9 @@ export const users = pgTable('users', {
 });
 
 // Types
-export type UserSelect = InferSelectModel<typeof users>;
-export type UserInsert = InferInsertModel<typeof users>;
-export type UserUpdate = Partial<UserInsert>;
+export type DbUserSelect = InferSelectModel<typeof users>;
+export type DbUserInsert = InferInsertModel<typeof users>;
+export type DbUserUpdate = Partial<DbUserInsert>;
 
 // Relations
 // export const usersRelations = relations(users, ({ many }) => ({
