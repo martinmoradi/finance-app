@@ -1,0 +1,20 @@
+{
+  "name": "@repo/vitest-config",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./base": "./base.js",
+    "./next": "./next.js",
+    "./nest": "./nest.js",
+    "./internal": "./internal.js"
+  },
+  "dependencies": {
+    "vitest": "^3.0.5",
+    "vite-tsconfig-paths": "^4.0.0",
+    "@vitejs/plugin-react": "^4.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
