@@ -14,8 +14,8 @@
     "removeComments": true,
     "skipLibCheck": true,
     "sourceMap": true,
-    "strictNullChecks": false,
-    "strictBindCallApply": false,
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
     "allowJs": true,
     "baseUrl": "./",
     "paths": {
