@@ -33,6 +33,7 @@ export const nestConfig = [
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
     },
   },
 ];
