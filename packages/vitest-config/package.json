@@ -9,6 +9,10 @@
     "./nest": "./nest.js",
     "./internal": "./internal.js"
   },
+  "dependencies": {
+    "vitest": "^3.0.5",
+    "vite-tsconfig-paths": "^4.0.0"
+  },
   "devDependencies": {
     "typescript": "^5.7.3"
   }
