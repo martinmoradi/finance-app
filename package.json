@@ -10,6 +10,7 @@
     "docker:dev:build": "docker compose -f docker-compose.dev.yml up --build",
     "docker:start": "docker compose -f docker-compose.yml up",
     "docker:start:build": "docker compose -f docker-compose.yml up --build",
+    "clean": "turbo clean",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "test": "turbo test",
