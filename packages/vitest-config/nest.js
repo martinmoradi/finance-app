@@ -9,7 +9,7 @@ export default defineConfig({
     ...baseConfig.test,
     environment: 'node',
     globals: true,
-    include: ['**/*.spec.ts'],
+    include: ['**/*.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
