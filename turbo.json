@@ -83,6 +83,11 @@
     "db:reset": {
       "dependsOn": ["^build"],
       "cache": false
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["TEST"]
     }
   }
 }
