@@ -1,2 +1,12 @@
 import config from '@repo/vitest-config/internal';
-export default config;
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  ...config,
+  test: {
+    ...config.test,
+    globals: true,
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+  },
+});
