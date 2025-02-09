@@ -1,5 +1,5 @@
 # GitHub Actions workflow for CI
-name: CI
+name: Unit Tests
 
 # Define when this workflow should run
 on:
