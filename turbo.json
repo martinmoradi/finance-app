@@ -1,7 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/*.ts", "**/*.tsx", "**/*.json"],
-  "globalEnv": ["NODE_ENV"],
+  "globalEnv": ["NODE_ENV", "DATABASE_URL", "TEST", "CI"],
   "tasks": {
     "build": {
       "env": [
@@ -86,13 +86,11 @@
     },
     "test:integration": {
       "dependsOn": ["^build"],
-      "cache": false,
-      "env": ["TEST", "CI"]
+      "cache": false
     },
     "test:integration:ci": {
       "dependsOn": ["^build"],
-      "cache": false,
-      "env": ["TEST", "CI"]
+      "cache": false
     }
   }
 }
