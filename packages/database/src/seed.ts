@@ -11,14 +11,9 @@ import { seed } from 'drizzle-seed';
  */
 export async function main() {
   // Create database connection using test or production connection string
-  const connectionString = process.env.CI
-    ? getRequiredEnvVar('DATABASE_URL')
-    : process.env.TEST
-      ? 'postgresql://postgres:postgres@localhost:5433/finance_app_test'
-      : getRequiredEnvVar('DATABASE_URL');
 
   const { db, pool } = await createDatabaseClient({
-    connectionString,
+    connectionString: getRequiredEnvVar('DATABASE_URL'),
   });
 
   try {
