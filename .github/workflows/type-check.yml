@@ -1,0 +1,88 @@
+# GitHub Actions workflow for CI
+name: Type checking
+
+# Define when this workflow should run
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  type-check:
+    name: Type checking
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Set up PostgreSQL service that will run alongside our tests
+    services:
+      postgres:
+        image: postgres:17.2-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: finance_app_test
+        ports:
+          - 5432:5432
+        # Health check ensures PostgreSQL is ready before tests run
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Environment variables available to all steps in this job
+    env:
+      # General configuration
+      NODE_ENV: CI
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
+
+      # API configuration
+      PORT: 3001
+      ALLOWED_ORIGINS: http://localhost:3000
+
+      # Web app configuration
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+
+    steps:
+      # Check out our repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # Set up pnpm package manager
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.2.0
+
+      # Cache turbo build artifacts for faster subsequent runs
+      - name: Cache turbo build setup
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      # Setup Node.js with pnpm caching
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      # Install project dependencies
+      - name: Install dependencies
+        run: pnpm install
+
+      # Build all projects in the monorepo
+      - name: Build
+        run: pnpm build
+
+      # Run type checking across all projects
+      - name: Type Check
+        run: pnpm type-check

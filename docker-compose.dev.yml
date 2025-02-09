@@ -20,6 +20,26 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres_test:
+    container_name: postgres_test
+    image: postgres:17.2-alpine # Using Alpine-based image for smaller footprint
+    restart: unless-stopped # Ensures container restarts on failure
+    ports:
+      - '5433:5432' # Expose PostgreSQL default port
+    environment:
+      POSTGRES_USER: postgres # Database superuser
+      POSTGRES_PASSWORD: postgres # WARNING: Change in production
+      POSTGRES_DB: finance_app_test # Development database name
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data # Persist database data
+    networks:
+      - app_network_dev
+    healthcheck: # Ensure database is ready for connections
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # pgAdmin Database Management Interface
   pgadmin:
     container_name: pgadmin_dev
@@ -96,6 +116,8 @@ services:
 volumes:
   postgres_dev_data:
     name: finance_app_postgres_dev_data # Named volume for database persistence
+  postgres_test_data:
+    name: finance_app_postgres_test_data
 
 # Docker Network Configuration
 networks:

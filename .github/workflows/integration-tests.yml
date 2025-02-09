@@ -1,5 +1,7 @@
-name: E2E Tests
+# GitHub Actions workflow for CI
+name: Integration tests
 
+# Define when this workflow should run
 on:
   push:
     branches: [main, develop]
@@ -7,11 +9,12 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  e2e-tests:
-    name: End-to-End Tests
+  integration-tests:
+    name: Integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # Set up PostgreSQL service that will run alongside our tests
     services:
       postgres:
         image: postgres:17.2-alpine
@@ -21,18 +24,27 @@ jobs:
           POSTGRES_DB: finance_app_test
         ports:
           - 5432:5432
+        # Health check ensures PostgreSQL is ready before tests run
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
+    # Environment variables available to all steps in this job
     env:
+      # General configuration
+      NODE_ENV: CI
+      CI: true
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
+
+      # API configuration
+      PORT: 3001
+      ALLOWED_ORIGINS: http://localhost:3000
+
+      # Web app configuration
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_API_URL: http://localhost:3001
-      PLAYWRIGHT_BASE_URL: http://localhost:3000
-      PLAYWRIGHT_API_URL: http://localhost:3001
 
     steps:
       # Check out our repository code
@@ -71,39 +83,13 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Install Playwright package
-      - name: Install Playwright
-        run: pnpm add -D @playwright/test --filter=playwright-web
+      # Run integration tests across all projects
+      - name: Integration Tests
+        run: pnpm test:integration:ci
 
-      # Install Playwright Browsers
-      - name: Install Playwright Browsers
-        run: pnpm --filter=playwright-web exec playwright install --with-deps
-
-      # Split the start command into separate processes
-      - name: Start API Server
-        run: pnpm --filter=api start &
-        env:
-          NODE_ENV: test
-
-      - name: Start Web Server
-        run: pnpm --filter=web start &
-        env:
-          NODE_ENV: test
-
-      # Wait for servers to be ready
-      - name: Wait for servers
-        run: |
-          timeout 30 bash -c 'until curl -s http://localhost:3001/health; do sleep 1; done'
-          timeout 30 bash -c 'until curl -s http://localhost:3000; do sleep 1; done'
-
-      # Run the E2E tests
-      - name: Run E2E Tests
-        run: pnpm test:e2e
-
-      # Upload test artifacts on failure
-      - name: Upload Playwright report
-        if: failure()
+      - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: coverage-report
+          path: coverage/
+          retention-days: 30

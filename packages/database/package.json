@@ -1,0 +1,51 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage",
+    "test:db:push": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test drizzle-kit push --force",
+    "test:db:seed": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test tsx src/seed.ts",
+    "test:integration": "pnpm test:db:push && pnpm test:db:seed && TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test vitest run -c ./vitest.integration.config.mjs",
+    "test:db:push:ci": "drizzle-kit push --force",
+    "test:db:seed:ci": "tsx src/seed.ts",
+    "test:integration:ci": "pnpm test:db:push:ci && pnpm test:db:seed:ci && vitest run --coverage -c ./vitest.integration.config.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/seed.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
+    "db:reset": "drizzle-kit drop --force && drizzle-kit generate && drizzle-kit migrate && tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@repo/env-validation": "workspace:*",
+    "drizzle-orm": "^0.39.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@repo/vitest-config": "workspace:*",
+    "@types/node": "^22.13.1",
+    "@types/pg": "^8.11.11",
+    "@vitest/coverage-v8": "^3.0.5",
+    "dotenv": "^16.4.7",
+    "drizzle-kit": "^0.30.4",
+    "drizzle-seed": "^0.3.1",
+    "eslint": "^9.19.0",
+    "tsup": "^8.3.6",
+    "tsx": "^4.19.2",
+    "vitest": "^3.0.5"
+  }
+}
