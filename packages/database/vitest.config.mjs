@@ -8,5 +8,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['src/**/integration/**/*.integration.test.{js,jsx,ts,tsx}'],
   },
 });
