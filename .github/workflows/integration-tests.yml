@@ -93,7 +93,12 @@ jobs:
 
       # Run integration tests across all projects
       - name: Integration Tests
-        run: pnpm test:integration:ci
+        run: |
+          echo "Environment variables:"
+          echo "DATABASE_URL: $DATABASE_URL"
+          echo "CI: $CI"
+          echo "NODE_ENV: $NODE_ENV"
+          pnpm test:integration:ci
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
