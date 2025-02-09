@@ -3,15 +3,18 @@ import { createDatabaseClient, type DatabaseConnection } from '@/client';
 import { schema } from '@/schema';
 import { sql } from 'drizzle-orm';
 import { Pool } from 'pg';
-
+import { getRequiredEnvVar } from '@repo/env-validation';
 /**
  * Sets up a test database connection
  * @returns DatabaseConnection object containing db client and connection pool
  */
 export async function setupTestDatabase(): Promise<DatabaseConnection> {
+  const connectionString = process.env.CI
+    ? getRequiredEnvVar('DATABASE_URL')
+    : 'postgresql://postgres:postgres@localhost:5433/finance_app_test';
+
   const connection = await createDatabaseClient({
-    connectionString:
-      'postgresql://postgres:postgres@localhost:5433/finance_app_test',
+    connectionString,
   });
 
   return connection;

@@ -57,7 +57,9 @@ export async function createDatabaseClient(
     try {
       // Initialize connection pool with provided configuration
       const pool = new Pool({
-        connectionString: config.connectionString,
+        connectionString: process.env.CI
+          ? getRequiredEnvVar('DATABASE_URL')
+          : config.connectionString,
         ssl: getRequiredEnvVar('NODE_ENV') === 'production', // Enable SSL in production
         max: config.maxConnections || 5,
         connectionTimeoutMillis: config.connectionTimeoutMillis || 10000,
