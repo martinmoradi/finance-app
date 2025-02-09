@@ -88,6 +88,11 @@
       "dependsOn": ["^build"],
       "cache": false,
       "env": ["TEST", "CI"]
+    },
+    "test:integration:ci": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["TEST", "CI"]
     }
   }
 }

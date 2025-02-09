@@ -27,6 +27,7 @@
     "db:push": "turbo db:push --filter=@repo/database",
     "db:reset": "turbo db:reset --filter=@repo/database",
     "test:integration": "turbo test:integration --filter=@repo/database",
+    "test:integration:ci": "turbo test:integration:ci --filter=@repo/database",
     "prepare": "husky"
   },
   "devDependencies": {
