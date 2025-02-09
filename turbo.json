@@ -87,7 +87,7 @@
     "test:integration": {
       "dependsOn": ["^build"],
       "cache": false,
-      "env": ["TEST"]
+      "env": ["TEST", "CI"]
     }
   }
 }
