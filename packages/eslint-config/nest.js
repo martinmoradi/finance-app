@@ -1,8 +1,7 @@
-import { config as baseConfig } from './base.js';
-import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import { config as baseConfig } from './base.js';
 
 /**
  * A custom ESLint configuration for NestJS applications.
@@ -34,6 +33,14 @@ export const nestConfig = [
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/no-redundant-type-constituents': 'off',
+      '@typescript-eslint/no-unsafe-call': 'error',
+    },
+  },
+  // Separate config for DTO files
+  {
+    files: ['**/*.dto.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
 ];
