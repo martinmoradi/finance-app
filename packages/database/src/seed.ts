@@ -34,6 +34,7 @@ export async function main() {
         columns: {
           name: f.fullName(), // Generate fake full names
           email: f.email(), // Generate fake email addresses
+          password: f.string(), // Generate fake passwords
         },
       },
     }));

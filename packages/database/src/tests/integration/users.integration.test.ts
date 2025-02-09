@@ -59,6 +59,7 @@ describe('Users Integration Tests', () => {
     expect(result).toHaveLength(3);
     expect(result[0]).toHaveProperty('email');
     expect(result[0]).toHaveProperty('name');
+    expect(result[0]).toHaveProperty('password');
   });
 
   it('should find user by email', async () => {
