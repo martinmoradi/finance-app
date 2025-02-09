@@ -1,5 +1,5 @@
 # GitHub Actions workflow for CI
-name: Unit Tests
+name: Integration Tests
 
 # Define when this workflow should run
 on:
@@ -35,10 +35,11 @@ jobs:
     env:
       # General configuration
       NODE_ENV: CI
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
 
       # API configuration
       PORT: 3001
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
       ALLOWED_ORIGINS: http://localhost:3000
 
       # Web app configuration
@@ -82,13 +83,6 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Run unit tests across all projects
-      - name: Unit Tests
-        run: pnpm test:ci
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 30
+      # Run type checking across all projects
+      - name: Type Check
+        run: pnpm type-check

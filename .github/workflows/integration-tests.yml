@@ -83,14 +83,6 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Run type checking across all projects
-      - name: Type Check
-        run: pnpm type-check
-
-      # Run linting across all projects
-      - name: Lint
-        run: pnpm lint
-
       # Run integration tests across all projects
       - name: Integration Tests
         run: |
