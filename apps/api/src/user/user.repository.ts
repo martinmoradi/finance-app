@@ -4,7 +4,7 @@ import { queries } from '@repo/database';
 import { User } from '@repo/types';
 
 @Injectable()
-export class UsersRepository extends BaseRepository {
+export class UserRepository extends BaseRepository {
   async findAll(): Promise<User[] | null> {
     const users = await this.db.query.users.findMany();
     return users?.length ? users : null;

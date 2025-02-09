@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { AppService } from '@/app.service';
+import { describe, expect, it } from 'vitest';
 
 describe('AppService', () => {
   const service = new AppService();
