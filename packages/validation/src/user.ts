@@ -1,7 +1,7 @@
 import { UserInsert } from '@repo/types';
 import { z } from 'zod';
 
-export const createUserSchema: z.ZodType<UserInsert> = z.object({
+export const createUserSchema = z.object({
   email: z
     .string()
     .email('Invalid email address')
@@ -19,4 +19,4 @@ export const createUserSchema: z.ZodType<UserInsert> = z.object({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/,
       'Password must contain at least one uppercase letter, one lowercase letter, and one number',
     ),
-});
+}) satisfies z.ZodType<UserInsert>;
