@@ -1,5 +1,5 @@
 # GitHub Actions workflow for CI
-name: Integration Tests
+name: Type checking
 
 # Define when this workflow should run
 on:
@@ -9,8 +9,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  type-check:
+    name: Type checking
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

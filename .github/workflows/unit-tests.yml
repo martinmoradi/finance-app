@@ -1,5 +1,5 @@
 # GitHub Actions workflow for CI
-name: Unit Tests
+name: Unit tests
 
 # Define when this workflow should run
 on:
@@ -9,8 +9,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  unit-tests:
+    name: Unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
