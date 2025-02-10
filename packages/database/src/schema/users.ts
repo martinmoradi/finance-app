@@ -26,5 +26,8 @@ export const queries = {
   byId: (id: string) => ({
     where: eq(users.id, id),
   }),
+  byEmail: (email: string) => ({
+    where: eq(users.email, email),
+  }),
   // Add more common queries as needed
 };
