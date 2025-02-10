@@ -8,6 +8,10 @@ import { APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
 
+/**
+ * Main application module
+ * Configures the NestJS application with modules and providers
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),

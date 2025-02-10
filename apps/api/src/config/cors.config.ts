@@ -1,3 +1,7 @@
+/**
+ * Configuration for Cross-Origin Resource Sharing (CORS)
+ * Defines allowed origins, methods, credentials, headers, and cache settings
+ */
 export const corsConfig = {
   // We'll read allowed origins from environment variables
   origins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),

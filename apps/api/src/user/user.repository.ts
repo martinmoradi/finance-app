@@ -1,7 +1,7 @@
 import { BaseRepository } from '@/database/base.repository';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { Injectable } from '@nestjs/common';
-import { eq, queries, users } from '@repo/database';
+import { queries, users } from '@repo/database';
 import { User } from '@repo/types';
 
 /**
