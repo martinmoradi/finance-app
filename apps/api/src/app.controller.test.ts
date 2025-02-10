@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('AppController', () => {
   it('should return "Hello World!"', () => {
