@@ -21,6 +21,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.0.3",
     "@repo/database": "workspace:*",
@@ -29,6 +30,8 @@
     "@repo/validation": "workspace:*",
     "argon2": "^0.41.1",
     "nestjs-zod": "^4.2.1",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "zod": "^3.24.1"
