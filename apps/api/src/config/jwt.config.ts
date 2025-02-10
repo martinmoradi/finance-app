@@ -7,7 +7,7 @@ import { registerAs } from '@nestjs/config';
  */
 export default registerAs('jwt', () => {
   const secret = getRequiredEnvVar('JWT_SECRET');
-  const expiresIn = getRequiredEnvVar('JWT_EXPIRATION_IN_SECONDS');
+  const expiresIn = getRequiredEnvVar('JWT_EXPIRES_IN');
 
   return {
     secret,
