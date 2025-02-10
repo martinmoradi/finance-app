@@ -117,6 +117,9 @@ importers:
       '@types/node':
         specifier: ^22.10.7
         version: 22.13.0
+      '@types/passport-local':
+        specifier: ^1.0.38
+        version: 1.0.38
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.2
@@ -2558,6 +2561,15 @@ packages:
 
   '@types/node@22.13.1':
     resolution: {integrity: sha512-jK8uzQlrvXqEU91UxiK5J7pKHyzgnI1Qnl0QDHIgVGuolJhRb9EEl28Cj9b3rGR8B2lhFCtvIm5os8lFnO/1Ew==}
+
+  '@types/passport-local@1.0.38':
+    resolution: {integrity: sha512-nsrW4A963lYE7lNTv9cr5WmiUD1ibYJvWrpE13oxApFsRt77b0RdtZvKbCdNIY4v/QZ6TRQWaDDEwV1kCTmcXg==}
+
+  '@types/passport-strategy@0.2.38':
+    resolution: {integrity: sha512-GC6eMqqojOooq993Tmnmp7AUTbbQSgilyvpCYQjT+H6JfG/g6RGc7nXEniZlp0zyKJ0WUdOiZWLBZft9Yug1uA==}
+
+  '@types/passport@1.0.17':
+    resolution: {integrity: sha512-aciLyx+wDwT2t2/kJGJR2AEeBz0nJU4WuRX04Wu9Dqc5lSUtwu0WERPHYsLhF9PtseiAMPBGNUOtFjxZ56prsg==}
 
   '@types/pg@8.11.11':
     resolution: {integrity: sha512-kGT1qKM8wJQ5qlawUrEkXgvMSXoV213KfMGXcwfDwUIfUHXqXYXOfS1nE1LINRJVVVx5wCm70XnFlMHaIcQAfw==}
@@ -8494,6 +8506,21 @@ snapshots:
   '@types/node@22.13.1':
     dependencies:
       undici-types: 6.20.0
+
+  '@types/passport-local@1.0.38':
+    dependencies:
+      '@types/express': 5.0.0
+      '@types/passport': 1.0.17
+      '@types/passport-strategy': 0.2.38
+
+  '@types/passport-strategy@0.2.38':
+    dependencies:
+      '@types/express': 5.0.0
+      '@types/passport': 1.0.17
+
+  '@types/passport@1.0.17':
+    dependencies:
+      '@types/express': 5.0.0
 
   '@types/pg@8.11.11':
     dependencies:
