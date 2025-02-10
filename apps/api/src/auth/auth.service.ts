@@ -5,64 +5,70 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { AuthJwtPayload, AuthUser, UserProfile } from '@repo/types';
 import { hash, verify } from 'argon2';
 
-/**
- * Service handling authentication-related operations.
- * Provides methods for user registration and authentication.
- */
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /**
-   * Creates a new user account.
-   * @param createUserDto - Data transfer object containing user registration details.
-   * @returns Newly created user object.
-   * @throws ConflictException if a user with the provided email already exists.
+   * Registers a new user if the email isn't already taken.
+   * @throws ConflictException when email is already registered.
    */
   async signup(createUserDto: CreateUserDto) {
-    // Separate password from other user data for secure handling
     const { password, ...userData } = createUserDto;
-
-    // Check if user already exists with provided email
     const existingUser = await this.userService.findByEmail(userData.email);
+
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
 
-    // Hash password before storing
     const hashedPassword = await hash(password);
-
-    // Create and return new user with hashed password
     const user = await this.userService.create({
       ...userData,
       password: hashedPassword,
     });
+
     return user;
   }
 
   /**
-   * Validates a user's credentials for local authentication.
-   * @param email - The user's email address.
-   * @param password - The user's password.
-   * @returns The validated user object if credentials are valid.
-   * @throws UnauthorizedException if the user is not found or the password is invalid.
+   * Validates user credentials for local authentication strategy.
+   * @throws UnauthorizedException for invalid credentials.
    */
-  async validateLocalUser(email: string, password: string) {
-    // Find user by email
+  async validateLocalUser(
+    email: string,
+    password: string,
+  ): Promise<UserProfile> {
     const user = await this.userService.findByEmail(email);
+
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verify password matches stored hash
     const isPasswordValid = await verify(user.password, password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Return minimal user info for authentication
     return { id: user.id, email: user.email, name: user.name };
+  }
+
+  async signin(user: AuthUser) {
+    const tokens = await this.generateJwtTokens(user.id);
+    return { ...user, ...tokens };
+  }
+
+  private async generateJwtTokens(userId: string) {
+    const payload: AuthJwtPayload = { sub: userId };
+    const [accessToken] = await Promise.all([
+      this.jwtService.signAsync(payload),
+    ]);
+    return { accessToken };
   }
 }
