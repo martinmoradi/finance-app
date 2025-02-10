@@ -1,4 +1,4 @@
-export const mockedUsers = [
+export const userFixtures = [
   {
     id: '1',
     email: 'test@example.com',

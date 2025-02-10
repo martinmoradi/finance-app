@@ -5,7 +5,7 @@
 import { Test } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserRepository } from '../user.repository';
-import { mockedUsers } from './mocked-users';
+import { userFixtures } from './user.fixture';
 
 // Mock database instance with spies for all required methods
 const mockDb = {
@@ -51,7 +51,7 @@ describe('UserRepository', () => {
 
     // Reset and setup mocks before each test
     vi.clearAllMocks();
-    mockDb.query.users.findMany.mockResolvedValue(mockedUsers);
+    mockDb.query.users.findMany.mockResolvedValue(userFixtures);
   });
 
   /**
@@ -69,7 +69,7 @@ describe('UserRepository', () => {
    * Test suite for findById() method - successful case
    */
   it('should find user by id', async () => {
-    mockDb.query.users.findFirst.mockResolvedValue(mockedUsers[0]);
+    mockDb.query.users.findFirst.mockResolvedValue(userFixtures[0]);
 
     const user = await userRepository.findById('1');
     expect(user).toBeTruthy();
@@ -91,7 +91,7 @@ describe('UserRepository', () => {
    * Test suite for findByEmail() method - successful case
    */
   it('should find user by email', async () => {
-    mockDb.query.users.findFirst.mockResolvedValue(mockedUsers[0]);
+    mockDb.query.users.findFirst.mockResolvedValue(userFixtures[0]);
 
     const user = await userRepository.findByEmail('test@example.com');
     expect(user).toBeTruthy();
