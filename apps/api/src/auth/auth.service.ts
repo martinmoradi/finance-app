@@ -1,7 +1,11 @@
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { UserService } from '@/user/user.service';
-import { ConflictException, Injectable } from '@nestjs/common';
-import { hash } from 'argon2';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { hash, verify } from 'argon2';
 
 /**
  * Service handling authentication-related operations
@@ -35,5 +39,29 @@ export class AuthService {
       password: hashedPassword,
     });
     return user;
+  }
+
+  /**
+   * Validates a user's credentials for local authentication
+   * @param email - The user's email address
+   * @param password - The user's password
+   * @returns The validated user object if credentials are valid
+   * @throws UnauthorizedException if the user is not found or the password is invalid
+   */
+  async validateLocalUser(email: string, password: string) {
+    // Find user by email
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Verify password matches stored hash
+    const isPasswordValid = await verify(user.password, password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Return minimal user info for authentication
+    return { id: user.id, email: user.email, name: user.name };
   }
 }
