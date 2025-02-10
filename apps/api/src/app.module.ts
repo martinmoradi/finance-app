@@ -9,15 +9,15 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
 
 /**
- * Main application module
- * Configures the NestJS application with modules and providers
+ * Main application module.
+ * Configures the NestJS application with modules and providers.
  */
 @Module({
   imports: [
+    AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     UserModule,
-    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_PIPE, useClass: ZodValidationPipe }],

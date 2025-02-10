@@ -1,6 +1,6 @@
 /**
- * Configuration for Cross-Origin Resource Sharing (CORS)
- * Defines allowed origins, methods, credentials, headers, and cache settings
+ * Configuration for Cross-Origin Resource Sharing (CORS).
+ * Defines allowed origins, methods, credentials, headers, and cache settings.
  */
 export const corsConfig = {
   // We'll read allowed origins from environment variables

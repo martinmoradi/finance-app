@@ -5,8 +5,8 @@ import { UserRepository } from '@/user/user.repository';
 import { UserService } from '@/user/user.service';
 
 /**
- * Module for managing user-related functionality
- * Provides controllers and services for user operations
+ * Module for managing user-related functionality.
+ * Provides controllers and services for user operations.
  */
 @Module({
   controllers: [UserController],

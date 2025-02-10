@@ -8,17 +8,18 @@ import {
 import { hash, verify } from 'argon2';
 
 /**
- * Service handling authentication-related operations
+ * Service handling authentication-related operations.
+ * Provides methods for user registration and authentication.
  */
 @Injectable()
 export class AuthService {
   constructor(private readonly userService: UserService) {}
 
   /**
-   * Creates a new user account
-   * @param createUserDto - Data transfer object containing user registration details
-   * @returns Newly created user object
-   * @throws ConflictException if a user with the provided email already exists
+   * Creates a new user account.
+   * @param createUserDto - Data transfer object containing user registration details.
+   * @returns Newly created user object.
+   * @throws ConflictException if a user with the provided email already exists.
    */
   async signup(createUserDto: CreateUserDto) {
     // Separate password from other user data for secure handling
@@ -42,11 +43,11 @@ export class AuthService {
   }
 
   /**
-   * Validates a user's credentials for local authentication
-   * @param email - The user's email address
-   * @param password - The user's password
-   * @returns The validated user object if credentials are valid
-   * @throws UnauthorizedException if the user is not found or the password is invalid
+   * Validates a user's credentials for local authentication.
+   * @param email - The user's email address.
+   * @param password - The user's password.
+   * @returns The validated user object if credentials are valid.
+   * @throws UnauthorizedException if the user is not found or the password is invalid.
    */
   async validateLocalUser(email: string, password: string) {
     // Find user by email

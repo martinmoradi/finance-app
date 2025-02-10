@@ -5,8 +5,8 @@ import { User } from '@repo/types';
 import { Strategy } from 'passport-local';
 
 /**
- * Local authentication strategy for Passport
- * Validates user credentials against the database
+ * Local authentication strategy for Passport.
+ * Validates user credentials against the database.
  */
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
