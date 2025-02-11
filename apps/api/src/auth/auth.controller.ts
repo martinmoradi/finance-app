@@ -1,6 +1,7 @@
 import { AuthService } from '@/auth/auth.service';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { LocalAuthGuard } from '@/auth/guards/local-auth.guard';
+import { AccessTokenAuthGuard } from '@/auth/guards/access-token-auth.guard';
+import { CredentialsAuthGuard } from '@/auth/guards/credentials-auth.guard';
+import { RefreshTokenAuthGuard } from '@/auth/guards/refresh-token-auth.guard';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import {
   Body,
@@ -22,7 +23,7 @@ export class AuthController {
     return this.authService.signup(createUserDto);
   }
 
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(CredentialsAuthGuard)
   @Post('signin')
   signin(
     @Request() req: ExpressRequest & { user: PublicUser },
@@ -30,12 +31,28 @@ export class AuthController {
     return this.authService.signin(req.user);
   }
 
+  @UseGuards(RefreshTokenAuthGuard)
+  @Post('refresh')
+  refreshToken(
+    @Request() req: ExpressRequest & { user: PublicUser },
+  ): Promise<AuthenticatedUser> {
+    return this.authService.renewAccessToken(req.user);
+  }
+
   // Dummy route to test the JWT guard
-  @UseGuards(JwtAuthGuard) // This guard checks the JWT token
+  @UseGuards(AccessTokenAuthGuard)
   @Get('me')
   me(
     @Request() req: ExpressRequest & { user: AuthenticatedUser },
   ): AuthenticatedUser {
     return req.user;
+  }
+
+  @UseGuards(AccessTokenAuthGuard)
+  @Post('signout')
+  async signout(
+    @Request() req: ExpressRequest & { user: PublicUser },
+  ): Promise<void> {
+    await this.authService.signout(req.user);
   }
 }
