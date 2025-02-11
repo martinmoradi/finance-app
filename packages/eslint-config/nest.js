@@ -34,6 +34,7 @@ export const nestConfig = [
       '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/no-redundant-type-constituents': 'off',
       '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
   // Separate config for DTO files
