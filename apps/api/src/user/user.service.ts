@@ -33,4 +33,11 @@ export class UserService {
   async findById(id: string): Promise<DatabaseUser | null> {
     return this.userRepository.findById(id);
   }
+
+  async updateRefreshToken(
+    userId: string,
+    hashedRefreshToken: string | null,
+  ): Promise<DatabaseUser | null> {
+    return this.userRepository.updateRefreshToken(userId, hashedRefreshToken);
+  }
 }

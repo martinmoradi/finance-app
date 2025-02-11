@@ -1,7 +1,7 @@
 import { BaseRepository } from '@/database/base.repository';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { Injectable } from '@nestjs/common';
-import { queries, users } from '@repo/database';
+import { eq, queries, users } from '@repo/database';
 import { DatabaseUser } from '@repo/types';
 
 /**
@@ -50,5 +50,23 @@ export class UserRepository extends BaseRepository {
       .values(createUserDto)
       .returning();
     return newUser[0] ?? null;
+  }
+
+  /**
+   * Updates a user's refresh token in the database.
+   * @param userId - The user's unique identifier.
+   * @param hashedRefreshToken - The new hashed refresh token.
+   * @returns Updated user if successful, null if update fails.
+   */
+  async updateRefreshToken(
+    userId: string,
+    hashedRefreshToken: string | null,
+  ): Promise<DatabaseUser | null> {
+    const updatedUser = await this.db
+      .update(users)
+      .set({ refreshToken: hashedRefreshToken })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser[0] ?? null;
   }
 }
