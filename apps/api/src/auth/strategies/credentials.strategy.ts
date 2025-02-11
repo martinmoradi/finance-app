@@ -9,7 +9,10 @@ import { Strategy } from 'passport-local';
  * Validates user credentials against the database.
  */
 @Injectable()
-export class LocalStrategy extends PassportStrategy(Strategy) {
+export class CredentialsStrategy extends PassportStrategy(
+  Strategy,
+  'credentials',
+) {
   constructor(private readonly authService: AuthService) {
     super({
       usernameField: 'email',
@@ -17,7 +20,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(email: string, password: string): Promise<PublicUser> {
-    const user = await this.authService.validateLocalUser(email, password);
+    const user = await this.authService.validateCredentials(email, password);
     if (!user) {
       throw new UnauthorizedException();
     }
