@@ -1,7 +1,7 @@
 import { AuthService } from '@/auth/auth.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { UserProfile } from '@repo/types';
+import { PublicUser } from '@repo/types';
 import { Strategy } from 'passport-local';
 
 /**
@@ -16,14 +16,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  /**
-   * Validates user credentials
-   * @param email - User's email
-   * @param password - User's password
-   * @returns User object with minimal details
-   * @throws UnauthorizedException if credentials are invalid
-   */
-  async validate(email: string, password: string): Promise<UserProfile> {
+  async validate(email: string, password: string): Promise<PublicUser> {
     const user = await this.authService.validateLocalUser(email, password);
     if (!user) {
       throw new UnauthorizedException();
