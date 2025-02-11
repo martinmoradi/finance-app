@@ -1,12 +1,17 @@
-import { UserProfile } from '@/user';
+import { PublicUser } from '@/user';
 
-type TokenPayload = {
+export type AuthTokens = {
   accessToken: string;
   refreshToken: string;
 };
 
-export type AuthJwtPayload = {
+export type SigninCredentials = {
+  email: string;
+  password: string;
+};
+
+export type JwtPayload = {
   sub: string;
 };
 
-export type AuthUser = UserProfile & TokenPayload;
+export type AuthenticatedUser = PublicUser & AuthTokens;
