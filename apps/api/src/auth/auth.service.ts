@@ -165,7 +165,7 @@ export class AuthService {
     }
 
     const isRefreshTokenValid = await verify(
-      databaseUser.refreshToken,
+      databaseUser.refreshToken as string,
       refreshToken,
     );
     if (!isRefreshTokenValid) {
