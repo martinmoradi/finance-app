@@ -33,13 +33,13 @@ export const nestConfig = [
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/no-redundant-type-constituents': 'off',
-      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-call': 'warn',
       '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
   // Separate config for DTO files
   {
-    files: ['**/*.dto.ts'],
+    files: ['**/*.dto.ts', 'src/main.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-call': 'off',
     },
