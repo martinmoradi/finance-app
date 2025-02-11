@@ -33,6 +33,14 @@ export class AuthController {
     return this.authService.signin(req.user);
   }
 
+  @UseGuards(AccessTokenAuthGuard)
+  @Post('signout')
+  async signout(
+    @Request() req: ExpressRequest & { user: PublicUser },
+  ): Promise<void> {
+    await this.authService.signout(req.user);
+  }
+
   @UseGuards(RefreshTokenAuthGuard)
   @Post('refresh')
   refreshToken(
@@ -48,13 +56,5 @@ export class AuthController {
     @Request() req: ExpressRequest & { user: AuthenticatedUser },
   ): AuthenticatedUser {
     return req.user;
-  }
-
-  @UseGuards(AccessTokenAuthGuard)
-  @Post('signout')
-  async signout(
-    @Request() req: ExpressRequest & { user: PublicUser },
-  ): Promise<void> {
-    await this.authService.signout(req.user);
   }
 }
