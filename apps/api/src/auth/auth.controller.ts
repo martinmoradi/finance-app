@@ -11,9 +11,11 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthenticatedUser, PublicUser } from '@repo/types';
 import { Request as ExpressRequest } from 'express';
 
+@UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
