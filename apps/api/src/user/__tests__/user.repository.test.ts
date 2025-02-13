@@ -26,7 +26,7 @@ const mockDb = {
 vi.mock('@/database/base.repository', () => {
   return {
     BaseRepository: class {
-      protected get db() {
+      protected get db(): typeof mockDb {
         return mockDb;
       }
     },
