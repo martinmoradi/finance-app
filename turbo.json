@@ -1,16 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/*.ts", "**/*.tsx", "**/*.json"],
-  "globalEnv": ["NODE_ENV", "DATABASE_URL", "TEST", "CI"],
+  "globalEnv": [
+    "PORT",
+    "ALLOWED_ORIGINS",
+    "NODE_ENV",
+    "DATABASE_URL",
+    "TEST",
+    "CI",
+    "JWT_SECRET",
+    "JWT_EXPIRES_IN",
+    "REFRESH_TOKEN_SECRET",
+    "REFRESH_TOKEN_EXPIRES_IN",
+    "COOKIE_SECRET",
+    "CSRF_SECRET"
+  ],
   "tasks": {
     "build": {
-      "env": [
-        "PORT",
-        "ALLOWED_ORIGINS",
-        "DATABASE_URL",
-        "NEXT_PUBLIC_APP_URL",
-        "NEXT_PUBLIC_API_URL"
-      ],
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "public/dist/**"]
