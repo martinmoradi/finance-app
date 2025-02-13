@@ -1,7 +1,7 @@
 import { BaseRepository } from '@/database/base.repository';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { Injectable } from '@nestjs/common';
-import { eq, queries, users } from '@repo/database';
+import { userQueries, users } from '@repo/database';
 import { DatabaseUser } from '@repo/types';
 
 /**
@@ -25,7 +25,7 @@ export class UserRepository extends BaseRepository {
    * @returns User if found, null if not found.
    */
   async findById(id: string): Promise<DatabaseUser | null> {
-    const user = await this.db.query.users.findFirst(queries.byId(id));
+    const user = await this.db.query.users.findFirst(userQueries.byId(id));
     return user ?? null;
   }
 
@@ -35,7 +35,9 @@ export class UserRepository extends BaseRepository {
    * @returns User if found, null if not found.
    */
   async findByEmail(email: string): Promise<DatabaseUser | null> {
-    const user = await this.db.query.users.findFirst(queries.byEmail(email));
+    const user = await this.db.query.users.findFirst(
+      userQueries.byEmail(email),
+    );
     return user ?? null;
   }
 
@@ -45,28 +47,10 @@ export class UserRepository extends BaseRepository {
    * @returns Newly created user if successful, null if creation fails.
    */
   async create(createUserDto: CreateUserDto): Promise<DatabaseUser | null> {
-    const newUser = await this.db
+    const [newUser] = await this.db
       .insert(users)
       .values(createUserDto)
       .returning();
-    return newUser[0] ?? null;
-  }
-
-  /**
-   * Updates a user's refresh token in the database.
-   * @param userId - The user's unique identifier.
-   * @param hashedRefreshToken - The new hashed refresh token.
-   * @returns Updated user if successful, null if update fails.
-   */
-  async updateRefreshToken(
-    userId: string,
-    hashedRefreshToken: string | null,
-  ): Promise<DatabaseUser | null> {
-    const updatedUser = await this.db
-      .update(users)
-      .set({ refreshToken: hashedRefreshToken })
-      .where(eq(users.id, userId))
-      .returning();
-    return updatedUser[0] ?? null;
+    return newUser ?? null;
   }
 }
