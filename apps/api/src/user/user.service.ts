@@ -1,11 +1,17 @@
 import { CreateUserDto } from '@/user/dto/create-user.dto';
+import { LoggerService } from '@/logger/logger.service';
 import { UserRepository } from '@/user/user.repository';
 import { Injectable } from '@nestjs/common';
 import { DatabaseUser } from '@repo/types';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly logger: LoggerService,
+  ) {
+    this.logger = new LoggerService('UserService');
+  }
 
   /**
    * Finds a user by their email address.
@@ -13,7 +19,13 @@ export class UserService {
    * @returns The found user or null if not found.
    */
   async findByEmail(email: string): Promise<DatabaseUser | null> {
-    return this.userRepository.findByEmail(email);
+    try {
+      this.logger.debug('Finding user by email', { email });
+      return this.userRepository.findByEmail(email);
+    } catch (error) {
+      this.logger.error('Error finding user by email', error);
+      throw error;
+    }
   }
 
   /**
@@ -22,7 +34,13 @@ export class UserService {
    * @returns The newly created user or null if creation fails.
    */
   async create(createUserDto: CreateUserDto): Promise<DatabaseUser | null> {
-    return this.userRepository.create(createUserDto);
+    try {
+      this.logger.debug('Creating user', { createUserDto });
+      return this.userRepository.create(createUserDto);
+    } catch (error) {
+      this.logger.error('Error creating user', error);
+      throw error;
+    }
   }
 
   /**
@@ -31,13 +49,12 @@ export class UserService {
    * @returns The found user or null if not found
    */
   async findById(id: string): Promise<DatabaseUser | null> {
-    return this.userRepository.findById(id);
-  }
-
-  async updateRefreshToken(
-    userId: string,
-    hashedRefreshToken: string | null,
-  ): Promise<DatabaseUser | null> {
-    return this.userRepository.updateRefreshToken(userId, hashedRefreshToken);
+    try {
+      this.logger.debug('Finding user by ID', { id });
+      return this.userRepository.findById(id);
+    } catch (error) {
+      this.logger.error('Error finding user by ID', error);
+      throw error;
+    }
   }
 }
