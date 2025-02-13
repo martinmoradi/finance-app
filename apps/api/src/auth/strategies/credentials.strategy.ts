@@ -1,4 +1,5 @@
 import { AuthService } from '@/auth/auth.service';
+import { LoggerService } from '@/logger/logger.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { PublicUser } from '@repo/types';
@@ -15,6 +16,7 @@ export class CredentialsStrategy extends PassportStrategy(
   Strategy,
   'credentials',
 ) {
+  private readonly logger: LoggerService;
   /**
    * Creates an instance of CredentialsStrategy.
    * Configures the strategy to use email as the username field.
@@ -25,6 +27,7 @@ export class CredentialsStrategy extends PassportStrategy(
     super({
       usernameField: 'email',
     });
+    this.logger = new LoggerService('CredentialsStrategy');
   }
 
   /**
@@ -37,10 +40,34 @@ export class CredentialsStrategy extends PassportStrategy(
    * @throws {UnauthorizedException} If credentials are invalid
    */
   async validate(email: string, password: string): Promise<PublicUser> {
-    const user = await this.authService.validateCredentials(email, password);
-    if (!user) {
-      throw new UnauthorizedException();
+    this.logger.debug('Attempting credential validation', { email });
+    try {
+      const user = await this.authService.validateCredentials(email, password);
+      if (!user) {
+        this.logger.warn('Authentication failed: no user found', { email });
+        throw new UnauthorizedException();
+      }
+
+      // Log success with minimal user info
+      this.logger.info('Authentication successful', {
+        userId: user.id,
+        email: user.email,
+      });
+
+      return user;
+    } catch (error) {
+      // Different log levels based on error type
+      if (error instanceof UnauthorizedException) {
+        this.logger.warn('Authentication failed: invalid credentials', {
+          email,
+          errorType: error.constructor.name,
+        });
+        throw error;
+      }
+
+      // Unexpected errors get logged as errors
+      this.logger.error('Authentication failed: unexpected error', error);
+      throw new UnauthorizedException('Authentication failed');
     }
-    return user;
   }
 }
