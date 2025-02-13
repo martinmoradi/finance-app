@@ -1,6 +1,6 @@
-import { getRequiredEnvVar } from '@repo/env-validation';
 import { registerAs } from '@nestjs/config';
 import { JwtModuleOptions } from '@nestjs/jwt';
+import { getRequiredEnvVar } from '@repo/env-validation';
 
 // Make secret required
 type RequiredJwtModuleOptions = Required<Pick<JwtModuleOptions, 'secret'>> &

@@ -1,6 +1,6 @@
 import { registerAs } from '@nestjs/config';
-import { getRequiredEnvVar } from '@repo/env-validation';
 import { JwtSignOptions } from '@nestjs/jwt';
+import { getRequiredEnvVar } from '@repo/env-validation';
 
 // Make secret and expiresIn required
 type RequiredJwtSignOptions = Required<
