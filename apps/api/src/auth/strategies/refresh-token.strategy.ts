@@ -6,6 +6,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { JwtPayload, PublicUser } from '@repo/types';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { LoggerService } from '@/logger/logger.service';
 
 /**
  * Express Request type extension to ensure type safety for refresh token in request body.
@@ -14,6 +15,9 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 interface RefreshTokenRequest extends Request {
   body: {
     refreshToken: string;
+  };
+  cookies: {
+    deviceId: string;
   };
 }
 
@@ -32,6 +36,8 @@ export class RefreshTokenStrategy extends PassportStrategy(
   Strategy,
   'jwt-refresh',
 ) {
+  private readonly logger: LoggerService;
+
   /**
    * Creates an instance of RefreshTokenStrategy.
    * Configures JWT validation options and enables request pass-through.
@@ -52,6 +58,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
       ignoreExpiration: false,
       passReqToCallback: true,
     });
+    this.logger = new LoggerService('RefreshTokenStrategy');
   }
 
   /**
@@ -68,17 +75,57 @@ export class RefreshTokenStrategy extends PassportStrategy(
     payload: JwtPayload,
   ): Promise<PublicUser> {
     const userId = payload.sub;
-    const refreshToken = req.body?.refreshToken;
+    const { refreshToken } = req.body;
+    const deviceId = req.cookies['deviceId'];
+
+    this.logger.debug('Attempting refresh token validation', {
+      userId,
+      deviceId,
+    });
+
     if (!refreshToken) {
+      this.logger.warn('Authentication failed: missing refresh token', {
+        userId,
+      });
       throw new UnauthorizedException('Refresh token is required');
     }
-    const publicUser = await this.authService.validateRefreshToken(
-      userId,
-      refreshToken,
-    );
-    if (!publicUser) {
-      throw new UnauthorizedException();
+
+    try {
+      const publicUser = await this.authService.validateRefreshToken(
+        userId,
+        refreshToken,
+        deviceId,
+      );
+
+      if (!publicUser) {
+        this.logger.warn('Authentication failed: invalid refresh token', {
+          userId,
+          deviceId,
+        });
+        throw new UnauthorizedException();
+      }
+
+      // Log success with minimal user info
+      this.logger.info('Refresh token validation successful', {
+        userId: publicUser.id,
+        deviceId,
+      });
+
+      return publicUser;
+    } catch (error) {
+      // Different log levels based on error type
+      if (error instanceof UnauthorizedException) {
+        this.logger.warn('Authentication failed: invalid refresh token', {
+          userId,
+          deviceId,
+          errorType: error.constructor.name,
+        });
+        throw error;
+      }
+
+      // Unexpected errors get logged as errors
+      this.logger.error('Authentication failed: unexpected error', error);
+      throw new UnauthorizedException('Authentication failed');
     }
-    return publicUser;
   }
 }
