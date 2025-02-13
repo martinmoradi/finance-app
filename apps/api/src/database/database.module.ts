@@ -1,3 +1,4 @@
+import { LoggerService } from '@/logger/logger.service';
 import { Module } from '@nestjs/common';
 import { DatabaseService } from '@/database/database.service';
 
@@ -6,7 +7,7 @@ import { DatabaseService } from '@/database/database.service';
  * Provides a single instance of the DatabaseService.
  */
 @Module({
-  providers: [DatabaseService],
+  providers: [DatabaseService, LoggerService],
   exports: [DatabaseService],
 })
 export class DatabaseModule {}

@@ -1,3 +1,4 @@
+import { LoggerService } from '@/logger/logger.service';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import type { DatabaseClient, DatabaseConnection } from '@repo/database';
 import { createDatabaseClient } from '@repo/database';
@@ -9,6 +10,10 @@ import { getRequiredEnvVar } from '@repo/env-validation';
  */
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
+  constructor(private readonly logger: LoggerService) {
+    this.logger = new LoggerService('DatabaseService');
+  }
+
   /**
    * Database connection instance. Null before initialization.
    */
@@ -21,6 +26,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
    */
   protected get db(): DatabaseClient {
     if (!this.connection) {
+      this.logger.fatal('Database connection not initialized');
       throw new Error('Database connection not initialized');
     }
     return this.connection.db;
