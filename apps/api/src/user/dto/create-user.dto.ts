@@ -14,6 +14,7 @@ export class CreateUserDto extends createZodDto(createUserSchema) {
     minLength: 1,
     maxLength: 255,
     format: 'email',
+    required: true,
   })
   declare email: string;
 
@@ -22,15 +23,17 @@ export class CreateUserDto extends createZodDto(createUserSchema) {
     example: 'John Doe',
     minLength: 2,
     maxLength: 100,
+    required: true,
   })
   declare name: string;
 
   @ApiProperty({
     description: 'User password',
-    example: 'Password123',
+    example: 'YourPassword123',
     minLength: 8,
     maxLength: 100,
     pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$',
+    required: true,
   })
   declare password: string;
 }
