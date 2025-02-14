@@ -43,6 +43,13 @@
       "when": 1739500335943,
       "tag": "0005_classy_hellion",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1739502952167,
+      "tag": "0006_sweet_iceman",
+      "breakpoints": true
     }
   ]
 }
