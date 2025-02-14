@@ -24,7 +24,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     SessionModule,
     UserModule,
     DatabaseModule,
-    LoggerModule,
+    LoggerModule.forFeature('AuthService'),
   ],
   controllers: [AuthController],
   providers: [

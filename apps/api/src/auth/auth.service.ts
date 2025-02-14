@@ -37,9 +37,7 @@ export class AuthService {
     private readonly jwtRefreshConfiguration: ConfigType<
       typeof refreshJwtConfig
     >,
-  ) {
-    this.logger = new LoggerService('AuthService');
-  }
+  ) {}
 
   /* -------------- Public Authentication Methods -------------- */
 
