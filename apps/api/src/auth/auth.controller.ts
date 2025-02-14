@@ -197,7 +197,25 @@ export class AuthController {
   }
 
   /* ---------------------- Get authenticated user ---------------------- */
-  @UseGuards(AccessTokenAuthGuard)
+  @ApiOperation({ summary: 'Get authenticated user' })
+  @ApiOkResponse({
+    description: 'Returns the authenticated user',
+    type: AuthUserResponse,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid access token or CSRF token',
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many requests - maximum 5 requests per minute allowed',
+  })
+  @ApiCookieAuth('deviceId')
+  @ApiHeader({
+    name: 'x-csrf-token',
+    description: 'CSRF token required',
+    required: true,
+  })
+  @ApiBearerAuth('access-token')
+  @UseGuards(CsrfGuard, AccessTokenAuthGuard)
   @Get('me')
   me(
     @Request() req: ExpressRequest & { user: AuthenticatedUser },
