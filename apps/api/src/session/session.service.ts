@@ -19,9 +19,7 @@ export class SessionService {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly logger: LoggerService,
-  ) {
-    this.logger = new LoggerService('SessionService');
-  }
+  ) {}
 
   /* -------------- Core Session Management Methods -------------- */
 
