@@ -23,7 +23,7 @@ import { SessionModule } from './session/session.module';
     UserModule,
     ScheduleModule.forRoot(),
     SessionModule,
-    LoggerModule,
+    LoggerModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_PIPE, useClass: ZodValidationPipe }],
