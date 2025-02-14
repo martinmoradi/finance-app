@@ -2,7 +2,7 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import { config as baseConfig } from './base.js';
-
+import vitest from '@vitest/eslint-plugin';
 /**
  * A custom ESLint configuration for NestJS applications.
  *
@@ -42,6 +42,17 @@ export const nestConfig = [
     files: ['**/*.dto.ts', 'src/main.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-call': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.ts'],
+    plugins: {
+      vitest,
+    },
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      ...vitest.configs.recommended.rules,
+      'vitest/max-nested-describe': ['error', { max: 3 }],
     },
   },
 ];

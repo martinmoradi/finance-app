@@ -360,6 +360,9 @@ importers:
       '@next/eslint-plugin-next':
         specifier: ^15.1.6
         version: 15.1.6
+      '@vitest/eslint-plugin':
+        specifier: ^1.1.31
+        version: 1.1.31(@typescript-eslint/utils@8.22.0(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3))(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3)(vitest@3.0.5(@types/node@22.13.1)(jiti@2.4.2)(jsdom@26.0.0)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))
       eslint:
         specifier: ^9.19.0
         version: 9.19.0(jiti@2.4.2)
@@ -2725,6 +2728,19 @@ packages:
       vitest: 3.0.5
     peerDependenciesMeta:
       '@vitest/browser':
+        optional: true
+
+  '@vitest/eslint-plugin@1.1.31':
+    resolution: {integrity: sha512-xlsLr+e+AXZ/00eVZCtNmMeCJoJaRCoLDiAgLcxgQjSS1EertieB2MUHf8xIqPKs9lECc/UpL+y1xDcpvi02hw==}
+    peerDependencies:
+      '@typescript-eslint/utils': '>= 8.0'
+      eslint: '>= 8.57.0'
+      typescript: '>= 5.0.0'
+      vitest: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+      vitest:
         optional: true
 
   '@vitest/expect@3.0.5':
@@ -8870,6 +8886,14 @@ snapshots:
       vitest: 3.0.5(@types/node@22.13.1)(jiti@2.4.2)(jsdom@26.0.0)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0)
     transitivePeerDependencies:
       - supports-color
+
+  '@vitest/eslint-plugin@1.1.31(@typescript-eslint/utils@8.22.0(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3))(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3)(vitest@3.0.5(@types/node@22.13.1)(jiti@2.4.2)(jsdom@26.0.0)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))':
+    dependencies:
+      '@typescript-eslint/utils': 8.22.0(eslint@9.19.0(jiti@2.4.2))(typescript@5.7.3)
+      eslint: 9.19.0(jiti@2.4.2)
+    optionalDependencies:
+      typescript: 5.7.3
+      vitest: 3.0.5(@types/node@22.13.1)(jiti@2.4.2)(jsdom@26.0.0)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0)
 
   '@vitest/expect@3.0.5':
     dependencies:
