@@ -6,7 +6,8 @@ export const createUserSchema = z.object({
     .string()
     .email('Invalid email address')
     .min(1, 'Email is required')
-    .max(255, 'Email must be less than 255 characters long'),
+    .max(255, 'Email must be less than 255 characters long')
+    .toLowerCase(),
   name: z
     .string()
     .min(2, 'Name must be at least 2 characters long')
