@@ -1,6 +1,6 @@
 // Import required dependencies
 import { createDatabaseClient, type DatabaseConnection } from '@/client';
-import { schema } from '@/schema';
+import { schema, tables } from '@/schema';
 import { sql } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { getRequiredEnvVar } from '@repo/env-validation';
@@ -44,7 +44,7 @@ export async function cleanupTestDatabase(connection: DatabaseConnection) {
   const { db } = connection;
 
   // Iterate through schema and truncate each table
-  for (const [tableName] of Object.entries(schema)) {
+  for (const [tableName] of Object.entries(tables)) {
     await db.execute(sql`TRUNCATE TABLE ${sql.identifier(tableName)} CASCADE`);
   }
 }
