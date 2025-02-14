@@ -6,6 +6,7 @@ import {
   InferSelectModel,
   relations,
 } from 'drizzle-orm';
+import { index } from 'drizzle-orm/pg-core';
 import {
   pgTable,
   primaryKey,
@@ -20,14 +21,17 @@ export const sessions = pgTable(
   {
     userId: uuid('user_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     deviceId: text('device_id').notNull(),
     token: text('token').notNull(),
     lastUsedAt: timestamp('last_used_at').notNull().defaultNow(),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.deviceId] })],
+  (t) => [
+    primaryKey({ columns: [t.userId, t.deviceId] }),
+    index('expires_at_idx').on(t.expiresAt),
+  ],
 );
 
 // Relations
