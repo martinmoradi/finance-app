@@ -7,14 +7,24 @@ type LogContext = {
 
 @Injectable()
 export class LoggerService {
-  private readonly logger: Logger;
-  private readonly prefix: string;
+  private logger: Logger;
+  private prefix: string;
 
   constructor(serviceName?: string) {
     this.prefix = serviceName ? `[${serviceName}]:` : '';
     this.logger = new Logger('Finance App', {
       timestamp: true,
     });
+  }
+
+  setContext(context: string): LoggerService {
+    this.prefix = context ? `[${context}]:` : '';
+    return this;
+  }
+
+  // Clone method to create a new instance with a different context
+  forContext(context: string): LoggerService {
+    return new LoggerService(context);
   }
 
   /**
@@ -119,6 +129,7 @@ export class LoggerService {
    */
   private sanitizeContext(context?: LogContext): LogContext | undefined {
     if (!context) return undefined;
+    if (process.env.NODE_ENV === 'development') return context;
 
     // Create a shallow copy of the context
     const sanitized = { ...context };
