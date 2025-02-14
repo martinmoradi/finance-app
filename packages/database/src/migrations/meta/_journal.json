@@ -29,6 +29,20 @@
       "when": 1739461907408,
       "tag": "0003_groovy_krista_starr",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1739499925568,
+      "tag": "0004_long_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1739500335943,
+      "tag": "0005_classy_hellion",
+      "breakpoints": true
     }
   ]
 }
