@@ -10,9 +10,7 @@ import { getRequiredEnvVar } from '@repo/env-validation';
  */
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
-  constructor(private readonly logger: LoggerService) {
-    this.logger = new LoggerService('DatabaseService');
-  }
+  constructor(private readonly logger: LoggerService) {}
 
   /**
    * Database connection instance. Null before initialization.
