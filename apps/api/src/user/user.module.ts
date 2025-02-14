@@ -9,7 +9,7 @@ import { Module } from '@nestjs/common';
  * Provides controllers and services for user operations.
  */
 @Module({
-  imports: [DatabaseModule, LoggerModule],
+  imports: [DatabaseModule, LoggerModule.forFeature('UserService')],
   controllers: [UserController],
   providers: [UserRepository, UserService],
   exports: [UserService],

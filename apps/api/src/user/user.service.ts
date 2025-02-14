@@ -9,9 +9,7 @@ export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly logger: LoggerService,
-  ) {
-    this.logger = new LoggerService('UserService');
-  }
+  ) {}
 
   /**
    * Finds a user by their email address.
