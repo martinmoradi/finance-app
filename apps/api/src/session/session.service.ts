@@ -1,12 +1,14 @@
 import { LoggerService } from '@/logger/logger.service';
-import { InvalidRefreshTokenException } from '@/session/exceptions/invalid-refresh-token.exception';
-import { SessionCleanupFailedException } from '@/session/exceptions/session-cleanup-failed.exception';
-import { SessionCreationFailedException } from '@/session/exceptions/session-creation-failed.exception';
-import { SessionExpiredException } from '@/session/exceptions/session-expired.exception';
-import { SessionLimitExceededException } from '@/session/exceptions/session-limit-exceeded.exception';
-import { SessionNotFoundException } from '@/session/exceptions/session-not-found.exception';
-import { SessionRepositoryException } from '@/session/exceptions/session-repository.exception';
-import { SessionValidationException } from '@/session/exceptions/session-validation.exception';
+import {
+  InvalidRefreshTokenException,
+  SessionCleanupFailedException,
+  SessionCreationFailedException,
+  SessionExpiredException,
+  SessionLimitExceededException,
+  SessionNotFoundException,
+  SessionRepositoryException,
+  SessionValidationException,
+} from '@/session/exceptions';
 import { SessionRepository } from '@/session/session.repository';
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -36,7 +38,10 @@ export class SessionService {
     refreshToken: string,
     expiresAt: Date,
   ): Promise<DatabaseSession> {
-    this.logger.debug('Creating new session with token', { userId, deviceId });
+    this.logger.debug('Creating new session with token...', {
+      userId,
+      deviceId,
+    });
     try {
       await this.cleanUpExistingSession(userId, deviceId);
       const hashedToken = await hash(refreshToken);
@@ -72,39 +77,40 @@ export class SessionService {
     deviceId: string,
     refreshToken: string,
   ): Promise<DatabaseSession> {
-    this.logger.debug('Validating session', { userId, deviceId });
+    this.logger.debug('Validating session...', { userId, deviceId });
     try {
-      const session = await this.findSession(userId, deviceId);
-      if (!session) {
-        throw new SessionNotFoundException();
-      }
+      const session = await this.findSessionOrThrow(userId, deviceId);
 
       if (session.expiresAt < new Date()) {
+        this.logger.warn('Session expired', { userId, deviceId });
         throw new SessionExpiredException();
       }
 
       const isRefreshTokenValid = await verify(session.token, refreshToken);
       if (!isRefreshTokenValid) {
+        this.logger.warn('Invalid refresh token', { userId, deviceId });
         throw new InvalidRefreshTokenException();
       }
 
-      await this.updateLastUsedAt(userId, deviceId);
-      this.logger.info('Session validated successfully', { userId, deviceId });
-      return session;
+      const updatedSession = await this.updateLastUsedAt(userId, deviceId);
+
+      this.logger.info('Session validated successfully', {
+        userId,
+        deviceId,
+      });
+      return updatedSession;
     } catch (error) {
       if (error instanceof SessionValidationException) {
         throw error;
       }
       if (error instanceof SessionRepositoryException) {
-        throw new SessionValidationException(
-          'Failed to validate session due to repository error',
-        );
+        throw new SessionValidationException(error);
       }
       this.logger.error('Unexpected error during session validation', error, {
         userId,
         deviceId,
       });
-      throw new SessionValidationException('Failed to validate session');
+      throw new SessionValidationException(error as Error);
     }
   }
 
@@ -115,7 +121,7 @@ export class SessionService {
     userId: string,
     maxSessions: number = 5,
   ): Promise<void> {
-    this.logger.debug('Enforcing session limit', { userId, maxSessions });
+    this.logger.debug('Enforcing session limit...', { userId, maxSessions });
     try {
       const sessions = await this.findAllByUserId(userId);
       if (sessions.length >= maxSessions) {
@@ -141,7 +147,7 @@ export class SessionService {
    * Removes all sessions for a specific user.
    */
   async removeAllSessionsForUser(userId: string): Promise<DatabaseSession[]> {
-    this.logger.debug('Removing all sessions for user', { userId });
+    this.logger.debug('Removing all sessions for user...', { userId });
     try {
       const sessions = await this.sessionRepository.deleteAllForUser(userId);
       this.logger.info('Successfully removed all sessions for user', {
@@ -166,7 +172,7 @@ export class SessionService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async deleteExpired(): Promise<void> {
-    this.logger.debug('Running expired sessions cleanup');
+    this.logger.debug('Running expired sessions cleanup...');
     try {
       await this.sessionRepository.deleteExpired();
       this.logger.info('Expired sessions cleanup completed');
@@ -184,6 +190,10 @@ export class SessionService {
     try {
       const session = await this.sessionRepository.create(newSession);
       if (!session) {
+        this.logger.warn('Database operation succeeded but returned null', {
+          userId: newSession.userId,
+          deviceId: newSession.deviceId,
+        });
         throw new SessionRepositoryException(
           'create',
           newSession.userId,
@@ -192,6 +202,10 @@ export class SessionService {
       }
       return session;
     } catch (error) {
+      this.logger.error('Database error during session creation', error, {
+        userId: newSession.userId,
+        deviceId: newSession.deviceId,
+      });
       throw new SessionRepositoryException(
         'create',
         newSession.userId,
@@ -201,13 +215,45 @@ export class SessionService {
     }
   }
 
-  private async findSession(
+  private async findSessionOrNull(
     userId: string,
     deviceId: string,
   ): Promise<DatabaseSession | null> {
     try {
       return await this.sessionRepository.findOne(userId, deviceId);
     } catch (error) {
+      this.logger.error('Database error during session find', error, {
+        userId,
+        deviceId,
+      });
+      throw new SessionRepositoryException(
+        'find',
+        userId,
+        deviceId,
+        error as Error,
+      );
+    }
+  }
+
+  private async findSessionOrThrow(
+    userId: string,
+    deviceId: string,
+  ): Promise<DatabaseSession> {
+    try {
+      const session = await this.sessionRepository.findOne(userId, deviceId);
+      if (!session) {
+        this.logger.error('Session not found', { userId, deviceId });
+        throw new SessionNotFoundException();
+      }
+      return session;
+    } catch (error) {
+      if (error instanceof SessionNotFoundException) {
+        throw error;
+      }
+      this.logger.error('Database error during session find', error, {
+        userId,
+        deviceId,
+      });
       throw new SessionRepositoryException(
         'find',
         userId,
@@ -220,10 +266,25 @@ export class SessionService {
   private async updateLastUsedAt(
     userId: string,
     deviceId: string,
-  ): Promise<DatabaseSession | null> {
+  ): Promise<DatabaseSession> {
     try {
-      return await this.sessionRepository.updateLastUsedAt(userId, deviceId);
+      const session = await this.sessionRepository.updateLastUsedAt(
+        userId,
+        deviceId,
+      );
+      if (!session) {
+        this.logger.error('Database operation succeeded but returned null', {
+          userId,
+          deviceId,
+        });
+        throw new SessionRepositoryException('update', userId, deviceId);
+      }
+      return session;
     } catch (error) {
+      this.logger.error('Database error during session update', error, {
+        userId,
+        deviceId,
+      });
       throw new SessionRepositoryException(
         'update',
         userId,
@@ -237,6 +298,9 @@ export class SessionService {
     try {
       return await this.sessionRepository.findAllByUserId(userId);
     } catch (error) {
+      this.logger.error('Database error during session find all', error, {
+        userId,
+      });
       throw new SessionRepositoryException(
         'find all',
         userId,
@@ -253,6 +317,10 @@ export class SessionService {
     try {
       return await this.sessionRepository.delete(userId, deviceId);
     } catch (error) {
+      this.logger.error('Database error during session delete', error, {
+        userId,
+        deviceId,
+      });
       throw new SessionRepositoryException(
         'delete',
         userId,
@@ -266,7 +334,7 @@ export class SessionService {
     userId: string,
     deviceId: string,
   ): Promise<void> {
-    const existingSession = await this.findSession(userId, deviceId);
+    const existingSession = await this.findSessionOrNull(userId, deviceId);
     if (existingSession) {
       await this.deleteSession(userId, deviceId);
     }
