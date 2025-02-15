@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 
 export class SessionValidationException extends UnauthorizedException {
-  constructor(message: string) {
-    super(message);
+  constructor(cause?: Error) {
+    super('Failed to validate session', { cause });
   }
 }
