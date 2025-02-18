@@ -1,4 +1,4 @@
-import { DbUserInsert, queries, users } from '@/schema/users';
+import { DbUserInsert, userQueries, users } from '@/schema/users';
 import { eq, getTableName } from 'drizzle-orm';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
@@ -68,19 +68,12 @@ describe('Database Schema', () => {
       });
     });
 
-    // Test Relations
-    // describe('Relations', () => {
-    //   it('should have a relation with the posts table', () => {
-    //     expect(users.posts).toBeDefined();
-    //   });
-    // });
-
     // Test query builders
     describe('Query Builders', () => {
-      describe('queries.byId', () => {
+      describe('userQueries.byId', () => {
         it('should build correct WHERE clause for ID query', () => {
           const testId = '123e4567-e89b-12d3-a456-426614174000';
-          const query = queries.byId(testId);
+          const query = userQueries.byId(testId);
 
           expect(query.where).toBeDefined();
           expect(query.where).toEqual(eq(users.id, testId));
@@ -95,11 +88,11 @@ describe('Database Schema', () => {
           id?: string;
           name: string;
           email: string;
+          password: string;
           createdAt?: Date;
           updatedAt?: Date;
         };
 
-        // Type assertion to verify type compatibility at compile time
         expectTypeOf<ExpectedInsertType>().toEqualTypeOf<DbUserInsert>();
       });
     });
