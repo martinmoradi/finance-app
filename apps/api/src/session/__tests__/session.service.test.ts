@@ -15,7 +15,8 @@ import { SessionRepository } from '@/session/session.repository';
 import { SessionService } from '@/session/session.service';
 import { DatabaseSession } from '@repo/types';
 import { hash, verify } from 'argon2';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fail } from 'assert';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock argon2
 vi.mock('argon2', () => ({
