@@ -1,21 +1,36 @@
+import {
+  AuthenticationFailedException,
+  AuthRepositoryException,
+  InvalidCredentialsException,
+  SignoutFailedException,
+  SignupFailedException,
+  TokenGenerationFailedException,
+  TokenType,
+} from '@/auth/exceptions/';
+import { SigninFailedException } from '@/auth/exceptions/signin-failed.exception';
 import refreshJwtConfig from '@/config/refresh-jwt.config';
 import { LoggerService } from '@/logger/logger.service';
+import {
+  InvalidRefreshTokenException,
+  SessionCreationFailedException,
+  SessionLimitExceededException,
+  SessionRepositoryException,
+  SessionValidationException,
+} from '@/session/exceptions';
 import { SessionService } from '@/session/session.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
-import { UserService } from '@/user/user.service';
 import {
-  ConflictException,
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+  UserAlreadyExistsException,
+  UserNotFoundException,
+} from '@/user/exceptions';
+import { UserService } from '@/user/user.service';
+import { parseDuration } from '@/utils/parse-duration';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
   AuthenticatedUser,
   AuthTokens,
-  DatabaseSession,
   DatabaseUser,
   JwtPayload,
   PublicUser,
@@ -23,8 +38,8 @@ import {
 import { hash, verify } from 'argon2';
 
 /**
- * Service responsible for handling authentication-related operations including
- * user registration, login, token management and session handling.
+ * Handles authentication operations including user registration, login, token management,
+ * and session handling. Manages JWT tokens and session validation.
  */
 @Injectable()
 export class AuthService {
@@ -42,210 +57,244 @@ export class AuthService {
   /* -------------- Public Authentication Methods -------------- */
 
   /**
-   * Registers a new user in the system and creates an authenticated session.
-   *
-   * @param createUserDto - User registration data containing email, password, and name
-   * @param deviceId - Unique identifier for the user's device
-   * @returns Promise containing authenticated user data and tokens
-   * @throws {ConflictException} When user with the same email exists
-   * @throws {InternalServerErrorException} When user creation fails
+   * Registers a new user with email/password and creates an initial session
+   * @throws {UserAlreadyExistsException} If email is already registered
+   * @throws {SignupFailedException} For any registration failure after email check
    */
   async signup(
     createUserDto: CreateUserDto,
     deviceId: string,
   ): Promise<AuthenticatedUser> {
     try {
-      // Extract password and user data from DTO
       const { password, ...userData } = createUserDto;
-      this.logger.debug('User signup attempt', {
+      this.logger.debug('User signup attempt...', {
         email: userData.email,
         deviceId,
       });
 
-      // Check for existing user
+      // Check if email is already registered
       const existingUser = await this.userService.findByEmail(userData.email);
       if (existingUser) {
         this.logger.warn('Signup failed - email already exists', {
           email: userData.email,
           deviceId,
         });
-        throw new ConflictException('User already exists');
+        throw new UserAlreadyExistsException(userData.email);
       }
 
-      // Create new user with hashed password
-      const hashedPassword = await hash(password);
-      const databaseUser = await this.userService.create({
-        ...userData,
-        password: hashedPassword,
-      });
+      // Create user with hashed password
+      let databaseUser: DatabaseUser;
+      try {
+        const hashedPassword = await hash(password);
+        const result = await this.userService.create({
+          ...userData,
+          password: hashedPassword,
+        });
 
-      // Verify user was created successfully
-      if (!databaseUser) {
-        this.logger.error(
-          'Failed to create user in database',
-          new Error('Database user creation failed'),
-        );
-        throw new InternalServerErrorException('Failed to create user');
+        if (!result) {
+          throw new AuthRepositoryException('create', 'new-user');
+        }
+        databaseUser = result;
+      } catch (error) {
+        this.logger.error('Error during user signup', error);
+        throw new AuthRepositoryException('create', 'new-user', error as Error);
       }
 
       // Generate auth tokens and create session
-      const { accessToken, refreshToken } = await this.generateAuthTokens(
-        databaseUser.id,
-      );
-      await this.createSession(databaseUser.id, deviceId, refreshToken);
+      let tokens: AuthTokens;
+      try {
+        tokens = await this.generateAuthTokens(databaseUser.id);
+      } catch (error) {
+        this.logger.error('Error during token generation', error);
+        throw new TokenGenerationFailedException(
+          TokenType.GENERATION,
+          error as Error,
+        );
+      }
 
-      // Prepare and return authenticated user data
+      try {
+        const expiresAt = this.calculateRefreshTokenExpiration(
+          this.jwtRefreshConfiguration.expiresIn,
+        );
+        await this.createAuthSession(
+          databaseUser.id,
+          deviceId,
+          tokens.refreshToken,
+          expiresAt,
+        );
+      } catch (error) {
+        // Handle session limit exception
+        if (error instanceof SessionLimitExceededException) {
+          this.logger.warn('Session limit exceeded during signup', {
+            userId: databaseUser.id,
+          });
+          return { ...this.sanitizeUserData(databaseUser), ...tokens }; // Return user despite session limit
+        }
+        // Existing rollback logic
+        try {
+          await this.userService.delete(databaseUser.id);
+          this.logger.debug('Rollback: User cleanup successful', {
+            userId: databaseUser.id,
+          });
+        } catch (cleanupError) {
+          this.logger.error(
+            'Failed to cleanup user after session creation failed',
+            {
+              userId: databaseUser.id,
+              error: cleanupError,
+            },
+          );
+        }
+        throw error;
+      }
+
       const publicUser = this.sanitizeUserData(databaseUser);
       this.logger.info('User signup successful', {
         userId: databaseUser.id,
         email: publicUser.email,
         deviceId,
       });
-      return { ...publicUser, accessToken, refreshToken };
+
+      return { ...publicUser, ...tokens };
     } catch (error) {
-      if (error instanceof ConflictException) {
+      // Re-throw known errors
+      if (
+        error instanceof UserAlreadyExistsException ||
+        error instanceof TokenGenerationFailedException
+      ) {
         throw error;
       }
-      this.logger.error('Error during user signup', error);
-      throw new InternalServerErrorException(
-        'Failed to complete signup process',
-      );
+
+      // Handle session-related errors
+      if (
+        error instanceof SessionValidationException ||
+        error instanceof SessionCreationFailedException
+      ) {
+        throw new SignupFailedException(error);
+      }
+
+      this.logger.error('Unexpected error during user signup', error, {
+        email: createUserDto.email,
+        deviceId,
+      });
+      throw new SignupFailedException(error as Error);
     }
   }
 
   /**
-   * Authenticates a user and creates a new session with tokens.
-   *
-   * @param user - Validated public user object
-   * @param deviceId - Unique identifier for the user's device
-   * @returns Promise containing authenticated user data and tokens
+   * Authenticates an existing user and creates a new session
+   * @throws {TokenGenerationFailedException} If token creation fails
+   * @throws {SigninFailedException} For unexpected errors during login
    */
   async signin(user: PublicUser, deviceId: string): Promise<AuthenticatedUser> {
     try {
-      this.logger.debug('User signin attempt', {
-        userId: user.id,
-        email: user.email,
-        deviceId,
-      });
-
-      // Generate new authentication tokens and create session
-      const { accessToken, refreshToken } = await this.generateAuthTokens(
-        user.id,
+      const tokens = await this.generateAuthTokens(user.id);
+      const expiresAt = this.calculateRefreshTokenExpiration(
+        this.jwtRefreshConfiguration.expiresIn,
       );
-      await this.createSession(user.id, deviceId, refreshToken);
 
-      // Return authenticated user data
-      this.logger.info('User signin successful', {
-        userId: user.id,
-        email: user.email,
-        deviceId,
-      });
-      return { ...user, accessToken, refreshToken };
+      try {
+        await this.createAuthSession(
+          user.id,
+          deviceId,
+          tokens.refreshToken,
+          expiresAt,
+        );
+      } catch (error) {
+        // Wrap session creation errors
+        throw new SigninFailedException(error as Error);
+      }
+
+      return { ...user, ...tokens };
     } catch (error) {
-      this.logger.error('Error during user signin', error);
-      throw new InternalServerErrorException(
-        'Failed to complete signin process',
-      );
+      if (error instanceof TokenGenerationFailedException) {
+        throw error;
+      }
+      this.logger.error('Signin process failed', error, {
+        userId: user.id,
+        deviceId,
+      });
+      throw error; // Already wrapped
     }
   }
 
   /**
-   * Invalidates a user's session during logout.
-   *
-   * @param user - Public user object to sign out
-   * @param deviceId - Device identifier for the session to invalidate
+   * Invalidates a user's session for the specified device
+   * @throws {SignoutFailedException} If session deletion fails
    */
   async signout(user: PublicUser, deviceId: string): Promise<void> {
     try {
-      this.logger.debug('User signout attempt', {
-        userId: user.id,
-        email: user.email,
-        deviceId,
-      });
-
-      // Delete user session
-      await this.deleteSession(user.id, deviceId);
-
+      await this.sessionService.deleteSession(user.id, deviceId);
       this.logger.info('User signout successful', {
         userId: user.id,
         email: user.email,
         deviceId,
       });
     } catch (error) {
-      this.logger.error('Error during user signout', error);
-      throw new InternalServerErrorException(
-        'Failed to complete signout process',
-      );
+      const wrappedError = new SignoutFailedException(error as Error);
+      this.logger.error('Error during user signout', wrappedError);
+      throw wrappedError;
     }
   }
 
   /* -------------- Validation Methods -------------- */
 
   /**
-   * Validates user credentials for email/password authentication.
-   *
-   * @param email - User's email address
-   * @param password - User's plain text password
-   * @returns Promise containing validated public user data
-   * @throws {UnauthorizedException} When credentials are invalid
+   * Verifies email/password combination and returns user if valid
+   * @throws {UserNotFoundException} If no user exists with provided email
+   * @throws {InvalidCredentialsException} If password verification fails
    */
   async validateCredentials(
     email: string,
     password: string,
   ): Promise<PublicUser> {
     try {
-      this.logger.debug('Validating user credentials', { email });
+      this.logger.debug('Validating user credentials...', { email });
 
       // Find user by email
       const databaseUser = await this.userService.findByEmail(email);
       if (!databaseUser) {
         this.logger.warn('Invalid credentials - user not found', { email });
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UserNotFoundException();
       }
 
       // Verify password
       const isPasswordValid = await verify(databaseUser.password, password);
       if (!isPasswordValid) {
         this.logger.warn('Invalid credentials - incorrect password', { email });
-        throw new UnauthorizedException('Invalid credentials');
+        throw new InvalidCredentialsException();
       }
 
       this.logger.info('Credentials validation successful', { email });
       return this.sanitizeUserData(databaseUser);
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      if (
+        error instanceof UserNotFoundException ||
+        error instanceof InvalidCredentialsException
+      ) {
         throw error;
       }
       this.logger.error('Error during credentials validation', error);
-      throw new InternalServerErrorException('Failed to validate credentials');
+      throw new AuthenticationFailedException(error as Error);
     }
   }
 
   /**
-   * Validates a user's access token and session.
-   *
-   * @param userId - User's ID from JWT payload
-   * @param deviceId - Device identifier for the session
-   * @returns Promise containing validated public user data
-   * @throws {UnauthorizedException} When user or session is not found/valid
+   * Validates access token and associated session
+   * @throws {AuthenticationFailedException} If user or session validation fails
    */
   async validateAccessToken(
     userId: string,
     deviceId: string,
   ): Promise<PublicUser> {
-    try {
-      this.logger.debug('Validating access token', { userId, deviceId });
+    this.logger.debug('Validating access token...', { userId, deviceId });
 
+    try {
       // Verify user exists and has valid session
       const [databaseUser, session] = await Promise.all([
-        this.findUserById(userId),
-        this.findAndVerifySession(userId, deviceId),
+        this.userService.findByIdOrThrow(userId),
+        this.sessionService.findAndVerifySession(userId, deviceId),
       ]);
-
-      if (!databaseUser || !session) {
-        this.logger.warn('Invalid access token', { userId, deviceId });
-        throw new UnauthorizedException('Invalid access token');
-      }
 
       this.logger.info('Access token validation successful', {
         userId,
@@ -253,162 +302,97 @@ export class AuthService {
       });
       return this.sanitizeUserData(databaseUser);
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      this.logger.error('Error during access token validation', error);
-      throw new InternalServerErrorException('Failed to validate access token');
+      this.logger.error('Access token validation failed', error, {
+        userId,
+        deviceId,
+      });
+      throw new AuthenticationFailedException(error as Error);
     }
   }
 
   /**
-   * Validates a refresh token and associated session.
-   *
-   * @param userId - User's unique identifier
-   * @param refreshToken - Refresh token to validate
-   * @param deviceId - Device identifier for the session
-   * @returns Promise containing validated public user data
-   * @throws {UnauthorizedException} When token/session is invalid or not found
+   * Validates refresh token and associated session
+   * @throws {AuthenticationFailedException} If token or session is invalid
    */
   async validateRefreshToken(
     userId: string,
     refreshToken: string,
     deviceId: string,
   ): Promise<PublicUser> {
-    this.logger.debug('Validating refresh token', { userId, deviceId });
+    this.logger.debug('Validating refresh token...', { userId, deviceId });
 
-    // Verify user exists and session is valid
-    const databaseUser = await this.findUserById(userId);
-    await this.sessionService.validateSession(userId, deviceId, refreshToken);
-
-    this.logger.info('Refresh token validation successful', {
-      userId,
-      deviceId,
-    });
-    return this.sanitizeUserData(databaseUser);
+    try {
+      const databaseUser = await this.userService.findByIdOrThrow(userId);
+      await this.sessionService.validateSession(userId, deviceId, refreshToken);
+      return this.sanitizeUserData(databaseUser);
+    } catch (error) {
+      // Add handling for repository errors
+      if (error instanceof SessionRepositoryException) {
+        throw new AuthenticationFailedException(error);
+      }
+      if (error instanceof InvalidRefreshTokenException) {
+        throw new AuthenticationFailedException(error);
+      }
+      throw new AuthenticationFailedException(error as Error);
+    }
   }
 
   /**
-   * Generates new access and refresh tokens for a user.
-   *
-   * @param user - Public user object requiring new tokens
-   * @returns Promise containing user data with new authentication tokens
+   * Generates new access/refresh tokens and updates session
+   * @throws {TokenGenerationFailedException} If token creation fails
    */
   async renewAccessToken(user: PublicUser): Promise<AuthenticatedUser> {
-    this.logger.debug('Renewing access token', {
-      userId: user.id,
-      email: user.email,
-    });
+    try {
+      // Generate new tokens
+      const tokens = await this.generateAuthTokens(user.id);
 
-    // Generate new tokens
-    const tokens = await this.generateAuthTokens(user.id);
-
-    this.logger.info('Access token renewal successful', {
-      userId: user.id,
-      email: user.email,
-    });
-    return { ...user, ...tokens };
+      this.logger.info('Access token renewal successful', {
+        userId: user.id,
+        email: user.email,
+      });
+      return { ...user, ...tokens };
+    } catch (error) {
+      this.logger.error('Access token renewal failed', error, {
+        userId: user.id,
+      });
+      throw new TokenGenerationFailedException(
+        TokenType.RENEWAL,
+        error as Error,
+      );
+    }
   }
 
   /* -------------- Private Helper Methods -------------- */
 
   /**
-   * Generates new JWT access and refresh tokens for a user.
-   *
-   * @param userId - User's unique identifier
-   * @returns Promise containing newly generated access and refresh tokens
+   * Generates JWT access and refresh tokens for a user
+   * @throws {TokenGenerationFailedException} If either token generation fails
    */
   private async generateAuthTokens(userId: string): Promise<AuthTokens> {
-    this.logger.debug('Generating auth tokens', { userId });
+    this.logger.debug('Generating auth tokens...', { userId });
 
-    const payload: JwtPayload = { sub: userId };
+    try {
+      const payload: JwtPayload = { sub: userId };
+      const [accessToken, refreshToken] = await Promise.all([
+        this.jwtService.signAsync(payload),
+        this.jwtService.signAsync(payload, this.jwtRefreshConfiguration),
+      ]);
 
-    // Generate both tokens concurrently
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload),
-      this.jwtService.signAsync(payload, this.jwtRefreshConfiguration),
-    ]);
-
-    return { accessToken, refreshToken };
-  }
-
-  /**
-   * Creates a new session with the provided refresh token.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device identifier for the session
-   * @param refreshToken - Refresh token to associate with the session
-   */
-  private async createSession(
-    userId: string,
-    deviceId: string,
-    refreshToken: string,
-  ): Promise<void> {
-    const expiresAt = this.calculateRefreshTokenExpiration(
-      this.jwtRefreshConfiguration.expiresIn,
-    );
-
-    await this.sessionService.createSessionWithToken(
-      userId,
-      deviceId,
-      refreshToken,
-      expiresAt,
-    );
-  }
-
-  /**
-   * Deletes a session for a user.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device identifier for the session to delete
-   */
-  private async deleteSession(userId: string, deviceId: string): Promise<void> {
-    await this.sessionService.deleteSession(userId, deviceId);
-  }
-
-  /**
-   * Finds and validates a session.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device identifier for the session
-   * @returns Promise containing the verified session
-   * @throws {UnauthorizedException} When session is not found or expired
-   */
-  private async findAndVerifySession(
-    userId: string,
-    deviceId: string,
-  ): Promise<DatabaseSession> {
-    const session = await this.sessionService.findSession(userId, deviceId);
-    if (!session) {
-      throw new UnauthorizedException('Session not found');
+      this.logger.debug('Auth tokens generated successfully', {
+        userId,
+        tokenExpiration: this.jwtRefreshConfiguration.expiresIn,
+      });
+      return { accessToken, refreshToken };
+    } catch (error) {
+      this.logger.error('Failed to generate auth tokens', error, { userId });
+      throw new TokenGenerationFailedException(
+        TokenType.GENERATION,
+        error as Error,
+      );
     }
-    if (session.expiresAt < new Date()) {
-      throw new UnauthorizedException('Session expired');
-    }
-    return session;
   }
 
-  /**
-   * Retrieves and validates a user from the database.
-   *
-   * @param userId - User's unique identifier
-   * @returns Promise containing the found database user
-   * @throws {UnauthorizedException} When user is not found
-   */
-  private async findUserById(userId: string): Promise<DatabaseUser> {
-    const databaseUser = await this.userService.findById(userId);
-    if (!databaseUser) {
-      throw new UnauthorizedException('User not found');
-    }
-    return databaseUser;
-  }
-
-  /**
-   * Removes sensitive data from user object for public exposure.
-   *
-   * @param user - Database user object containing sensitive data
-   * @returns Public user object with only safe fields
-   */
+  /** Removes sensitive fields from user object before exposing to client */
   private sanitizeUserData(user: DatabaseUser): PublicUser {
     return {
       id: user.id,
@@ -417,47 +401,32 @@ export class AuthService {
     };
   }
 
-  /**
-   * Calculates expiration date for refresh tokens.
-   *
-   * @param expiresIn - Duration string or number in seconds
-   * @returns Date object representing token expiration
-   */
+  /** Converts JWT expiration configuration to concrete Date object */
   private calculateRefreshTokenExpiration(expiresIn: string | number): Date {
     if (typeof expiresIn === 'string') {
-      const durationInMs = this.parseDuration(expiresIn);
+      const durationInMs = parseDuration(expiresIn);
       return new Date(Date.now() + durationInMs);
     }
     return new Date(Date.now() + expiresIn * 1000);
   }
 
-  /**
-   * Parses duration strings into milliseconds.
-   *
-   * @param duration - Duration string (e.g., "7d", "24h", "60m", "3600s")
-   * @returns Number of milliseconds
-   * @throws {Error} When duration format is invalid
-   */
-  private parseDuration(duration: string): number {
-    const unit = duration.slice(-1);
-    const valueStr = duration.slice(0, -1);
-    const value = parseInt(valueStr);
-
-    if (isNaN(value) || value.toString() !== valueStr) {
-      throw new Error(`Invalid duration value: ${valueStr}`);
-    }
-
-    switch (unit) {
-      case 'd':
-        return value * 24 * 60 * 60 * 1000;
-      case 'h':
-        return value * 60 * 60 * 1000;
-      case 'm':
-        return value * 60 * 1000;
-      case 's':
-        return value * 1000;
-      default:
-        throw new Error(`Invalid duration unit: ${unit}`);
+  /** Creates session record with refresh token and expiration */
+  private async createAuthSession(
+    userId: string,
+    deviceId: string,
+    refreshToken: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    try {
+      await this.sessionService.createSessionWithToken(
+        userId,
+        deviceId,
+        refreshToken,
+        expiresAt,
+      );
+    } catch (error) {
+      this.logger.error('Session creation failed', error, { userId, deviceId });
+      throw error;
     }
   }
 }
