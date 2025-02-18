@@ -33,6 +33,15 @@ jobs:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       PLAYWRIGHT_BASE_URL: http://localhost:3000
       PLAYWRIGHT_API_URL: http://localhost:3001
+      PORT: 3001
+      ALLOWED_ORIGINS: http://localhost:3000
+      JWT_SECRET: HuJp8YdLf3CyejPX6rLyoJM0eJV9DQYeJfm6ZAO/5o0=
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: Oe8GIMo0128znSUtk3Z9biFD8bP3sdRs27PEl9VHm3w=
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CSRF_SECRET: WGtFuZH/f3QYl+2xrGRSxT/WwBtcN9rNeRXWOurO5u8=
+      COOKIE_SECRET: +NwyGpZuHFN2zQYQzHNpd1XEg16M3q0RSu1VodCmTTM=
+      NODE_ENV: CI
 
     steps:
       # Check out our repository code
