@@ -17,20 +17,22 @@ import { CreateSession } from '@repo/validation';
 import { hash, verify } from 'argon2';
 
 /**
- * Service responsible for managing user sessions including creation,
- * validation, and cleanup of sessions.
+ * Manages session lifecycle including creation, validation, and cleanup
  */
 @Injectable()
 export class SessionService {
+  private readonly MAX_SESSIONS_PER_USER = 5;
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly logger: LoggerService,
   ) {}
 
-  /* -------------- Public Business Methods -------------- */
+  /* -------------- Core Session Lifecycle Methods -------------- */
 
   /**
-   * Creates a new session with a hashed refresh token.
+   * Creates new session with refresh token
+   * @throws {SessionCreationFailedException} If session creation fails
+   * @throws {SessionLimitExceededException} If user exceeds max sessions
    */
   async createSessionWithToken(
     userId: string,
@@ -43,17 +45,31 @@ export class SessionService {
       deviceId,
     });
     try {
-      await this.cleanUpExistingSession(userId, deviceId);
+      const sessions = await this.findAllByUserId(userId);
+
+      await this.cleanUpExistingSession(sessions, deviceId);
+
       const hashedToken = await hash(refreshToken);
-      const session = await this.createSession({
+      const newSession = await this.createSession({
         userId,
         deviceId,
         token: hashedToken,
         expiresAt,
       });
 
+      sessions.push(newSession);
+      if (sessions.length > this.MAX_SESSIONS_PER_USER) {
+        try {
+          await this.enforceSessionLimit(sessions);
+        } catch (error) {
+          this.logger.error('Error enforcing session limit', error, {
+            userId,
+          });
+        }
+      }
+
       this.logger.info('Session created successfully', { userId, deviceId });
-      return session;
+      return newSession;
     } catch (error) {
       if (error instanceof SessionRepositoryException) {
         throw new SessionCreationFailedException(error);
@@ -70,7 +86,10 @@ export class SessionService {
   }
 
   /**
-   * Validates an existing session using the refresh token.
+   * Validates session and refresh token
+   * @throws {SessionValidationException} If validation fails
+   * @throws {SessionExpiredException} If session is expired
+   * @throws {InvalidRefreshTokenException} If token doesn't match
    */
   async validateSession(
     userId: string,
@@ -115,36 +134,37 @@ export class SessionService {
   }
 
   /**
-   * Enforces maximum number of sessions per user.
+   * Verifies session exists and is not expired
+   * @throws {SessionNotFoundException} If session doesn't exist
+   * @throws {SessionExpiredException} If session is expired
    */
-  async enforceSessionLimit(
+  async findAndVerifySession(
     userId: string,
-    maxSessions: number = 5,
-  ): Promise<void> {
-    this.logger.debug('Enforcing session limit...', { userId, maxSessions });
+    deviceId: string,
+  ): Promise<DatabaseSession> {
     try {
-      const sessions = await this.findAllByUserId(userId);
-      if (sessions.length >= maxSessions) {
-        const oldest = sessions.reduce((a, b) =>
-          a.lastUsedAt < b.lastUsedAt ? a : b,
-        );
-        await this.deleteSession(oldest.userId, oldest.deviceId);
-        this.logger.info('Removed oldest session due to limit', {
-          userId,
-          deviceId: oldest.deviceId,
-        });
+      const session = await this.findSessionOrThrow(userId, deviceId);
+      if (session.expiresAt < new Date()) {
+        throw new SessionExpiredException();
       }
+      return session;
     } catch (error) {
-      if (error instanceof SessionRepositoryException) {
-        throw new SessionLimitExceededException(userId);
+      if (
+        error instanceof SessionNotFoundException ||
+        error instanceof SessionExpiredException
+      ) {
+        throw error;
       }
-      this.logger.error('Error enforcing session limit', error, { userId });
-      throw new SessionLimitExceededException(userId);
+      this.logger.error('Error during session validation', error);
+      throw new SessionValidationException(error as Error);
     }
   }
 
+  /* -------------- Session Management & Cleanup -------------- */
+
   /**
-   * Removes all sessions for a specific user.
+   * Removes all sessions for a user
+   * @throws {SessionRepositoryException} If cleanup fails
    */
   async removeAllSessionsForUser(userId: string): Promise<DatabaseSession[]> {
     this.logger.debug('Removing all sessions for user...', { userId });
@@ -167,9 +187,7 @@ export class SessionService {
     }
   }
 
-  /**
-   * Automatically removes expired sessions at midnight.
-   */
+  /** Scheduled daily cleanup of expired sessions */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async deleteExpired(): Promise<void> {
     this.logger.debug('Running expired sessions cleanup...');
@@ -182,8 +200,42 @@ export class SessionService {
     }
   }
 
-  /* -------------- Private Repository Methods -------------- */
+  /* -------------- Session Limit Enforcement -------------- */
 
+  /** Enforces maximum sessions per user by removing oldest */
+  private async enforceSessionLimit(
+    sessions: DatabaseSession[],
+  ): Promise<void> {
+    this.logger.debug('Enforcing session limit...', {
+      userId: sessions[0]!.userId,
+      maxSessions: this.MAX_SESSIONS_PER_USER,
+    });
+    try {
+      while (sessions.length > this.MAX_SESSIONS_PER_USER) {
+        const oldest = sessions.reduce((a, b) =>
+          a.lastUsedAt <= b.lastUsedAt ? a : b,
+        );
+        await this.deleteSession(oldest.userId, oldest.deviceId);
+        sessions.splice(sessions.indexOf(oldest), 1);
+        this.logger.info('Removed oldest session due to limit', {
+          userId: oldest.userId,
+          deviceId: oldest.deviceId,
+        });
+      }
+    } catch (error) {
+      if (error instanceof SessionRepositoryException) {
+        throw new SessionLimitExceededException(sessions[0]!.userId);
+      }
+      this.logger.error('Error enforcing session limit', error, {
+        userId: sessions[0]!.userId,
+      });
+      throw new SessionLimitExceededException(sessions[0]!.userId);
+    }
+  }
+
+  /* -------------- Database Operations -------------- */
+
+  /** Creates session record in repository */
   private async createSession(
     newSession: CreateSession,
   ): Promise<DatabaseSession> {
@@ -215,26 +267,7 @@ export class SessionService {
     }
   }
 
-  private async findSessionOrNull(
-    userId: string,
-    deviceId: string,
-  ): Promise<DatabaseSession | null> {
-    try {
-      return await this.sessionRepository.findOne(userId, deviceId);
-    } catch (error) {
-      this.logger.error('Database error during session find', error, {
-        userId,
-        deviceId,
-      });
-      throw new SessionRepositoryException(
-        'find',
-        userId,
-        deviceId,
-        error as Error,
-      );
-    }
-  }
-
+  /** Retrieves session or throws if not found */
   private async findSessionOrThrow(
     userId: string,
     deviceId: string,
@@ -263,6 +296,7 @@ export class SessionService {
     }
   }
 
+  /** Updates last used timestamp */
   private async updateLastUsedAt(
     userId: string,
     deviceId: string,
@@ -294,6 +328,9 @@ export class SessionService {
     }
   }
 
+  /**
+   * Retrieves all sessions for a user with error handling.
+   */
   private async findAllByUserId(userId: string): Promise<DatabaseSession[]> {
     try {
       return await this.sessionRepository.findAllByUserId(userId);
@@ -310,7 +347,10 @@ export class SessionService {
     }
   }
 
-  private async deleteSession(
+  /**
+   * Deletes a specific session with error handling.
+   */
+  async deleteSession(
     userId: string,
     deviceId: string,
   ): Promise<DatabaseSession | null> {
@@ -330,13 +370,26 @@ export class SessionService {
     }
   }
 
+  /**
+   * Utility method to remove existing session if present.
+   * Used during session creation to ensure clean state.
+   */
   private async cleanUpExistingSession(
-    userId: string,
+    userSessions: DatabaseSession[],
     deviceId: string,
   ): Promise<void> {
-    const existingSession = await this.findSessionOrNull(userId, deviceId);
+    const existingSession = userSessions.find(
+      (session) => session.deviceId === deviceId,
+    );
     if (existingSession) {
-      await this.deleteSession(userId, deviceId);
+      this.logger.info('Existing session found, deleting...', {
+        userId: existingSession.userId,
+        deviceId: existingSession.deviceId,
+      });
+      await this.deleteSession(
+        existingSession.userId,
+        existingSession.deviceId,
+      );
     }
   }
 }
