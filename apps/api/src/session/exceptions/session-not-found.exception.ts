@@ -2,6 +2,6 @@ import { SessionValidationException } from '@/session/exceptions/session-validat
 
 export class SessionNotFoundException extends SessionValidationException {
   constructor() {
-    super('Session not found');
+    super(new Error('Session not found'));
   }
 }

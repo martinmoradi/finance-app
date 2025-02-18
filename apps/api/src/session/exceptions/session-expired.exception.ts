@@ -2,6 +2,6 @@ import { SessionValidationException } from '@/session/exceptions/session-validat
 
 export class SessionExpiredException extends SessionValidationException {
   constructor() {
-    super('Session expired');
+    super(new Error('Session expired'));
   }
 }

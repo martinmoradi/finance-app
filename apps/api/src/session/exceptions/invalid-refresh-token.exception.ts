@@ -2,6 +2,6 @@ import { SessionValidationException } from '@/session/exceptions/session-validat
 
 export class InvalidRefreshTokenException extends SessionValidationException {
   constructor() {
-    super('Invalid refresh token provided');
+    super(new Error('Invalid refresh token provided'));
   }
 }
