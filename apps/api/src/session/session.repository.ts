@@ -12,9 +12,6 @@ import { CreateSession } from '@repo/validation';
 export class SessionRepository extends BaseRepository {
   /**
    * Creates a new session in the database.
-   *
-   * @param newSession - Session data to be created
-   * @returns Promise containing the created session or null if creation fails
    */
   async create(newSession: CreateSession): Promise<DatabaseSession | null> {
     const [session] = await this.db
@@ -25,11 +22,7 @@ export class SessionRepository extends BaseRepository {
   }
 
   /**
-   * Finds an session for a specific user and device.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device's unique identifier
-   * @returns Promise containing the found session or null if not found
+   * Retrieves a session for a specific user and device combination.
    */
   async findOne(
     userId: string,
@@ -43,9 +36,6 @@ export class SessionRepository extends BaseRepository {
 
   /**
    * Retrieves all sessions for a specific user.
-   *
-   * @param userId - User's unique identifier
-   * @returns Promise containing array of sessions
    */
   async findAllByUserId(userId: string): Promise<DatabaseSession[]> {
     const userSessions = await this.db.query.sessions.findMany({
@@ -56,10 +46,6 @@ export class SessionRepository extends BaseRepository {
 
   /**
    * Updates the lastUsedAt timestamp for a specific session.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device's unique identifier
-   * @returns Promise containing the updated session or null if update fails
    */
   async updateLastUsedAt(
     userId: string,
@@ -75,10 +61,6 @@ export class SessionRepository extends BaseRepository {
 
   /**
    * Deletes a specific session for a user and device combination.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device's unique identifier
-   * @returns Promise containing the deleted session or null if deletion fails
    */
   async delete(
     userId: string,
@@ -94,9 +76,6 @@ export class SessionRepository extends BaseRepository {
 
   /**
    * Deletes all sessions for a specific user.
-   *
-   * @param userId - User's unique identifier
-   * @returns Promise containing array of deleted sessions
    */
   async deleteAllForUser(userId: string): Promise<DatabaseSession[]> {
     const deletedSessions = await this.db
@@ -107,9 +86,7 @@ export class SessionRepository extends BaseRepository {
   }
 
   /**
-   * Deletes all expired sessions from the database.
-   *
-   * @returns Promise containing array of deleted expired sessions
+   * Deletes all sessions that have passed their expiration date.
    */
   async deleteExpired(): Promise<DatabaseSession[]> {
     const deletedSessions = await this.db
@@ -121,11 +98,7 @@ export class SessionRepository extends BaseRepository {
   }
 
   /**
-   * Generates a WHERE clause for querying sessions by user and device IDs.
-   *
-   * @param userId - User's unique identifier
-   * @param deviceId - Device's unique identifier
-   * @returns SQL clause for filtering sessions
+   * Helper method to generate a WHERE clause for session queries.
    */
   private getSessionWhereClause(
     userId: string,
