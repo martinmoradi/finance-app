@@ -5,7 +5,7 @@
 import { Test } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserRepository } from '../user.repository';
-import { userFixtures } from './user.fixture';
+import { userFixtures } from './user.fixtures';
 
 // Mock database instance with spies for all required methods
 const mockDb = {
