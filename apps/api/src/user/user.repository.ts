@@ -1,7 +1,7 @@
 import { BaseRepository } from '@/database/base.repository';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import { Injectable } from '@nestjs/common';
-import { userQueries, users } from '@repo/database';
+import { eq, userQueries, users } from '@repo/database';
 import { DatabaseUser } from '@repo/types';
 
 /**
@@ -52,5 +52,13 @@ export class UserRepository extends BaseRepository {
       .values(createUserDto)
       .returning();
     return newUser ?? null;
+  }
+
+  /**
+   * Deletes a user by their ID.
+   * @param id - The user's unique identifier.
+   */
+  async delete(id: string): Promise<void> {
+    await this.db.delete(users).where(eq(users.id, id));
   }
 }
