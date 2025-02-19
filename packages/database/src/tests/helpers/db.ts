@@ -1,4 +1,3 @@
-// Import required dependencies
 import { createDatabaseClient, type DatabaseConnection } from '@/client';
 import { tables } from '@/schema';
 import { getRequiredEnvVar } from '@repo/env-validation';
