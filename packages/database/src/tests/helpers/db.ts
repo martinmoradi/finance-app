@@ -1,9 +1,9 @@
 // Import required dependencies
 import { createDatabaseClient, type DatabaseConnection } from '@/client';
-import { schema, tables } from '@/schema';
+import { tables } from '@/schema';
+import { getRequiredEnvVar } from '@repo/env-validation';
 import { sql } from 'drizzle-orm';
 import { Pool } from 'pg';
-import { getRequiredEnvVar } from '@repo/env-validation';
 /**
  * Sets up a test database connection
  * @returns DatabaseConnection object containing db client and connection pool
