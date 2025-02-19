@@ -14,6 +14,8 @@
     "test:watch": "vitest",
     "test:ci": "vitest run --coverage",
     "test:debug": "node --inspect-brk ./node_modules/vitest/vitest.mjs --runInBand",
+    "test:integration": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test vitest run -c ./vitest.integration.config.mjs",
+    "test:integration:ci": "vitest run --coverage -c ./vitest.integration.config.mjs",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

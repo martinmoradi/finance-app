@@ -5,10 +5,10 @@ export default mergeConfig(
   config,
   defineConfig({
     test: {
+      ...config.test,
       globals: true,
       environment: 'node',
-      include: ['src/**/*.test.ts', 'test/integration/**/*.test.ts'],
-      exclude: ['src/**/integration/**/*.integration.test.{js,jsx,ts,tsx}'],
+      include: ['src/**/integration/**/*.integration.test.{js,jsx,ts,tsx}'],
     },
   }),
 );
