@@ -6,6 +6,7 @@ import { RefreshTokenStrategy } from '@/auth/strategies/refresh-token.strategy';
 import { createCsrfProvider } from '@/config/csrf.config';
 import jwtConfig from '@/config/jwt.config';
 import refreshJwtConfig from '@/config/refresh-jwt.config';
+import { CookieModule } from '@/cookie/cookie.module';
 import { DatabaseModule } from '@/database/database.module';
 import { LoggerModule } from '@/logger/logger.module';
 import { SessionModule } from '@/session/session.module';
@@ -24,6 +25,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     SessionModule,
     UserModule,
     DatabaseModule,
+    CookieModule,
     LoggerModule.forFeature('AuthService'),
   ],
   controllers: [AuthController],

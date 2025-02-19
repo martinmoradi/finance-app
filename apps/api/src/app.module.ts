@@ -10,6 +10,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
 import { LoggerModule } from './logger/logger.module';
 import { SessionModule } from './session/session.module';
+import { CookieModule } from './cookie/cookie.module';
 
 /**
  * Main application module.
@@ -24,6 +25,7 @@ import { SessionModule } from './session/session.module';
     ScheduleModule.forRoot(),
     SessionModule,
     LoggerModule.forRoot(),
+    CookieModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_PIPE, useClass: ZodValidationPipe }],

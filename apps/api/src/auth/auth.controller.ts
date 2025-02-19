@@ -4,6 +4,7 @@ import { AccessTokenAuthGuard } from '@/auth/guards/access-token-auth.guard';
 import { CredentialsAuthGuard } from '@/auth/guards/credentials-auth.guard';
 import { CsrfGuard } from '@/auth/guards/csrf.guard';
 import { RefreshTokenAuthGuard } from '@/auth/guards/refresh-token-auth.guard';
+import { CookieService } from '@/cookie/cookie.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import {
   Body,
@@ -15,6 +16,7 @@ import {
   Request,
   Res,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -38,6 +40,7 @@ import { Request as ExpressRequest, Response } from 'express';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly cookieService: CookieService,
     @Inject('CSRF_PROVIDER')
     private readonly csrfProvider: DoubleCsrfUtilities,
   ) {}
@@ -63,7 +66,11 @@ export class AuthController {
     @Res() res: Response,
   ): Response {
     const token = this.csrfProvider.generateToken(req, res);
-    return res.json({ token });
+    const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
+    return res.json({
+      token,
+      deviceId,
+    });
   }
 
   /* ---------------------- Register ---------------------- */
@@ -90,6 +97,9 @@ export class AuthController {
     @Req() req: ExpressRequest,
   ): Promise<AuthenticatedUser> {
     const deviceId: string = req.cookies['deviceId'];
+    if (!deviceId) {
+      throw new BadRequestException('Device ID is required');
+    }
     return this.authService.signup(createUserDto, deviceId);
   }
 
@@ -132,6 +142,9 @@ export class AuthController {
     @Request() req: ExpressRequest & { user: PublicUser },
   ): Promise<AuthenticatedUser> {
     const deviceId: string = req.cookies['deviceId'];
+    if (!deviceId) {
+      throw new BadRequestException('Device ID is required');
+    }
     return this.authService.signin(req.user, deviceId);
   }
 
@@ -153,9 +166,12 @@ export class AuthController {
   @Post('signout')
   async signout(
     @Request() req: ExpressRequest & { user: PublicUser },
+    @Res() res: Response,
   ): Promise<void> {
-    const deviceId: string = req.cookies['deviceId'];
-    await this.authService.signout(req.user, deviceId);
+    const deviceId = req.cookies['deviceId'];
+    await this.authService.signout(req.user, deviceId as string);
+    this.cookieService.clearAuthCookies(res);
+    res.json({ message: 'Successfully signed out' });
   }
 
   /* ---------------------- Refresh access token ---------------------- */
