@@ -28,13 +28,7 @@ import { parseDuration } from '@/utils/parse-duration';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import {
-  AuthenticatedUser,
-  AuthTokens,
-  DatabaseUser,
-  JwtPayload,
-  PublicUser,
-} from '@repo/types';
+import { AuthTokens, DatabaseUser, JwtPayload, PublicUser } from '@repo/types';
 import { hash, verify } from 'argon2';
 
 /**
@@ -64,7 +58,7 @@ export class AuthService {
   async signup(
     createUserDto: CreateUserDto,
     deviceId: string,
-  ): Promise<AuthenticatedUser> {
+  ): Promise<[PublicUser, AuthTokens]> {
     try {
       const { password, ...userData } = createUserDto;
       this.logger.debug('User signup attempt...', {
@@ -128,7 +122,7 @@ export class AuthService {
           this.logger.warn('Session limit exceeded during signup', {
             userId: databaseUser.id,
           });
-          return { ...this.sanitizeUserData(databaseUser), ...tokens }; // Return user despite session limit
+          return [this.sanitizeUserData(databaseUser), tokens]; // Return user despite session limit
         }
         // Existing rollback logic
         try {
@@ -155,7 +149,7 @@ export class AuthService {
         deviceId,
       });
 
-      return { ...publicUser, ...tokens };
+      return [publicUser, tokens];
     } catch (error) {
       // Re-throw known errors
       if (
@@ -186,7 +180,10 @@ export class AuthService {
    * @throws {TokenGenerationFailedException} If token creation fails
    * @throws {SigninFailedException} For unexpected errors during login
    */
-  async signin(user: PublicUser, deviceId: string): Promise<AuthenticatedUser> {
+  async signin(
+    user: PublicUser,
+    deviceId: string,
+  ): Promise<[PublicUser, AuthTokens]> {
     try {
       const tokens = await this.generateAuthTokens(user.id);
       const expiresAt = this.calculateRefreshTokenExpiration(
@@ -205,7 +202,7 @@ export class AuthService {
         throw new SigninFailedException(error as Error);
       }
 
-      return { ...user, ...tokens };
+      return [user, tokens];
     } catch (error) {
       if (error instanceof TokenGenerationFailedException) {
         throw error;
@@ -291,9 +288,9 @@ export class AuthService {
 
     try {
       // Verify user exists and has valid session
-      const [databaseUser, session] = await Promise.all([
+      const [databaseUser] = await Promise.all([
         this.userService.findByIdOrThrow(userId),
-        this.sessionService.findAndVerifySession(userId, deviceId),
+        this.sessionService.verifySession(userId, deviceId),
       ]);
 
       this.logger.info('Access token validation successful', {
@@ -341,7 +338,7 @@ export class AuthService {
    * Generates new access/refresh tokens and updates session
    * @throws {TokenGenerationFailedException} If token creation fails
    */
-  async renewAccessToken(user: PublicUser): Promise<AuthenticatedUser> {
+  async renewAccessToken(user: PublicUser): Promise<[PublicUser, AuthTokens]> {
     try {
       // Generate new tokens
       const tokens = await this.generateAuthTokens(user.id);
@@ -350,7 +347,7 @@ export class AuthService {
         userId: user.id,
         email: user.email,
       });
-      return { ...user, ...tokens };
+      return [user, tokens];
     } catch (error) {
       this.logger.error('Access token renewal failed', error, {
         userId: user.id,

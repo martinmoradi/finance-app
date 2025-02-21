@@ -7,6 +7,7 @@ import { RefreshTokenAuthGuard } from '@/auth/guards/refresh-token-auth.guard';
 import { CookieService } from '@/cookie/cookie.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -16,7 +17,6 @@ import {
   Request,
   Res,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -48,7 +48,7 @@ export class AuthController {
   /* ---------------------- CSRF Token ---------------------- */
   @ApiOperation({ summary: 'Generate CSRF token' })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns a new CSRF token and sets it in cookies',
     schema: {
       type: 'object',
@@ -76,7 +76,8 @@ export class AuthController {
   /* ---------------------- Register ---------------------- */
   @ApiOperation({ summary: 'Register new user' })
   @ApiCreatedResponse({
-    description: 'User successfully registered',
+    description:
+      'User successfully registered. Access and refresh tokens are set in HTTP-only cookies.',
     type: AuthUserResponse,
   })
   @ApiConflictResponse({ description: 'User already exists' })
@@ -92,22 +93,45 @@ export class AuthController {
   })
   @UseGuards(CsrfGuard, ThrottlerGuard)
   @Post('signup')
-  signup(
+  async signup(
     @Body() createUserDto: CreateUserDto,
     @Req() req: ExpressRequest,
-  ): Promise<AuthenticatedUser> {
+    @Res() res: Response,
+  ): Promise<Response> {
     const deviceId: string = req.cookies['deviceId'];
     if (!deviceId) {
       throw new BadRequestException('Device ID is required');
     }
-    return this.authService.signup(createUserDto, deviceId);
+    const [user, tokens] = await this.authService.signup(
+      createUserDto,
+      deviceId,
+    );
+    this.cookieService.setAuthCookies(
+      res,
+      tokens.accessToken,
+      tokens.refreshToken,
+    );
+    return res.json(user);
   }
 
   /* ---------------------- Sign in ---------------------- */
   @ApiOperation({ summary: 'Sign in user' })
   @ApiOkResponse({
-    description: 'User successfully authenticated',
+    description:
+      'User successfully authenticated. Access and refresh tokens are set in HTTP-only cookies.',
     type: AuthUserResponse,
+  })
+  @ApiResponse({
+    status: 200,
+    headers: {
+      'Set-Cookie': {
+        description:
+          'Contains access_token and refresh_token as HTTP-only cookies',
+        schema: {
+          type: 'string',
+        },
+      },
+    },
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials or CSRF token' })
   @ApiBody({
@@ -138,14 +162,21 @@ export class AuthController {
   })
   @UseGuards(CsrfGuard, CredentialsAuthGuard, ThrottlerGuard)
   @Post('signin')
-  signin(
+  async signin(
     @Request() req: ExpressRequest & { user: PublicUser },
-  ): Promise<AuthenticatedUser> {
+    @Res() res: Response,
+  ): Promise<Response> {
     const deviceId: string = req.cookies['deviceId'];
     if (!deviceId) {
       throw new BadRequestException('Device ID is required');
     }
-    return this.authService.signin(req.user, deviceId);
+    const [user, tokens] = await this.authService.signin(req.user, deviceId);
+    this.cookieService.setAuthCookies(
+      res,
+      tokens.accessToken,
+      tokens.refreshToken,
+    );
+    return res.json(user);
   }
 
   /* ---------------------- Sign out ---------------------- */
@@ -155,7 +186,7 @@ export class AuthController {
   @ApiTooManyRequestsResponse({
     description: 'Too many requests - maximum 5 requests per minute allowed',
   })
-  @ApiBearerAuth('access-token')
+  @ApiCookieAuth('accessToken')
   @ApiCookieAuth('deviceId')
   @ApiHeader({
     name: 'x-csrf-token',
@@ -177,26 +208,16 @@ export class AuthController {
   /* ---------------------- Refresh access token ---------------------- */
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiOkResponse({
-    description: 'New access token generated',
+    description:
+      'New access and refresh tokens generated and set in HTTP-only cookies',
     type: AuthUserResponse,
   })
+  @ApiCookieAuth('refreshToken')
   @ApiUnauthorizedResponse({
     description: 'Invalid refresh token or CSRF token',
   })
   @ApiTooManyRequestsResponse({
     description: 'Too many requests - maximum 5 requests per minute allowed',
-  })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['refreshToken'],
-      properties: {
-        refreshToken: {
-          type: 'string',
-          example: 'eyJhbGciOiJIUzI1NiIs...',
-        },
-      },
-    },
   })
   @ApiCookieAuth('deviceId')
   @ApiHeader({
@@ -206,10 +227,21 @@ export class AuthController {
   })
   @UseGuards(CsrfGuard, RefreshTokenAuthGuard, ThrottlerGuard)
   @Post('refresh')
-  refreshToken(
+  async refreshToken(
     @Request() req: ExpressRequest & { user: PublicUser },
-  ): Promise<AuthenticatedUser> {
-    return this.authService.renewAccessToken(req.user);
+    @Res() res: Response,
+  ): Promise<Response> {
+    // Token validation already happens in the RefreshTokenAuthGuard
+    const [user, tokens] = await this.authService.renewAccessToken(req.user);
+
+    // Set new tokens in cookies
+    this.cookieService.setAuthCookies(
+      res,
+      tokens.accessToken,
+      tokens.refreshToken,
+    );
+
+    return res.json(user);
   }
 
   /* ---------------------- Get authenticated user ---------------------- */
@@ -225,6 +257,7 @@ export class AuthController {
     description: 'Too many requests - maximum 5 requests per minute allowed',
   })
   @ApiCookieAuth('deviceId')
+  @ApiCookieAuth('accessToken')
   @ApiHeader({
     name: 'x-csrf-token',
     description: 'CSRF token required',

@@ -160,6 +160,15 @@ export class SessionService {
     }
   }
 
+  /**
+   * Verifies session exists and is not expired
+   * @throws {SessionNotFoundException} If session doesn't exist
+   * @throws {SessionExpiredException} If session is expired
+   */
+  async verifySession(userId: string, deviceId: string): Promise<void> {
+    await this.findAndVerifySession(userId, deviceId);
+  }
+
   /* -------------- Session Management & Cleanup -------------- */
 
   /**

@@ -1,17 +1,27 @@
 import { AuthService } from '@/auth/auth.service';
+import { AuthenticationFailedException } from '@/auth/exceptions/authentication-failed.exception';
 import jwtConfig from '@/config/jwt.config';
+import {
+  CookieContents,
+  CookieService,
+  RequestWithCookies,
+} from '@/cookie/cookie.service';
 import { LoggerService } from '@/logger/logger.service';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { JwtPayload, PublicUser } from '@repo/types';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
+import { Strategy } from 'passport-jwt';
 
+/**
+ * Express Request type extension to ensure type safety for cookie-based access token.
+ * Required for proper typing in the validate method.
+ */
 interface AccessTokenRequest extends Request {
-  cookies: {
-    deviceId: string;
-  };
+  cookies: Pick<CookieContents, 'deviceId' | 'accessToken'>;
 }
+
 /**
  * Passport strategy for handling JWT access token authentication.
  * Validates incoming JWTs and extracts user information for protected routes.
@@ -35,9 +45,11 @@ export class AccessTokenStrategy extends PassportStrategy(
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     private readonly authService: AuthService,
     private readonly logger: LoggerService,
+    private readonly cookieService: CookieService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: (req: RequestWithCookies) =>
+        this.cookieService.extractTokenFromCookie(req, 'accessToken'),
       secretOrKey: jwtConfiguration.secret,
       ignoreExpiration: false,
       passReqToCallback: true,
@@ -57,9 +69,15 @@ export class AccessTokenStrategy extends PassportStrategy(
     request: AccessTokenRequest,
     payload: JwtPayload,
   ): Promise<PublicUser> {
-    this.logger.debug('Validating access token', payload);
     const userId = payload.sub;
     const deviceId = request.cookies['deviceId'];
+
+    this.logger.debug('Validating access token', payload);
+
+    if (!deviceId) {
+      this.logger.warn('Missing deviceId cookie', { userId });
+      throw new UnauthorizedException('Authentication failed');
+    }
 
     try {
       const publicUser = await this.authService.validateAccessToken(
@@ -68,18 +86,32 @@ export class AccessTokenStrategy extends PassportStrategy(
       );
       if (!publicUser) {
         this.logger.warn('Invalid access token', { userId, deviceId });
-        throw new UnauthorizedException('Invalid access token');
+        throw new UnauthorizedException('Authentication failed');
       }
 
       this.logger.info('Access token validated', publicUser);
       return publicUser;
     } catch (error) {
-      this.logger.error('Access token validation failed', {
-        userId,
-        deviceId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw new UnauthorizedException('Access token validation failed');
+      if (error instanceof AuthenticationFailedException) {
+        this.logger.warn(
+          'Access token validation failed: authentication error',
+          {
+            userId,
+            deviceId,
+            errorType: error.constructor.name,
+            message: error.message,
+          },
+        );
+      } else {
+        this.logger.error('Access token validation failed', {
+          userId,
+          deviceId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+
+      // Always return a generic UnauthorizedException to the client
+      throw new UnauthorizedException('Authentication failed');
     }
   }
 }
