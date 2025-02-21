@@ -49,6 +49,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
    */
   async onModuleDestroy(): Promise<void> {
     await this.connection?.pool.end();
-    console.log('Database connection closed');
+    if (!process.env.TEST) {
+      console.log('Database connection closed');
+    }
   }
 }

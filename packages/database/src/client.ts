@@ -69,7 +69,9 @@ export async function createDatabaseClient(
 
       // Verify connection is working with a simple query
       await pool.query('SELECT 1');
-      console.log('[Database] Connection established');
+      if (!process.env.TEST) {
+        console.log('[Database] Connection established');
+      }
 
       // Initialize Drizzle ORM with our schema
       const db = drizzle(pool, { schema });
@@ -77,13 +79,17 @@ export async function createDatabaseClient(
       return { db, pool } as DatabaseConnection;
     } catch (error) {
       lastError = error as Error;
-      console.error(
-        `Database connection attempt ${attempt + 1}/${retries} failed:`,
-        error,
-      );
+      if (!process.env.TEST) {
+        console.error(
+          `Database connection attempt ${attempt + 1}/${retries} failed:`,
+          error,
+        );
+      }
 
       if (attempt === retries - 1) {
-        console.error('[Database] All connection attempts failed');
+        if (!process.env.TEST) {
+          console.error('[Database] All connection attempts failed');
+        }
         throw lastError;
       }
 

@@ -16,6 +16,16 @@ export async function setupTestApp(
   testDbService: TestDatabaseService;
 }> {
   try {
+    // Set test environment flag
+    process.env.TEST = 'true';
+
+    // Set database URL based on environment
+    if (!process.env.CI) {
+      // Local development: use test database
+      process.env.DATABASE_URL =
+        'postgresql://postgres:postgres@localhost:5433/finance_app_test';
+    }
+
     // Setup test database connection
     const connection = await setupTestDatabase();
 
