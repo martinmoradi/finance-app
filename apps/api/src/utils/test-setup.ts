@@ -1,14 +1,13 @@
-// test-setup.ts
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { DatabaseModule } from '@/database/database.module';
 import { TestDatabaseModule } from '@/database/__tests__/test-database.module';
 import { TestDatabaseService } from '@/database/__tests__/test-database.service';
-import { setupTestDatabase, DatabaseConnection } from '@repo/database';
+import { DatabaseModule } from '@/database/database.module';
 import { LoggerModule } from '@/logger/logger.module';
+import { DynamicModule, INestApplication, Type } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { DatabaseConnection, setupTestDatabase } from '@repo/database';
 
 export async function setupTestApp(
-  appModule: any,
+  appModule: Type<unknown> | DynamicModule,
   configure?: (app: INestApplication) => Promise<void>,
 ): Promise<{
   app: INestApplication;
