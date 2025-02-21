@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { getRequiredEnvVar } from '@repo/env-validation';
 
 type LogContext = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -9,6 +10,10 @@ type LogContext = {
 export class LoggerService {
   private logger: Logger;
   private prefix: string;
+
+  get isDev(): boolean {
+    return getRequiredEnvVar('NODE_ENV') === 'development';
+  }
 
   constructor(serviceName?: string) {
     this.prefix = serviceName ? `[${serviceName}]:` : '';
@@ -77,8 +82,7 @@ export class LoggerService {
         ? {
             errorName: error.name,
             errorMessage: error.message,
-            stack:
-              process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            stack: this.isDev ? error.stack : undefined,
             ...context,
           }
         : {
@@ -129,7 +133,7 @@ export class LoggerService {
    */
   private sanitizeContext(context?: LogContext): LogContext | undefined {
     if (!context) return undefined;
-    if (process.env.NODE_ENV === 'development') return context;
+    if (this.isDev) return context;
 
     // Create a shallow copy of the context
     const sanitized = { ...context };
