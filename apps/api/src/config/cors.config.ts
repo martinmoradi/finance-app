@@ -1,10 +1,13 @@
+import { getRequiredEnvVar } from '@repo/env-validation';
+
 /**
  * Configuration for Cross-Origin Resource Sharing (CORS).
  * Defines allowed origins, methods, credentials, headers, and cache settings.
  */
+const allowedOrigins = getRequiredEnvVar('ALLOWED_ORIGINS');
 export const corsConfig = {
   // We'll read allowed origins from environment variables
-  origins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+  origins: allowedOrigins.split(','),
 
   // Specify which HTTP methods are allowed
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
