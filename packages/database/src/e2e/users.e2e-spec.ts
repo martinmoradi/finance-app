@@ -1,26 +1,17 @@
 import type { DatabaseConnection } from '@/client';
 import { DatabaseClient } from '@/client';
-import { schema } from '@/schema';
+import { schema, tables } from '@/schema';
 import { main as seedDatabase } from '@/seed';
 import {
   cleanupTestDatabase,
   rollbackTransaction,
   setupTestDatabase,
   startTransaction,
-} from '@/tests/helpers/db';
+} from '@/e2e/helpers/db';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
 
-describe('Users Integration Tests', () => {
+describe('Users e2e Tests', () => {
   let connection: DatabaseConnection;
   let db: DatabaseClient;
   let pool: Pool;
@@ -32,8 +23,10 @@ describe('Users Integration Tests', () => {
     db = connection.db;
     pool = connection.pool;
 
-    // Set test environment and seed initial data
-    process.env.TEST = 'true';
+    // Clean up any existing data
+    await cleanupTestDatabase(connection);
+
+    // Seed fresh data
     await seedDatabase();
   });
 
@@ -54,6 +47,11 @@ describe('Users Integration Tests', () => {
   });
 
   describe('User Queries', () => {
+    it('should successfully connect to database', async () => {
+      const result = await pool.query('SELECT 1 as number');
+      expect(result.rows[0].number).toBe(1);
+    });
+
     it('should find all seeded users', async () => {
       const result = await db.query.users.findMany();
 
