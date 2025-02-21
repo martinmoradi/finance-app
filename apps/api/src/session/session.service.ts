@@ -284,7 +284,7 @@ export class SessionService {
     try {
       const session = await this.sessionRepository.findOne(userId, deviceId);
       if (!session) {
-        this.logger.error('Session not found', { userId, deviceId });
+        this.logger.debug('Session not found', { userId, deviceId });
         throw new SessionNotFoundException();
       }
       return session;
