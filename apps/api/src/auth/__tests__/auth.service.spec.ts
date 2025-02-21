@@ -7,12 +7,13 @@ import {
   SignupFailedException,
   TokenGenerationFailedException,
 } from '@/auth/exceptions';
+import refreshJwtConfig from '@/config/refresh-jwt.config';
 import { LoggerService } from '@/logger/logger.service';
 import {
-  InvalidRefreshTokenException,
   SessionCreationFailedException,
   SessionExpiredException,
   SessionLimitExceededException,
+  SessionNotFoundException,
   SessionRepositoryException,
 } from '@/session/exceptions';
 import { SessionService } from '@/session/session.service';
@@ -23,33 +24,31 @@ import {
 } from '@/user/exceptions';
 import { UserService } from '@/user/user.service';
 import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
 import { DatabaseUser, PublicUser } from '@repo/types';
 import { verify } from 'argon2';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock Argon2 and JWT directly
-vi.mock('argon2', () => ({
-  hash: vi.fn().mockImplementation((pass) => Promise.resolve(`hashed_${pass}`)),
-  verify: vi
+// Mock Argon2
+jest.mock('argon2', () => ({
+  hash: jest
+    .fn()
+    .mockImplementation((pass) => Promise.resolve(`hashed_${pass}`)),
+  verify: jest
     .fn()
     .mockImplementation((hashed, plain) =>
       Promise.resolve(hashed === `hashed_${plain}`),
     ),
 }));
 
-vi.mock('@nestjs/jwt', () => ({
-  JwtService: vi.fn(() => ({
-    signAsync: vi.fn().mockResolvedValue('mockToken'),
-  })),
-}));
-
 describe('AuthService', () => {
+  let module: TestingModule;
   let authService: AuthService;
-  let userService: UserService;
-  let sessionService: SessionService;
-  let jwtService: JwtService;
-  let loggerService: LoggerService;
+  let userService: jest.Mocked<UserService>;
+  let sessionService: jest.Mocked<SessionService>;
+  let jwtService: jest.Mocked<JwtService>;
+  let loggerService: jest.Mocked<LoggerService>;
 
+  // Test data
   const mockUserDto: CreateUserDto = {
     email: 'test@example.com',
     password: 'password123',
@@ -71,7 +70,6 @@ describe('AuthService', () => {
     name: mockDatabaseUser.name,
   };
 
-  // Add mock session object
   const mockDatabaseSession = {
     userId: 'user123',
     deviceId: 'device123',
@@ -81,53 +79,86 @@ describe('AuthService', () => {
     expiresAt: new Date(Date.now() + 100000),
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
+  beforeEach(async () => {
     // Create mock implementations
-    userService = {
-      findByEmail: vi.fn().mockResolvedValue(null),
-      findByIdOrThrow: vi.fn().mockResolvedValue(mockDatabaseUser),
-      create: vi.fn().mockResolvedValue(mockDatabaseUser),
-      delete: vi.fn().mockResolvedValue(true),
-    } as unknown as UserService;
+    const mockUserService = {
+      findByEmail: jest.fn().mockResolvedValue(null),
+      findByIdOrThrow: jest.fn().mockResolvedValue(mockDatabaseUser),
+      create: jest.fn().mockResolvedValue(mockDatabaseUser),
+      delete: jest.fn().mockResolvedValue(true),
+    };
 
-    sessionService = {
-      createSessionWithToken: vi.fn().mockResolvedValue(mockDatabaseSession),
-      findAndVerifySession: vi.fn().mockResolvedValue(undefined),
-      deleteSession: vi.fn().mockResolvedValue(undefined),
-      validateSession: vi.fn().mockResolvedValue(undefined),
-    } as unknown as SessionService;
+    const mockSessionService = {
+      createSessionWithToken: jest.fn().mockResolvedValue(mockDatabaseSession),
+      findAndVerifySession: jest.fn().mockResolvedValue(undefined),
+      deleteSession: jest.fn().mockResolvedValue(undefined),
+      validateSession: jest.fn().mockResolvedValue(undefined),
+      verifySession: jest.fn().mockResolvedValue(undefined),
+    };
 
-    loggerService = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    } as unknown as LoggerService;
+    const mockLoggerService = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
 
-    jwtService = new JwtService();
+    const mockJwtService = {
+      signAsync: jest.fn().mockResolvedValue('mockToken'),
+    };
 
-    authService = new AuthService(
-      userService,
-      sessionService,
-      jwtService,
-      loggerService,
-      {
-        expiresIn: '7d',
-        secret: 'testSecret',
-      },
-    );
+    // Create testing module
+    module = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        {
+          provide: UserService,
+          useValue: mockUserService,
+        },
+        {
+          provide: SessionService,
+          useValue: mockSessionService,
+        },
+        {
+          provide: LoggerService,
+          useValue: mockLoggerService,
+        },
+        {
+          provide: JwtService,
+          useValue: mockJwtService,
+        },
+        {
+          provide: refreshJwtConfig.KEY,
+          useValue: {
+            expiresIn: '7d',
+            secret: 'testSecret',
+          },
+        },
+      ],
+    }).compile();
+
+    // Get service instances
+    authService = module.get<AuthService>(AuthService);
+    userService = module.get(UserService);
+    sessionService = module.get(SessionService);
+    jwtService = module.get(JwtService);
+    loggerService = module.get(LoggerService);
+
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('signup', () => {
     it('should successfully create a new user and session', async () => {
       // Execute
-      const result = await authService.signup(mockUserDto, 'device123');
+      const [user, tokens] = await authService.signup(mockUserDto, 'device123');
 
       // Assertions
-      expect(result).toEqual({
-        ...mockPublicUser,
+      expect(user).toEqual(mockPublicUser);
+      expect(tokens).toEqual({
         accessToken: 'mockToken',
         refreshToken: 'mockToken',
       });
@@ -163,9 +194,7 @@ describe('AuthService', () => {
       const sessionError = new SessionCreationFailedException(
         new Error('DB connection failed'),
       );
-      vi.mocked(sessionService.createSessionWithToken).mockRejectedValue(
-        sessionError,
-      );
+      sessionService.createSessionWithToken.mockRejectedValue(sessionError);
 
       // Execute and verify error
       await expect(
@@ -182,7 +211,7 @@ describe('AuthService', () => {
 
     it('should throw UserAlreadyExistsException if email exists', async () => {
       // Setup existing user
-      vi.mocked(userService.findByEmail).mockResolvedValue(mockDatabaseUser);
+      userService.findByEmail.mockResolvedValue(mockDatabaseUser);
 
       // Execute and verify error
       await expect(
@@ -196,7 +225,7 @@ describe('AuthService', () => {
     it('should handle token generation failures', async () => {
       // Setup JWT failure
       const jwtError = new Error('JWT failure');
-      vi.mocked(jwtService.signAsync).mockRejectedValue(jwtError);
+      jwtService.signAsync.mockRejectedValue(jwtError);
 
       // Execute and verify error
       await expect(
@@ -213,7 +242,7 @@ describe('AuthService', () => {
     it('should handle unexpected errors during signup', async () => {
       // Setup unexpected error
       const unexpectedError = new Error('Unexpected DB failure');
-      vi.mocked(userService.findByEmail).mockRejectedValue(unexpectedError);
+      userService.findByEmail.mockRejectedValue(unexpectedError);
 
       // Execute and verify error
       await expect(
@@ -235,14 +264,16 @@ describe('AuthService', () => {
       const sessionError = new SessionLimitExceededException(
         mockDatabaseUser.id,
       );
-      vi.mocked(sessionService.createSessionWithToken).mockRejectedValue(
-        sessionError,
-      );
+      sessionService.createSessionWithToken.mockRejectedValue(sessionError);
 
-      const result = await authService.signup(mockUserDto, 'device123');
+      const [user, tokens] = await authService.signup(mockUserDto, 'device123');
 
       // Should still return user despite session limit warning
-      expect(result.id).toBe(mockDatabaseUser.id);
+      expect(user.id).toBe(mockDatabaseUser.id);
+      expect(tokens).toEqual({
+        accessToken: 'mockToken',
+        refreshToken: 'mockToken',
+      });
       expect(loggerService.warn).toHaveBeenCalledWith(
         'Session limit exceeded during signup',
         { userId: mockDatabaseUser.id },
@@ -259,6 +290,7 @@ describe('AuthService', () => {
 
     it('should generate tokens and create session for valid user', async () => {
       await authService.signin(mockPublicUser, 'device123');
+
       expect(sessionService.createSessionWithToken).toHaveBeenCalledWith(
         mockPublicUser.id,
         'device123',
@@ -271,9 +303,7 @@ describe('AuthService', () => {
       const sessionError = new SessionCreationFailedException(
         new Error('DB error'),
       );
-      vi.mocked(sessionService.createSessionWithToken).mockRejectedValue(
-        sessionError,
-      );
+      sessionService.createSessionWithToken.mockRejectedValue(sessionError);
 
       await expect(
         authService.signin(mockPublicUser, 'device123'),
@@ -281,8 +311,9 @@ describe('AuthService', () => {
     });
 
     it('should handle concurrent signin attempts', async () => {
-      vi.mocked(sessionService.createSessionWithToken)
-        .mockResolvedValueOnce(mockDatabaseSession) // First successful call
+      // First call succeeds, second call fails
+      sessionService.createSessionWithToken
+        .mockResolvedValueOnce(mockDatabaseSession)
         .mockRejectedValueOnce(new SessionCreationFailedException(new Error()));
 
       // First successful signin
@@ -297,8 +328,8 @@ describe('AuthService', () => {
 
   describe('validateCredentials', () => {
     it('should return user for valid credentials', async () => {
-      vi.mocked(userService.findByEmail).mockResolvedValue(mockDatabaseUser);
-      vi.mocked(verify).mockResolvedValue(true);
+      userService.findByEmail.mockResolvedValue(mockDatabaseUser);
+      jest.mocked(verify).mockResolvedValue(true);
 
       const result = await authService.validateCredentials(
         'test@example.com',
@@ -313,12 +344,20 @@ describe('AuthService', () => {
     });
 
     it('should throw InvalidCredentialsException for wrong password', async () => {
-      vi.mocked(userService.findByEmail).mockResolvedValue(mockDatabaseUser);
-      vi.mocked(verify).mockResolvedValue(false);
+      userService.findByEmail.mockResolvedValue(mockDatabaseUser);
+      jest.mocked(verify).mockResolvedValue(false);
 
       await expect(
         authService.validateCredentials('test@example.com', 'wrongPassword'),
       ).rejects.toThrow(InvalidCredentialsException);
+    });
+
+    it('should throw InvalidCredentialsException for non-existent user', async () => {
+      userService.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        authService.validateCredentials('nonexistent@example.com', 'password'),
+      ).rejects.toThrow(UserNotFoundException);
     });
   });
 
@@ -330,19 +369,30 @@ describe('AuthService', () => {
         name: 'Test',
       };
 
-      const result = await authService.renewAccessToken(mockUser);
+      const [user, tokens] = await authService.renewAccessToken(mockUser);
 
-      expect(result.accessToken).toBe('mockToken');
-      expect(result.refreshToken).toBe('mockToken');
+      expect(tokens.accessToken).toBe('mockToken');
+      expect(tokens.refreshToken).toBe('mockToken');
+      expect(user).toEqual(mockUser);
       expect(sessionService.createSessionWithToken).not.toHaveBeenCalled();
     });
 
     it('should handle JWT service failures', async () => {
-      vi.mocked(jwtService.signAsync).mockRejectedValue(new Error('JWT error'));
+      jwtService.signAsync.mockRejectedValue(new Error('JWT error'));
 
       await expect(
         authService.renewAccessToken(mockPublicUser),
       ).rejects.toThrow(TokenGenerationFailedException);
+    });
+
+    it('should include user data in returned tuple', async () => {
+      const [user, tokens] = await authService.renewAccessToken(mockPublicUser);
+
+      expect(user).toEqual(mockPublicUser);
+      expect(tokens).toEqual({
+        accessToken: 'mockToken',
+        refreshToken: 'mockToken',
+      });
     });
   });
 
@@ -372,7 +422,21 @@ describe('AuthService', () => {
 
     it('should handle session deletion failures', async () => {
       const sessionError = new Error('Session deletion failed');
-      vi.mocked(sessionService.deleteSession).mockRejectedValue(sessionError);
+      sessionService.deleteSession.mockRejectedValue(sessionError);
+
+      await expect(authService.signout(mockUser, 'device123')).rejects.toThrow(
+        SignoutFailedException,
+      );
+
+      expect(loggerService.error).toHaveBeenCalledWith(
+        'Error during user signout',
+        expect.any(SignoutFailedException),
+      );
+    });
+
+    it('should handle unexpected errors during signout', async () => {
+      const unexpectedError = new Error('Unexpected error');
+      sessionService.deleteSession.mockRejectedValue(unexpectedError);
 
       await expect(authService.signout(mockUser, 'device123')).rejects.toThrow(
         SignoutFailedException,
@@ -392,15 +456,8 @@ describe('AuthService', () => {
     };
 
     it('should validate user with active session', async () => {
-      vi.mocked(userService.findByIdOrThrow).mockResolvedValue(mockUser);
-      vi.mocked(sessionService.findAndVerifySession).mockResolvedValue({
-        userId: mockUser.id,
-        deviceId: 'device123',
-        expiresAt: new Date(Date.now() + 10000),
-        createdAt: new Date(),
-        token: 'mockToken',
-        lastUsedAt: new Date(),
-      });
+      userService.findByIdOrThrow.mockResolvedValue(mockUser);
+      sessionService.verifySession.mockResolvedValue(undefined);
 
       const result = await authService.validateAccessToken(
         mockUser.id,
@@ -408,14 +465,14 @@ describe('AuthService', () => {
       );
 
       expect(result.id).toBe(mockUser.id);
-      expect(sessionService.findAndVerifySession).toHaveBeenCalledWith(
+      expect(sessionService.verifySession).toHaveBeenCalledWith(
         mockUser.id,
         'device123',
       );
     });
 
     it('should throw for non-existent user', async () => {
-      vi.mocked(userService.findByIdOrThrow).mockRejectedValue(
+      userService.findByIdOrThrow.mockRejectedValue(
         new UserNotFoundException(),
       );
 
@@ -425,14 +482,43 @@ describe('AuthService', () => {
     });
 
     it('should handle expired sessions', async () => {
-      vi.mocked(userService.findByIdOrThrow).mockResolvedValue(mockUser);
-      vi.mocked(sessionService.findAndVerifySession).mockRejectedValue(
+      userService.findByIdOrThrow.mockResolvedValue(mockUser);
+      sessionService.verifySession.mockRejectedValue(
         new SessionExpiredException(),
       );
 
       await expect(
         authService.validateAccessToken(mockUser.id, 'device123'),
       ).rejects.toThrow(AuthenticationFailedException);
+    });
+
+    it('should handle invalid sessions', async () => {
+      userService.findByIdOrThrow.mockResolvedValue(mockUser);
+      sessionService.verifySession.mockRejectedValue(
+        new SessionExpiredException(),
+      );
+
+      await expect(
+        authService.validateAccessToken(mockUser.id, 'device123'),
+      ).rejects.toThrow(AuthenticationFailedException);
+    });
+
+    it('should handle unexpected errors during validation', async () => {
+      const unexpectedError = new Error('Unexpected validation error');
+      userService.findByIdOrThrow.mockRejectedValue(unexpectedError);
+
+      await expect(
+        authService.validateAccessToken(mockUser.id, 'device123'),
+      ).rejects.toThrow(AuthenticationFailedException);
+
+      expect(loggerService.error).toHaveBeenCalledWith(
+        'Access token validation failed',
+        unexpectedError,
+        {
+          userId: mockUser.id,
+          deviceId: 'device123',
+        },
+      );
     });
   });
 
@@ -443,8 +529,8 @@ describe('AuthService', () => {
     };
 
     it('should validate active refresh token', async () => {
-      vi.mocked(userService.findByIdOrThrow).mockResolvedValue(mockUser);
-      vi.mocked(sessionService.validateSession).mockResolvedValue({
+      userService.findByIdOrThrow.mockResolvedValue(mockUser);
+      sessionService.validateSession.mockResolvedValue({
         userId: mockUser.id,
         deviceId: 'device123',
         token: 'hashed_mockToken',
@@ -468,9 +554,9 @@ describe('AuthService', () => {
     });
 
     it('should handle invalid refresh tokens', async () => {
-      vi.mocked(userService.findByIdOrThrow).mockResolvedValue(mockUser);
-      vi.mocked(sessionService.validateSession).mockRejectedValue(
-        new InvalidRefreshTokenException(),
+      userService.findByIdOrThrow.mockResolvedValue(mockUser);
+      sessionService.validateSession.mockRejectedValue(
+        new SessionExpiredException(),
       );
 
       await expect(
@@ -489,7 +575,7 @@ describe('AuthService', () => {
         'device123',
         new Error('DB error'),
       );
-      vi.mocked(sessionService.validateSession).mockRejectedValue(repoError);
+      sessionService.validateSession.mockRejectedValue(repoError);
 
       await expect(
         authService.validateRefreshToken(mockUser.id, 'mockToken', 'device123'),
@@ -500,7 +586,7 @@ describe('AuthService', () => {
   describe('edge cases', () => {
     it('should handle clock skew in token expiration', async () => {
       const expirationDate = new Date(Date.now() + 5000);
-      vi.mocked(sessionService.findAndVerifySession).mockResolvedValue({
+      sessionService.findAndVerifySession.mockResolvedValue({
         expiresAt: expirationDate,
         createdAt: new Date(),
         userId: 'user123',
@@ -510,15 +596,34 @@ describe('AuthService', () => {
       });
 
       // Validate with 10s clock skew
-      vi.useFakeTimers({ now: Date.now() - 10000 });
-      vi.mocked(userService.findByIdOrThrow).mockResolvedValue({
+      jest.useFakeTimers().setSystemTime(Date.now() - 10000);
+      userService.findByIdOrThrow.mockResolvedValue({
         ...mockDatabaseUser,
         id: 'user123',
       });
+
       await expect(
         authService.validateAccessToken('user123', 'device123'),
       ).resolves.toBeDefined();
-      vi.useRealTimers();
+
+      jest.useRealTimers();
+    });
+
+    it('should handle malformed JWT tokens', async () => {
+      jwtService.signAsync.mockRejectedValue(new Error('Invalid JWT format'));
+
+      await expect(
+        authService.renewAccessToken(mockPublicUser),
+      ).rejects.toThrow(TokenGenerationFailedException);
+    });
+
+    it('should handle database timeouts', async () => {
+      const timeoutError = new Error('Database connection timeout');
+      userService.findByIdOrThrow.mockRejectedValue(timeoutError);
+
+      await expect(
+        authService.validateAccessToken('user123', 'device123'),
+      ).rejects.toThrow(AuthenticationFailedException);
     });
   });
 });
