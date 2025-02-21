@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getRequiredEnvVar } from './env';
 
 describe('Environment Variable Validation', () => {
@@ -7,7 +6,7 @@ describe('Environment Variable Validation', () => {
 
   beforeEach(() => {
     // Clear and reset process.env before each test
-    vi.resetModules();
+    jest.resetModules();
     process.env = { ...originalEnv };
   });
 
