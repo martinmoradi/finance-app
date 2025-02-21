@@ -7,7 +7,7 @@ export class TestDatabaseService {
   constructor(private readonly logger: LoggerService) {}
   private connection: DatabaseConnection | null = null;
 
-  setConnection(connection: DatabaseConnection) {
+  setConnection(connection: DatabaseConnection): void {
     this.connection = connection;
   }
 
