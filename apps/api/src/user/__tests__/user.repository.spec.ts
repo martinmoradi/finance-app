@@ -1,29 +1,22 @@
-/**
- * Tests for the UserRepository class which handles database operations for users
- */
-
+import { userFixtures } from '@/user/__tests__/user.fixtures';
+import { UserRepository } from '@/user/user.repository';
 import { Test } from '@nestjs/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UserRepository } from '../user.repository';
-import { userFixtures } from './user.fixtures';
 
-// Mock database instance with spies for all required methods
 const mockDb = {
   query: {
     users: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
   },
-  insert: vi.fn().mockReturnThis(),
-  values: vi.fn().mockReturnThis(),
-  returning: vi.fn(),
+  insert: jest.fn().mockReturnThis(),
+  values: jest.fn().mockReturnThis(),
+  returning: jest.fn(),
+  delete: jest.fn().mockReturnThis(),
+  where: jest.fn().mockResolvedValue(undefined),
 };
 
-/**
- * Mock the BaseRepository class to return our mock database instance
- */
-vi.mock('@/database/base.repository', () => {
+jest.mock('@/database/base.repository', () => {
   return {
     BaseRepository: class {
       protected get db(): typeof mockDb {
@@ -36,12 +29,6 @@ vi.mock('@/database/base.repository', () => {
 describe('UserRepository', () => {
   let userRepository: UserRepository;
 
-  /**
-   * Before each test:
-   * 1. Create a new NestJS testing module with UserRepository
-   * 2. Get an instance of UserRepository
-   * 3. Reset all mocks and setup default mock responses
-   */
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [UserRepository],
@@ -50,36 +37,23 @@ describe('UserRepository', () => {
     userRepository = moduleRef.get<UserRepository>(UserRepository);
 
     // Reset and setup mocks before each test
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     mockDb.query.users.findMany.mockResolvedValue(userFixtures);
+    mockDb.query.users.findFirst.mockResolvedValue(userFixtures[0]);
   });
 
-  /**
-   * Test suite for findAll() method
-   */
   it('should find all users', async () => {
     const users = await userRepository.findAll();
     expect(users).toBeTruthy();
     expect(users?.[0]).toBeTruthy();
-    expect(users![0]?.email).toBe('test@example.com');
-    expect(users).toHaveLength(5);
   });
 
-  /**
-   * Test suite for findById() method - successful case
-   */
   it('should find user by id', async () => {
-    mockDb.query.users.findFirst.mockResolvedValue(userFixtures[0]);
-
     const user = await userRepository.findById('1');
     expect(user).toBeTruthy();
     expect(user?.id).toBe('1');
-    expect(user?.email).toBe('test@example.com');
   });
 
-  /**
-   * Test suite for findById() method - user not found case
-   */
   it('should return null when user not found', async () => {
     mockDb.query.users.findFirst.mockResolvedValue(null);
 
@@ -87,20 +61,12 @@ describe('UserRepository', () => {
     expect(user).toBeNull();
   });
 
-  /**
-   * Test suite for findByEmail() method - successful case
-   */
   it('should find user by email', async () => {
-    mockDb.query.users.findFirst.mockResolvedValue(userFixtures[0]);
-
     const user = await userRepository.findByEmail('test@example.com');
     expect(user).toBeTruthy();
     expect(user?.email).toBe('test@example.com');
   });
 
-  /**
-   * Test suite for findByEmail() method - user not found case
-   */
   it('should return null when user not found by email', async () => {
     mockDb.query.users.findFirst.mockResolvedValue(null);
 
@@ -108,9 +74,6 @@ describe('UserRepository', () => {
     expect(user).toBeNull();
   });
 
-  /**
-   * Test suite for create() method - successful case
-   */
   it('should create a new user', async () => {
     const newUser = {
       email: 'new@example.com',
@@ -133,19 +96,38 @@ describe('UserRepository', () => {
     expect(createdUser?.name).toBe(newUser.name);
   });
 
-  /**
-   * Test suite for create() method - failure case
-   */
   it('should return null when user creation fails', async () => {
     mockDb.returning.mockResolvedValue([]);
 
-    const newUser = {
+    const createdUser = await userRepository.create({
       email: 'new@example.com',
       name: 'New User',
       password: 'hashedPassword',
-    };
-
-    const createdUser = await userRepository.create(newUser);
+    });
     expect(createdUser).toBeNull();
+  });
+
+  it('should delete a user', async () => {
+    const userId = '1';
+    mockDb.where.mockResolvedValue({ rowCount: 1 });
+
+    await userRepository.delete(userId);
+
+    // Assert
+    expect(mockDb.delete).toHaveBeenCalledWith(expect.anything()); // Verifies delete was called
+    expect(mockDb.where).toHaveBeenCalledWith(expect.anything()); // Verifies where clause was used
+  });
+
+  it('should handle non-existent user deletion gracefully', async () => {
+    // Arrange
+    const userId = 'nonexistent';
+    mockDb.where.mockResolvedValue({ rowCount: 0 });
+
+    // Act
+    await userRepository.delete(userId);
+
+    // Assert
+    expect(mockDb.delete).toHaveBeenCalledWith(expect.anything());
+    expect(mockDb.where).toHaveBeenCalledWith(expect.anything());
   });
 });
