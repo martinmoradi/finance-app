@@ -13,7 +13,6 @@ import {
   SessionCreationFailedException,
   SessionExpiredException,
   SessionLimitExceededException,
-  SessionNotFoundException,
   SessionRepositoryException,
 } from '@/session/exceptions';
 import { SessionService } from '@/session/session.service';
