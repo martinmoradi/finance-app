@@ -74,7 +74,7 @@ export const nestConfig = [
     },
   },
   {
-    files: ['**/*.e2e-spec.ts'],
+    files: ['**/*.e2e-spec.ts', '**/*.e2e-utils.ts'],
     plugins: {
       jest,
     },
