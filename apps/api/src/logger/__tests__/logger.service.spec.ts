@@ -2,13 +2,21 @@ import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRequiredEnvVar } from '@repo/env-validation';
 import { LoggerService } from '../logger.service';
+import { RequestContextStorage } from '@/middleware/request-context.storage';
 
-// First, mock the env-validation module
+// Mock the request-context.storage
+jest.mock('@/middleware/request-context.storage', () => ({
+  RequestContextStorage: {
+    getRequestId: jest.fn(),
+  },
+}));
+
+// Mock the env-validation module
 jest.mock('@repo/env-validation', () => ({
   getRequiredEnvVar: jest.fn(),
 }));
 
-// Second, mock @nestjs/common before using mockLoggerInstance
+// Mock @nestjs/common before using mockLoggerInstance
 jest.mock('@nestjs/common', () => {
   const originalModule = jest.requireActual('@nestjs/common');
   const mockLogger = {
@@ -36,7 +44,7 @@ jest.mock('@nestjs/common', () => {
   };
 });
 
-// Third, define the mock instance type
+// Define the mock instance type
 const mockLoggerInstance = new (jest.requireMock('@nestjs/common').Logger)();
 
 describe('LoggerService', () => {
@@ -114,6 +122,49 @@ describe('LoggerService', () => {
     });
   });
 
+  describe('request ID enhancement', () => {
+    const testMessage = 'Test message';
+    const testContext = { user: 'testUser', action: 'test' };
+    const testRequestId = 'test-request-id-123';
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      service = new LoggerService();
+    });
+
+    it('should include request ID in context when available', () => {
+      // Mock RequestContextStorage to return a request ID
+      (RequestContextStorage.getRequestId as jest.Mock).mockReturnValue(
+        testRequestId,
+      );
+
+      service.info(testMessage, testContext);
+
+      expect(mockLoggerInstance.log).toHaveBeenCalledWith(
+        ` ${testMessage}`,
+        expect.objectContaining({
+          requestId: testRequestId,
+          user: 'testUser',
+          action: 'test',
+        }),
+      );
+    });
+
+    it('should not modify context when request ID is not available', () => {
+      // Mock RequestContextStorage to return undefined
+      (RequestContextStorage.getRequestId as jest.Mock).mockReturnValue(
+        undefined,
+      );
+
+      service.info(testMessage, testContext);
+
+      expect(mockLoggerInstance.log).toHaveBeenCalledWith(
+        ` ${testMessage}`,
+        testContext,
+      );
+    });
+  });
+
   describe('logging methods', () => {
     const testMessage = 'Test message';
     const testContext = { user: 'testUser', action: 'test' };
@@ -121,6 +172,10 @@ describe('LoggerService', () => {
     beforeEach(() => {
       jest.clearAllMocks();
       service = new LoggerService();
+      // Mock no request ID for these basic tests
+      (RequestContextStorage.getRequestId as jest.Mock).mockReturnValue(
+        undefined,
+      );
     });
 
     it('should log debug messages', () => {
@@ -155,6 +210,60 @@ describe('LoggerService', () => {
         expect.stringContaining(testMessage),
         expect.stringContaining('Error: Test error'),
         expect.objectContaining(testContext),
+      );
+    });
+  });
+
+  describe('sanitizeContext method', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should mask sensitive fields in production environment', () => {
+      // Mock production environment
+      (getRequiredEnvVar as jest.Mock).mockReturnValue('production');
+      service = new LoggerService();
+
+      const sensitiveContext = {
+        username: 'testUser',
+        password: 'secret123',
+        authToken: 'xyz456',
+        apiSecret: 'very-secret',
+        userCredential: 'credential-value',
+      };
+
+      service.info('Test with sensitive data', sensitiveContext);
+
+      expect(mockLoggerInstance.log).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          username: 'testUser',
+          password: '[REDACTED]',
+          authToken: '[REDACTED]',
+          apiSecret: '[REDACTED]',
+          userCredential: '[REDACTED]',
+        }),
+      );
+    });
+
+    it('should not mask fields in development environment', () => {
+      // Mock development environment
+      (getRequiredEnvVar as jest.Mock).mockReturnValue('development');
+      service = new LoggerService();
+
+      const sensitiveContext = {
+        username: 'testUser',
+        password: 'secret123',
+      };
+
+      service.info('Test with sensitive data', sensitiveContext);
+
+      expect(mockLoggerInstance.log).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          username: 'testUser',
+          password: 'secret123',
+        }),
       );
     });
   });
