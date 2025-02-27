@@ -27,7 +27,10 @@ describe('SessionService', () => {
 
       repository.findOne.mockResolvedValue(mockSession);
 
-      await service.getValidSession(userId, deviceId);
+      await service.getValidSession({
+        userId,
+        deviceId: deviceId,
+      });
 
       expect(repository.findOne).toHaveBeenCalledWith(userId, deviceId);
     });
@@ -46,7 +49,10 @@ describe('SessionService', () => {
 
       repository.findOne.mockResolvedValue(validSession);
 
-      await service.getValidSession(userId, deviceId);
+      await service.getValidSession({
+        userId,
+        deviceId: deviceId,
+      });
 
       // This test is indirect - we verify that if session is valid, no exception is thrown
       // A more direct test would be to spy on the validateSessionExpiration method,
@@ -62,7 +68,10 @@ describe('SessionService', () => {
 
       repository.findOne.mockResolvedValue(mockSession);
 
-      await service.getValidSession(userId, deviceId);
+      await service.getValidSession({
+        userId,
+        deviceId: deviceId,
+      });
 
       expect(logger.debug).toHaveBeenCalledWith('Starting session validation', {
         userId,
@@ -80,7 +89,10 @@ describe('SessionService', () => {
 
       repository.findOne.mockResolvedValue(mockSession);
 
-      await service.getValidSession(userId, deviceId);
+      await service.getValidSession({
+        userId,
+        deviceId: deviceId,
+      });
 
       expect(logger.info).toHaveBeenCalledWith(
         'Session validated successfully',
@@ -100,12 +112,18 @@ describe('SessionService', () => {
       // Repository returns null, which should lead to SessionNotFoundException
       repository.findOne.mockResolvedValue(null);
 
-      await expect(service.getValidSession(userId, deviceId)).rejects.toThrow(
-        SessionValidationException,
-      );
+      await expect(
+        service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        }),
+      ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.getValidSession(userId, deviceId);
+        await service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -123,12 +141,18 @@ describe('SessionService', () => {
       const expiredSession = createExpiredSession();
       repository.findOne.mockResolvedValue(expiredSession);
 
-      await expect(service.getValidSession(userId, deviceId)).rejects.toThrow(
-        SessionValidationException,
-      );
+      await expect(
+        service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        }),
+      ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.getValidSession(userId, deviceId);
+        await service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -150,12 +174,18 @@ describe('SessionService', () => {
 
       repository.findOne.mockRejectedValue(originalError);
 
-      await expect(service.getValidSession(userId, deviceId)).rejects.toThrow(
-        SessionValidationException,
-      );
+      await expect(
+        service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        }),
+      ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.getValidSession(userId, deviceId);
+        await service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -177,7 +207,10 @@ describe('SessionService', () => {
       repository.findOne.mockRejectedValue(originalError);
 
       try {
-        await service.getValidSession(userId, deviceId);
+        await service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -201,9 +234,12 @@ describe('SessionService', () => {
         .spyOn(service as any, 'findSessionOrThrow')
         .mockRejectedValue(originalError);
 
-      await expect(service.getValidSession(userId, deviceId)).rejects.toThrow(
-        SessionValidationException,
-      );
+      await expect(
+        service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        }),
+      ).rejects.toThrow(SessionValidationException);
 
       expect(logger.error).toHaveBeenCalledWith(
         'Error during session validation',
@@ -216,7 +252,10 @@ describe('SessionService', () => {
       );
 
       try {
-        await service.getValidSession(userId, deviceId);
+        await service.getValidSession({
+          userId,
+          deviceId: deviceId,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -233,7 +272,10 @@ describe('SessionService', () => {
 
       repository.findOne.mockResolvedValue(mockSession);
 
-      const result = await service.getValidSession(userId, deviceId);
+      const result = await service.getValidSession({
+        userId,
+        deviceId: deviceId,
+      });
 
       expect(result).toBe(mockSession);
     });
