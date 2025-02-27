@@ -86,6 +86,7 @@ jobs:
       - name: Unit Tests
         run: pnpm test:ci
 
+      # Upload coverage reports
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
@@ -98,4 +99,4 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: unit
+          flags: e2e

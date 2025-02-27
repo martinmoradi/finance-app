@@ -106,13 +106,13 @@
       "!**/main.ts",
       "!database/__tests__/**"
     ],
-    "coverageDirectory": "../coverage",
     "coverageReporters": [
       "json",
       "lcov",
       "text",
       "html"
     ],
+    "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "forceCoverageMatch": [
       "**/*.ts"
