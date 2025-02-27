@@ -76,6 +76,12 @@
       "outputs": ["playwright-report/**"],
       "cache": false
     },
+    "playwright:ci": {
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["PLAYWRIGHT_*"],
+      "outputs": ["playwright-report/**"],
+      "cache": false
+    },
     "type-check": {
       "dependsOn": ["^type-check"]
     },
