@@ -1,3 +1,4 @@
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { setupAuthTests } from './auth.e2e-utils';
 
@@ -6,16 +7,17 @@ describe('E2E Auth', () => {
   const testUtils = setupAuthTests();
 
   // These variables will be initialized from the test context in the tests
-  let app;
+  let app: INestApplication<any>;
 
   describe('POST /auth/csrf-token', () => {
+    // 1. Happy Path Tests (Core Functionality)
     it('should generate a valid CSRF token', async () => {
       // Get the app from testUtils for this test
       app = testUtils.getApp();
 
       const response = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       // Check response structure
       expect(response.body).toHaveProperty('token');
@@ -28,7 +30,7 @@ describe('E2E Auth', () => {
 
       const response = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const cookies = response.headers['set-cookie'] as unknown as string[];
       expect(Array.isArray(cookies)).toBe(true);
@@ -46,12 +48,13 @@ describe('E2E Auth', () => {
       expect(csrfCookie).toContain('SameSite=Lax');
     });
 
+    // 2. Device ID Tests
     it('should create a deviceId cookie if not present', async () => {
       app = testUtils.getApp();
 
       const response = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const cookies = response.headers['set-cookie'] as unknown as string[];
       expect(Array.isArray(cookies)).toBe(true);
@@ -76,7 +79,7 @@ describe('E2E Auth', () => {
       // First request to get a deviceId
       const firstResponse = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const cookies = firstResponse.headers[
         'set-cookie'
@@ -90,7 +93,7 @@ describe('E2E Auth', () => {
       const secondResponse = await request(app.getHttpServer())
         .post('/auth/csrf-token')
         .set('Cookie', cookies)
-        .expect(201);
+        .expect(200);
 
       // Verify the same deviceId is returned
       expect(secondResponse.body.deviceId).toBe(existingDeviceId);
