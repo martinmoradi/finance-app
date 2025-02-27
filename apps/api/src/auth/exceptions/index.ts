@@ -6,3 +6,4 @@ export * from './signout-failed.exception';
 export * from './signup-failed.exception';
 export * from './token-generation-failed.exception';
 export * from './token-validation-failed.exception';
+export * from './invalid-deviceid.exception';
