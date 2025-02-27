@@ -104,7 +104,7 @@
       "!**/**/*.fixture.ts",
       "!**/**/*.dto.ts",
       "!**/**/main.ts",
-      "!src/database/__tests__"
+      "!src/database/__tests__/**"
     ],
     "coverageDirectory": "./coverage",
     "coverageReporters": [
