@@ -7,7 +7,6 @@ import { RefreshTokenAuthGuard } from '@/auth/guards/refresh-token-auth.guard';
 import { CookieService } from '@/cookie/cookie.service';
 import { CreateUserDto } from '@/user/dto/create-user.dto';
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -27,7 +26,6 @@ import {
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
-  ApiResponse,
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -47,8 +45,7 @@ export class AuthController {
 
   /* ---------------------- CSRF Token ---------------------- */
   @ApiOperation({ summary: 'Generate CSRF token' })
-  @ApiResponse({
-    status: 201,
+  @ApiOkResponse({
     description: 'Returns a new CSRF token and sets it in cookies',
     schema: {
       type: 'object',
@@ -67,7 +64,7 @@ export class AuthController {
   ): Response {
     const token = this.csrfProvider.generateToken(req, res);
     const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
-    return res.json({
+    return res.status(200).json({
       token,
       deviceId,
     });
@@ -98,20 +95,13 @@ export class AuthController {
     @Req() req: ExpressRequest,
     @Res() res: Response,
   ): Promise<Response> {
-    const deviceId: string = req.cookies['deviceId'];
-    if (!deviceId) {
-      throw new BadRequestException('Device ID is required');
-    }
+    const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
     const [user, tokens] = await this.authService.signup(
       createUserDto,
       deviceId,
     );
-    this.cookieService.setAuthCookies(
-      res,
-      tokens.accessToken,
-      tokens.refreshToken,
-    );
-    return res.json(user);
+    this.cookieService.setAuthCookies(res, tokens);
+    return res.status(201).json(user);
   }
 
   /* ---------------------- Sign in ---------------------- */
@@ -121,8 +111,7 @@ export class AuthController {
       'User successfully authenticated. Access and refresh tokens are set in HTTP-only cookies.',
     type: AuthUserResponse,
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     headers: {
       'Set-Cookie': {
         description:
@@ -166,17 +155,10 @@ export class AuthController {
     @Request() req: ExpressRequest & { user: PublicUser },
     @Res() res: Response,
   ): Promise<Response> {
-    const deviceId: string = req.cookies['deviceId'];
-    if (!deviceId) {
-      throw new BadRequestException('Device ID is required');
-    }
+    const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
     const [user, tokens] = await this.authService.signin(req.user, deviceId);
-    this.cookieService.setAuthCookies(
-      res,
-      tokens.accessToken,
-      tokens.refreshToken,
-    );
-    return res.json(user);
+    this.cookieService.setAuthCookies(res, tokens);
+    return res.status(200).json(user);
   }
 
   /* ---------------------- Sign out ---------------------- */
@@ -199,10 +181,10 @@ export class AuthController {
     @Request() req: ExpressRequest & { user: PublicUser },
     @Res() res: Response,
   ): Promise<void> {
-    const deviceId = req.cookies['deviceId'];
-    await this.authService.signout(req.user, deviceId as string);
+    const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
+    await this.authService.signout(req.user, deviceId);
     this.cookieService.clearAuthCookies(res);
-    res.json({ message: 'Successfully signed out' });
+    res.status(200).json({ message: 'Successfully signed out' });
   }
 
   /* ---------------------- Refresh access token ---------------------- */
@@ -231,17 +213,13 @@ export class AuthController {
     @Request() req: ExpressRequest & { user: PublicUser },
     @Res() res: Response,
   ): Promise<Response> {
-    // Token validation already happens in the RefreshTokenAuthGuard
-    const [user, tokens] = await this.authService.renewAccessToken(req.user);
-
-    // Set new tokens in cookies
-    this.cookieService.setAuthCookies(
-      res,
-      tokens.accessToken,
-      tokens.refreshToken,
+    const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
+    const [user, tokens] = await this.authService.refreshTokens(
+      req.user,
+      deviceId,
     );
-
-    return res.json(user);
+    this.cookieService.setAuthCookies(res, tokens);
+    return res.status(200).json(user);
   }
 
   /* ---------------------- Get authenticated user ---------------------- */
