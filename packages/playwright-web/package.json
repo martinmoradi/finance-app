@@ -4,7 +4,7 @@
     "playwright": "playwright test",
     "playwright:ui": "playwright test --ui",
     "playwright:debug": "playwright test --debug",
-    "playwright:ci": "playwright test --reporter=json | npx playwright-junit --output=playwright-report/junit.xml"
+    "playwright:ci": "playwright test --reporter=json"
   },
   "dependencies": {
     "web": "workspace:*"
