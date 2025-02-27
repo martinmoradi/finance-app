@@ -19,13 +19,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", "src/**/*.ts", "tsconfig.json"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**",
-        "public/dist/**",
-        "*.tsbuildinfo"
-      ]
+      "outputs": ["dist/**", "public/dist/**", "*.tsbuildinfo"]
     },
     "start": {
       "dependsOn": ["^build"],
