@@ -25,7 +25,7 @@ module.exports = {
     '!**/**/main.ts',
     '!src/database/__tests__/**',
   ],
-  coverageDirectory: './coverage',
+  coverageDirectory: '../coverage',
   coverageReporters: ['json', 'lcov', 'text', 'html'],
   forceCoverageMatch: ['**/*.ts'],
 };

@@ -106,7 +106,7 @@
       "!**/**/main.ts",
       "!src/database/__tests__/**"
     ],
-    "coverageDirectory": "./coverage",
+    "coverageDirectory": "../coverage",
     "coverageReporters": [
       "json",
       "lcov",
