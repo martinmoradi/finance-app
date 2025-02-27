@@ -91,20 +91,20 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "src/**/*.(t|j)s",
-      "!**/**/index.ts",
-      "!**/**/*.config.ts",
-      "!src/**/*.test.ts",
-      "!src/**/*.spec.ts",
+      "**/*.(t|j)s",
+      "!**/index.ts",
+      "!**/*.config.ts",
+      "!**/*.test.ts",
+      "!**/*.spec.ts",
       "!e2e/**",
-      "!**/**/__tests__/**/*.helper.ts",
-      "!src/**/__tests__/**/*.helper.ts",
-      "!**/**/tests/**/*.helper.ts",
-      "!**/**/*.fixtures.ts",
-      "!**/**/*.fixture.ts",
-      "!**/**/*.dto.ts",
-      "!**/**/main.ts",
-      "!src/database/__tests__/**"
+      "!**/__tests__/**/*.helper.ts",
+      "!**/__tests__/**/*.helper.ts",
+      "!**/tests/**/*.helper.ts",
+      "!**/*.fixtures.ts",
+      "!**/*.fixture.ts",
+      "!**/*.dto.ts",
+      "!**/main.ts",
+      "!database/__tests__/**"
     ],
     "coverageDirectory": "../coverage",
     "coverageReporters": [
@@ -113,9 +113,9 @@
       "text",
       "html"
     ],
-    "testEnvironment": "node"
-  },
-  "forceCoverageMatch": [
-    "**/*.ts"
-  ]
+    "testEnvironment": "node",
+    "forceCoverageMatch": [
+      "**/*.ts"
+    ]
+  }
 }
