@@ -3,6 +3,8 @@
 A comprehensive personal finance management solution built with enterprise-grade architecture and modern web technologies.
 This project demonstrates professional full-stack development capabilities with a focus on TypeScript, testing practices, and scalable architecture patterns.
 
+[![codecov](https://codecov.io/gh/martinmoradi/finance-app/branch/main/graph/badge.svg)](https://codecov.io/gh/martinmoradi/finance-app)
+
 ## Project Overview
 
 This application helps users manage their personal finances through:

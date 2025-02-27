@@ -17,8 +17,12 @@
     "test:ci": "turbo test:ci",
     "test:watch": "turbo test:watch",
     "test:e2e": "turbo test:e2e",
-    "test:e2e:ui": "turbo test:e2e:ui",
-    "test:e2e:debug": "turbo test:e2e:debug",
+    "test:e2e:ci": "turbo test:e2e:ci",
+    "playwright": "turbo playwright --filter=playwright-web",
+    "playwright:ui": "turbo playwright:ui --filter=playwright-web",
+    "playwright:debug": "turbo playwright:debug --filter=playwright-web",
+    "playwright:ci": "turbo playwright:ci --filter=playwright-web",
+    "combine-coverage": "mkdir -p coverage && npx istanbul-merge --out coverage/coverage-final.json 'app/*/coverage/coverage-final.json' 'packages/*/coverage/coverage-final.json'",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:generate": "turbo db:generate --filter=@repo/database",
     "db:migrate": "turbo db:migrate --filter=@repo/database",
@@ -26,8 +30,6 @@
     "db:studio": "turbo db:studio --filter=@repo/database",
     "db:push": "turbo db:push --filter=@repo/database",
     "db:reset": "turbo db:reset --filter=@repo/database",
-    "test:integration": "turbo test:integration --filter=@repo/database^... --filter=api",
-    "test:integration:ci": "turbo test:integration:ci --filter=@repo/database^... --filter=api",
     "prepare": "husky"
   },
   "devDependencies": {

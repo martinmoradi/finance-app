@@ -1,9 +1,10 @@
 {
   "name": "@repo/playwright-web",
   "scripts": {
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "playwright": "playwright test",
+    "playwright:ui": "playwright test --ui",
+    "playwright:debug": "playwright test --debug",
+    "playwright:ci": "playwright test --reporter=json | npx playwright-junit --output=playwright-report/junit.xml"
   },
   "dependencies": {
     "web": "workspace:*"
