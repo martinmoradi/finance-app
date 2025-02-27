@@ -1,0 +1,42 @@
+export const userFixtures = [
+  {
+    id: '1',
+    email: 'test@example.com',
+    name: 'Test User',
+    password: 'hashedPassword',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '2',
+    email: 'test2@example.com',
+    name: 'Test User 2',
+    password: 'hashedPassword2',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '3',
+    email: 'test3@example.com',
+    name: 'Test User 3',
+    password: 'hashedPassword3',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '4',
+    email: 'test4@example.com',
+    name: 'Test User 4',
+    password: 'hashedPassword4',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '5',
+    email: 'test5@example.com',
+    name: 'Test User 5',
+    password: 'hashedPassword5',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];

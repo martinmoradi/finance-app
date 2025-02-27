@@ -1,5 +1,8 @@
 FROM node:23-slim
 
+# Install required system packages
+RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
+
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -22,7 +25,6 @@ COPY packages/env-validation/package.json ./packages/env-validation/
 COPY packages/types/package.json ./packages/types/
 COPY packages/validation/package.json ./packages/validation/
 COPY packages/database/package.json ./packages/database/
-COPY packages/vitest-config/package.json ./packages/vitest-config/
 
 # Install dependencies
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install

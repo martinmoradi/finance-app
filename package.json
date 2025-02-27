@@ -26,8 +26,8 @@
     "db:studio": "turbo db:studio --filter=@repo/database",
     "db:push": "turbo db:push --filter=@repo/database",
     "db:reset": "turbo db:reset --filter=@repo/database",
-    "test:integration": "turbo test:integration --filter=@repo/database",
-    "test:integration:ci": "turbo test:integration:ci --filter=@repo/database",
+    "test:integration": "turbo test:integration --filter=@repo/database^... --filter=api",
+    "test:integration:ci": "turbo test:integration:ci --filter=@repo/database^... --filter=api",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -35,10 +35,10 @@
     "@commitlint/config-conventional": "^19.7.1",
     "husky": "^9.1.7",
     "prettier": "^3.4.2",
-    "turbo": "^2.4.0",
+    "turbo": "^2.4.2",
     "typescript": "5.7.3"
   },
-  "packageManager": "pnpm@10.2.1",
+  "packageManager": "pnpm@10.4.0",
   "engines": {
     "node": ">=22"
   }

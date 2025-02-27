@@ -78,7 +78,14 @@ services:
       - /app/apps/api/node_modules # Prevent mounting host API node_modules
       - /app/packages/eslint-config/node_modules # Prevent mounting shared package node_modules
       - /app/packages/typescript-config/node_modules
-    command: nodemon --watch apps/api/src -e ts,js --exec pnpm dev --filter api # Hot reload for development
+    command: >
+      nodemon
+        --watch apps/api/src
+        --ext ts,js
+        --delay 2500
+        --legacy-watch
+        --signal SIGTERM
+        --exec "pnpm dev --filter api"
     depends_on:
       postgres:
         condition: service_healthy # Wait for database to be ready

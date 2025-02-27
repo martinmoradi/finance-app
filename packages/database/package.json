@@ -12,9 +12,12 @@
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "clean": "rm -rf dist",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ci": "vitest run --coverage",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:e2e": "TEST=true jest --config ./jest-e2e.config.ts",
+    "test:e2e:watch": "TEST=true jest --config ./jest-e2e.config.ts --watch",
+    "test:ci": "jest --coverage",
+    "test:e2e:ci": "jest --config ./jest-e2e.config.ts --coverage",
     "test:db:push": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test drizzle-kit push --force",
     "test:db:seed": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test tsx src/seed.ts",
     "test:integration": "pnpm test:db:push && pnpm test:db:seed && TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test vitest run -c ./vitest.integration.config.mjs",
@@ -25,8 +28,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "db:push": "drizzle-kit push",
-    "db:reset": "drizzle-kit drop --force && drizzle-kit generate && drizzle-kit migrate && tsx src/seed.ts"
+    "test:db:studio": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test drizzle-kit studio",
+    "db:clean": "tsx src/clean.ts",
+    "test:db:clean": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test tsx src/clean.ts",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@repo/env-validation": "workspace:*",
@@ -36,16 +41,35 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@repo/vitest-config": "workspace:*",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.13.1",
     "@types/pg": "^8.11.11",
-    "@vitest/coverage-v8": "^3.0.5",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.30.4",
     "drizzle-seed": "^0.3.1",
     "eslint": "^9.19.0",
+    "jest": "^29.7.0",
     "tsup": "^8.3.6",
-    "tsx": "^4.19.2",
-    "vitest": "^3.0.5"
+    "tsx": "^4.19.2"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testRegex": "src/.*\\.(spec|test)\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.(t|j)s"
+    ],
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node"
   }
 }
