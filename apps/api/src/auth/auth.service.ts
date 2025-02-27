@@ -260,7 +260,10 @@ export class AuthService {
       this.validateDeviceId(deviceId);
 
       // 2. Delete session
-      await this.sessionService.deleteSession(user.id, deviceId);
+      await this.sessionService.deleteSession({
+        userId: user.id,
+        deviceId,
+      });
 
       // 3. Log success
       this.logger.info('User signout successful', {
@@ -380,7 +383,7 @@ export class AuthService {
       // 2. Verify user exists and has valid session
       const [databaseUser] = await Promise.all([
         this.userService.findByIdOrThrow(userId),
-        this.sessionService.verifySession(userId, deviceId),
+        this.sessionService.verifySession({ userId, deviceId }),
       ]);
 
       // 3. Log success and return sanitized user
@@ -442,10 +445,10 @@ export class AuthService {
       const databaseUser = await this.userService.findByIdOrThrow(userId);
 
       // 3. Validate session
-      const session = await this.sessionService.getValidSession(
+      const session = await this.sessionService.getValidSession({
         userId,
         deviceId,
-      );
+      });
 
       // 4. Check if token has been rotated
       const payload: JwtPayload = this.jwtService.decode(refreshToken);
