@@ -1,7 +1,7 @@
 import { BaseRepository } from '@/database/base.repository';
 import { Injectable } from '@nestjs/common';
 import { and, eq, lt, sessions, SQL } from '@repo/database';
-import { DatabaseSession } from '@repo/types';
+import { DatabaseSession, SessionUpdate } from '@repo/types';
 import { CreateSession } from '@repo/validation';
 
 /**
@@ -45,16 +45,13 @@ export class SessionRepository extends BaseRepository {
   }
 
   /**
-   * Updates the lastUsedAt timestamp for a specific session.
+   * Refreshes the lastUsedAt timestamp for a specific session.
    */
-  async updateLastUsedAt(
-    userId: string,
-    deviceId: string,
-  ): Promise<DatabaseSession | null> {
+  async update(session: SessionUpdate): Promise<DatabaseSession | null> {
     const [updatedSession] = await this.db
       .update(sessions)
-      .set({ lastUsedAt: new Date() })
-      .where(this.getSessionWhereClause(userId, deviceId))
+      .set(session)
+      .where(this.getSessionWhereClause(session.userId!, session.deviceId!))
       .returning();
     return updatedSession ?? null;
   }
