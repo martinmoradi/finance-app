@@ -91,6 +91,7 @@ describe('Database Schema', () => {
           userId: string;
           deviceId: string;
           token: string;
+          tokenId: string;
           lastUsedAt?: Date;
           expiresAt: Date;
           createdAt?: Date;

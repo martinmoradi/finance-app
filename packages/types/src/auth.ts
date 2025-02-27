@@ -1,9 +1,6 @@
 import { PublicUser } from '@/user';
 
-export type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
-};
+export type AuthTokens = [accessToken: string, refreshToken: string];
 
 export type SigninCredentials = {
   email: string;
@@ -12,6 +9,7 @@ export type SigninCredentials = {
 
 export type JwtPayload = {
   sub: string;
+  jti?: string;
 };
 
 export type AuthenticatedUser = PublicUser & AuthTokens;

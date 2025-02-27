@@ -24,6 +24,7 @@ export const sessions = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     deviceId: text('device_id').notNull(),
     token: text('token').notNull(),
+    tokenId: text('token_id').notNull(),
     lastUsedAt: timestamp('last_used_at').notNull().defaultNow(),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
