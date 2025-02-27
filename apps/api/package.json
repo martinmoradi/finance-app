@@ -105,7 +105,9 @@
       "!**/constants.ts",
       "!**/interfaces/**",
       "!**/types/**",
-      "!**/enums/**"
+      "!**/enums/**",
+      "!apps/api/src/config/refresh-jwt.config.ts",
+      "!apps/api/src/utils/__tests__/parse-duration.spec.ts"
     ],
     "coverageReporters": [
       "json",

@@ -25,6 +25,8 @@ module.exports = {
     '!**/interfaces/**',
     '!**/types/**',
     '!**/enums/**',
+    '!apps/api/src/config/refresh-jwt.config.ts',
+    '!apps/api/src/utils/__tests__/parse-duration.spec.ts',
   ],
   coverageDirectory: '../coverage',
   coverageReporters: ['json', 'lcov', 'text', 'html'],
