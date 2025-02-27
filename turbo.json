@@ -49,14 +49,16 @@
     },
     "test:ci": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "cache": false
     },
     "test:e2e": {
       "dependsOn": ["^build"]
     },
     "test:e2e:ci": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "cache": false
     },
     "playwright": {
       "dependsOn": ["^build"],
