@@ -5,7 +5,8 @@ import { CreateSession } from '@repo/validation';
 export const mockSessionData = {
   userId: 'user123',
   deviceId: 'device123',
-  refreshToken: 'refresh123',
+  token: 'refresh123',
+  tokenId: 'token123',
   expiresAt: new Date('2025-01-15'),
 } as const;
 
@@ -13,7 +14,8 @@ export const mockSessionData = {
 export const mockDatabaseSessionData: CreateSession = {
   userId: mockSessionData.userId,
   deviceId: mockSessionData.deviceId,
-  token: `hashed_${mockSessionData.refreshToken}`,
+  token: `hashed_${mockSessionData.token}`,
+  tokenId: mockSessionData.tokenId,
   expiresAt: mockSessionData.expiresAt,
 };
 
@@ -25,6 +27,7 @@ export function createMockSession(
     userId: mockSessionData.userId,
     deviceId: mockSessionData.deviceId,
     token: mockDatabaseSessionData.token,
+    tokenId: mockSessionData.tokenId,
     expiresAt: mockSessionData.expiresAt,
     createdAt: now,
     lastUsedAt: now,
