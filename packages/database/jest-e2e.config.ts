@@ -11,7 +11,8 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   collectCoverageFrom: [
-    'src/**/*.(t|j)s',
+    'src/schema/**/*.(t|j)s',
+    '!**/**/index.ts',
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
     '!src/e2e/**',

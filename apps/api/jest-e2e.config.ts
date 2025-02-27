@@ -11,6 +11,8 @@ module.exports = {
   },
   collectCoverageFrom: [
     'src/**/*.(t|j)s',
+    '!**/**/index.ts',
+    '!**/**/*.config.ts',
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
     '!e2e/**',

@@ -2,7 +2,7 @@ import { AppModule } from '@/app.module';
 import { TestDatabaseService } from '@/database/__tests__/test-database.service';
 import { SessionService } from '@/session/session.service';
 import { UserService } from '@/user/user.service';
-import { setupTestApp } from '@/utils/test-setup';
+import { setupTestApp } from 'e2e/test-setup';
 import { INestApplication } from '@nestjs/common';
 import { TestingModule } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
