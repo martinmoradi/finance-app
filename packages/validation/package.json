@@ -50,9 +50,23 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "src/**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "!**/**/index.ts",
+      "!src/**/*.test.ts",
+      "!src/**/*.spec.ts",
+      "!src/e2e/**",
+      "!e2e/**",
+      "!**/**/__tests__/**/*.helper.ts",
+      "!src/**/__tests__/**/*.helper.ts",
+      "!**/**/tests/**/*.helper.ts"
     ],
     "coverageDirectory": "./coverage",
+    "coverageReporters": [
+      "json",
+      "lcov",
+      "text",
+      "html"
+    ],
     "testEnvironment": "node"
   }
 }

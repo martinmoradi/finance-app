@@ -9,4 +9,22 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  collectCoverageFrom: [
+    'src/**/*.(t|j)s',
+    '!**/**/index.ts',
+    '!**/**/*.config.ts',
+    '!src/**/*.test.ts',
+    '!src/**/*.spec.ts',
+    '!e2e/**',
+    '!**/**/__tests__/**/*.helper.ts',
+    '!src/**/__tests__/**/*.helper.ts',
+    '!**/**/tests/**/*.helper.ts',
+    '!**/**/*.fixtures.ts',
+    '!**/**/*.fixture.ts',
+    '!**/**/*.dto.ts',
+    '!**/**/main.ts',
+    '!src/database/__tests__',
+  ],
+  coverageDirectory: './coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'html'],
 };

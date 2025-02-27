@@ -1,0 +1,32 @@
+coverage:
+  status:
+    project:
+      default:
+        # Overall project target
+        target: 80%
+        threshold: 2%
+      unit:
+        flags:
+          - unit
+        target: 85%
+      e2e:
+        flags:
+          - e2e
+        target: 60%
+
+flags:
+  unit:
+    paths:
+      - apps/
+      - packages/
+    carryforward: true
+  e2e:
+    paths:
+      - apps/
+      - packages/
+    carryforward: true
+
+comment:
+  layout: 'reach, diff, flags, files'
+  behavior: default
+  require_changes: false

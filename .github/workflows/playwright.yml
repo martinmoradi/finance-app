@@ -1,4 +1,4 @@
-name: E2E tests
+name: Playwright Tests
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  e2e-tests:
-    name: End-to-End Tests
+  playwright-tests:
+    name: Playwright Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -79,6 +79,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Install Playwright package
+      - name: Install Playwright
+        run: pnpm add -D @playwright/test --filter=playwright-web
+
+      # Install Playwright Browsers
+      - name: Install Playwright Browsers
+        run: pnpm --filter=playwright-web exec playwright install --with-deps
+
         # Prepare database schema
       - name: Create database schema
         run: pnpm --filter=@repo/database test:db:push:ci
@@ -104,23 +112,23 @@ jobs:
 
       # Run the E2E tests
       - name: Run E2E Tests
-        run: pnpm test:e2e:ci
+        run: pnpm playwright:ci
 
       # Combine coverage reports
       - name: Combine coverage reports
         run: pnpm combine-coverage
 
-      # Upload coverage reports
-      - name: Upload coverage reports
+      # Upload test artifacts on failure
+      - name: Upload Playwright report
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: .coverage/
-          retention-days: 30
+          name: playwright-report
+          path: playwright-report/
 
       # Upload coverage reports to Codecov
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: e2e
+          flags: playwright

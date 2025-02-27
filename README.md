@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/martinmoradi/finance-app/branch/main/graph/badge.svg)](https://codecov.io/gh/martinmoradi/finance-app)
+
 # Personal Finance Application
 
 A comprehensive personal finance management solution built with enterprise-grade architecture and modern web technologies.
