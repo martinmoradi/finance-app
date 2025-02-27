@@ -29,7 +29,7 @@ describe('AuthService', () => {
     jest
       .mocked(verify)
       .mockImplementation((hash, plain) =>
-        Promise.resolve(hash === `hashed_${plain}`),
+        Promise.resolve(hash === `hashed_${String(plain)}`),
       );
   });
 

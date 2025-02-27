@@ -19,7 +19,9 @@ describe('AuthService', () => {
     jest.clearAllMocks();
     jest
       .mocked(hash)
-      .mockImplementation((value) => Promise.resolve(`hashed_${value}`));
+      .mockImplementation((value) =>
+        Promise.resolve(`hashed_${String(value)}`),
+      );
 
     // Mock UUID generation for consistent testing
     jest

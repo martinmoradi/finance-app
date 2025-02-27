@@ -8,15 +8,21 @@ import { AuthController } from '@/auth/auth.controller';
 import { AuthService } from '@/auth/auth.service';
 import { CsrfGuard } from '@/auth/guards/csrf.guard';
 
+interface CsrfProvider {
+  generateToken: () => string;
+}
+
 export interface TestContext {
   controller: AuthController;
   mockAuthService: jest.Mocked<AuthService>;
   mockCookieService: jest.Mocked<CookieService>;
-  mockCsrfProvider: jest.Mocked<any>;
+  mockCsrfProvider: jest.Mocked<CsrfProvider>;
   mockLoggerService: jest.Mocked<LoggerService>;
 }
 
-export const createMockRequest = (cookies: Record<string, string> = {}) => {
+export const createMockRequest = (
+  cookies: Record<string, string> = {},
+): Request => {
   return {
     cookies,
     signedCookies: {},
@@ -29,7 +35,7 @@ export const createMockRequest = (cookies: Record<string, string> = {}) => {
 export const createMockRequestWithUser = (
   cookies: Record<string, string> = {},
   user: PublicUser,
-) => {
+): Request & { user: PublicUser } => {
   return {
     cookies,
     signedCookies: {},
@@ -40,7 +46,7 @@ export const createMockRequestWithUser = (
   } as unknown as Request & { user: PublicUser };
 };
 
-export const createMockResponse = () => {
+export const createMockResponse = (): Response => {
   return {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
@@ -66,7 +72,7 @@ export const setupTestModule = async (): Promise<TestContext> => {
     setDeviceIdCookie: jest.fn(),
   } as unknown as jest.Mocked<CookieService>;
 
-  const mockCsrfProvider = {
+  const mockCsrfProvider: CsrfProvider = {
     generateToken: jest.fn().mockReturnValue('mock-csrf-token'),
   };
 
@@ -109,7 +115,7 @@ export const setupTestModule = async (): Promise<TestContext> => {
     controller,
     mockAuthService,
     mockCookieService,
-    mockCsrfProvider,
+    mockCsrfProvider: mockCsrfProvider as jest.Mocked<CsrfProvider>,
     mockLoggerService,
   };
 };
