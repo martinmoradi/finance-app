@@ -87,6 +87,12 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm --filter=playwright-web exec playwright install --with-deps
 
+        # Prepare database schema
+      - name: Create database schema
+        run: pnpm --filter=@repo/database test:db:push:ci
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
+
       # Split the start command into separate processes
       - name: Start API Server
         run: pnpm --filter=api start &
