@@ -28,6 +28,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/seed.ts",
     "db:studio": "drizzle-kit studio",
+    "test:db:studio": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test drizzle-kit studio",
+    "db:clean": "tsx src/clean.ts",
+    "test:db:clean": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test tsx src/clean.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
