@@ -1,5 +1,6 @@
 import { AuthService } from '@/auth/auth.service';
-import { AuthenticationFailedException } from '@/auth/exceptions/authentication-failed.exception';
+import { InvalidDeviceIdException } from '@/auth/exceptions/invalid-deviceid.exception';
+import { TokenValidationFailedException } from '@/auth/exceptions/token-validation-failed.exception';
 import jwtConfig from '@/config/jwt.config';
 import {
   CookieContents,
@@ -15,18 +16,14 @@ import { Request } from 'express';
 import { Strategy } from 'passport-jwt';
 
 /**
- * Express Request type extension to ensure type safety for cookie-based access token.
- * Required for proper typing in the validate method.
+ * Request type with cookie-based access token for validate method typing
  */
 interface AccessTokenRequest extends Request {
   cookies: Pick<CookieContents, 'deviceId' | 'accessToken'>;
 }
 
 /**
- * Passport strategy for handling JWT access token authentication.
- * Validates incoming JWTs and extracts user information for protected routes.
- *
- * @implements {PassportStrategy}
+ * JWT access token authentication strategy
  */
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(
@@ -34,11 +31,7 @@ export class AccessTokenStrategy extends PassportStrategy(
   'jwt-access',
 ) {
   /**
-   * Creates an instance of AccessTokenStrategy.
-   * Configures JWT validation options using environment-specific settings.
-   *
-   * @param jwtConfiguration - JWT configuration including secret key
-   * @param authService - Service handling authentication logic
+   * Configures JWT validation with environment settings
    */
   constructor(
     @Inject(jwtConfig.KEY)
@@ -58,58 +51,42 @@ export class AccessTokenStrategy extends PassportStrategy(
   }
 
   /**
-   * Validates the JWT payload and retrieves the associated user.
-   * Called by Passport after token is verified.
-   *
-   * @param payload - Decoded JWT payload containing user information
-   * @returns Promise resolving to user data if valid
-   * @throws {UnauthorizedException} If user cannot be validated
+   * Validates JWT payload and retrieves user data
+   * @throws {UnauthorizedException} When authentication fails
    */
   async validate(
     request: AccessTokenRequest,
     payload: JwtPayload,
   ): Promise<PublicUser> {
+    // 1. Get the user ID and device ID
     const userId = payload.sub;
     const deviceId = request.cookies['deviceId'];
 
-    this.logger.debug('Validating access token', payload);
-
-    if (!deviceId) {
-      this.logger.warn('Missing deviceId cookie', { userId });
-      throw new UnauthorizedException('Authentication failed');
-    }
-
     try {
+      // 2. Validate the device ID
+      this.authService.validateDeviceId(deviceId);
+
+      // 3. Validate the access token and get the public user
       const publicUser = await this.authService.validateAccessToken(
         userId,
         deviceId,
       );
-      if (!publicUser) {
-        this.logger.warn('Invalid access token', { userId, deviceId });
-        throw new UnauthorizedException('Authentication failed');
-      }
 
+      // 4. Log the successful validation and return the public user
       this.logger.info('Access token validated', publicUser);
       return publicUser;
     } catch (error) {
-      if (error instanceof AuthenticationFailedException) {
-        this.logger.warn(
-          'Access token validation failed: authentication error',
-          {
-            userId,
-            deviceId,
-            errorType: error.constructor.name,
-            message: error.message,
-          },
-        );
-      } else {
+      // Only log errors that are not handled by the auth service
+      if (
+        !(error instanceof InvalidDeviceIdException) &&
+        !(error instanceof TokenValidationFailedException)
+      ) {
         this.logger.error('Access token validation failed', {
           userId,
           deviceId,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-
       // Always return a generic UnauthorizedException to the client
       throw new UnauthorizedException('Authentication failed');
     }

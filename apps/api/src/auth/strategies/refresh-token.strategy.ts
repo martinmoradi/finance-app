@@ -1,5 +1,8 @@
 import { AuthService } from '@/auth/auth.service';
-import { AuthenticationFailedException } from '@/auth/exceptions';
+import {
+  InvalidDeviceIdException,
+  TokenValidationFailedException,
+} from '@/auth/exceptions';
 import refreshJwtConfig from '@/config/refresh-jwt.config';
 import {
   CookieContents,
@@ -82,78 +85,40 @@ export class RefreshTokenStrategy extends PassportStrategy(
     const userId = payload.sub;
     const refreshToken = req.cookies['refreshToken'];
     const deviceId = req.cookies['deviceId'];
-
-    this.logger.debug('Attempting refresh token validation', {
-      userId,
-      deviceId,
-    });
-
-    if (!refreshToken) {
-      this.logger.warn('Authentication failed: missing refresh token', {
-        userId,
-      });
-      throw new UnauthorizedException('Authentication failed');
-    }
-
-    if (!deviceId) {
-      this.logger.warn('Authentication failed: missing device ID', {
-        userId,
-      });
-      throw new UnauthorizedException('Authentication failed');
-    }
-
     try {
+      // 1. Validate device ID
+      this.authService.validateDeviceId(deviceId);
+
+      // 2. Validate refresh token
+      if (!refreshToken) {
+        this.logger.warn('Authentication failed: invalid refresh token', {
+          userId,
+          deviceId,
+        });
+        throw new InvalidRefreshTokenException();
+      }
+
+      // 3. Validate the refresh token
       const publicUser = await this.authService.validateRefreshToken(
         userId,
         refreshToken,
         deviceId,
       );
 
-      if (!publicUser) {
-        this.logger.warn('Authentication failed: invalid refresh token', {
-          userId,
-          deviceId,
-        });
-        throw new UnauthorizedException('Authentication failed');
-      }
-
-      this.logger.info('Refresh token validation successful', { publicUser });
-
       return publicUser;
     } catch (error) {
-      if (error instanceof InvalidRefreshTokenException) {
-        this.logger.warn('Authentication failed: invalid refresh token', {
+      // Only log errors that are not handled by the auth service
+      if (
+        !(error instanceof TokenValidationFailedException) &&
+        !(error instanceof InvalidRefreshTokenException) &&
+        !(error instanceof InvalidDeviceIdException)
+      ) {
+        this.logger.error('Refresh token validation failed', {
           userId,
           deviceId,
-          errorType: error.constructor.name,
-          message: error.message,
-        });
-      } else if (error instanceof AuthenticationFailedException) {
-        this.logger.warn(
-          'Authentication failed: general authentication error',
-          {
-            userId,
-            deviceId,
-            errorType: error.constructor.name,
-            message: error.message,
-          },
-        );
-      } else {
-        // Unexpected errors get logged as errors with full details
-        this.logger.error('Authentication failed: unexpected error', {
-          userId,
-          deviceId,
-          error:
-            error instanceof Error
-              ? {
-                  name: error.constructor.name,
-                  message: error.message,
-                  stack: error.stack,
-                }
-              : 'Unknown error',
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-
       // Always return a generic UnauthorizedException to the client
       throw new UnauthorizedException('Authentication failed');
     }

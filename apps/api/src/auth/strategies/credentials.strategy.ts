@@ -1,4 +1,5 @@
 import { AuthService } from '@/auth/auth.service';
+import { AuthenticationFailedException } from '@/auth/exceptions/authentication-failed.exception';
 import { LoggerService } from '@/logger/logger.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
@@ -40,33 +41,27 @@ export class CredentialsStrategy extends PassportStrategy(
    * @throws {UnauthorizedException} If credentials are invalid
    */
   async validate(email: string, password: string): Promise<PublicUser> {
-    this.logger.debug('Attempting credential validation', { email });
     try {
+      // 1. Validate credentials
       const user = await this.authService.validateCredentials(email, password);
-      if (!user) {
-        this.logger.warn('Authentication failed: no user found', { email });
-        throw new UnauthorizedException();
-      }
 
-      // Log success with minimal user info
+      // 2. Log success and return user
       this.logger.info('Authentication successful', {
         userId: user.id,
         email: user.email,
       });
-
       return user;
     } catch (error) {
-      // Different log levels based on error type
-      if (error instanceof UnauthorizedException) {
-        this.logger.warn('Authentication failed: invalid credentials', {
+      // Only log errors that are not handled by the auth service
+      if (!(error instanceof AuthenticationFailedException)) {
+        const unknownError = error as Error;
+        this.logger.warn('Credential validation failed', {
           email,
-          errorType: error.constructor.name,
+          errorType: unknownError.constructor.name,
         });
-        throw error;
       }
 
-      // Unexpected errors get logged as errors
-      this.logger.error('Authentication failed: unexpected error', error);
+      // Always throw UnauthorizedException to the client
       throw new UnauthorizedException('Authentication failed');
     }
   }
