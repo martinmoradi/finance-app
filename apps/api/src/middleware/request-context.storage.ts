@@ -7,7 +7,9 @@ interface RequestContext {
 
 export class RequestContextStorage {
   private static storage = new AsyncLocalStorage<RequestContext>();
-  private static isTestEnvironment = process.env.NODE_ENV === 'test';
+  private static isTestEnvironment = ['test', 'CI'].includes(
+    process.env.NODE_ENV || '',
+  );
   private static defaultTestRequestId = crypto.randomUUID();
 
   static getRequestId(): string {
