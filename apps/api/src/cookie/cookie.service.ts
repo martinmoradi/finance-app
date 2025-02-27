@@ -1,6 +1,7 @@
 import { parseDuration } from '@/utils/parse-duration';
 import { Injectable } from '@nestjs/common';
 import { getRequiredEnvVar } from '@repo/env-validation';
+import { AuthTokens } from '@repo/types';
 import * as crypto from 'crypto';
 import { CookieOptions, Request, Response } from 'express';
 
@@ -34,38 +35,29 @@ export type RequestWithCookies = Request & {
 
 @Injectable()
 export class CookieService {
-  // Environment checks (basic utilities)
   /**
-   * Checks if the current environment is production.
-   *
-   * @returns True if the environment is production, false otherwise
+   * Checks if environment is production
    */
   get isProd(): boolean {
     return getRequiredEnvVar('NODE_ENV') === 'production';
   }
 
   /**
-   * Checks if the current environment is development.
-   *
-   * @returns True if the environment is development, false otherwise
+   * Checks if environment is development
    */
   get isDev(): boolean {
     return getRequiredEnvVar('NODE_ENV') === 'development';
   }
 
-  // Device ID operations
   /**
-   * Generates a random device ID.
-   *
-   * @returns A random UUID
+   * Generates a random device ID
    */
   generateDeviceId(): string {
     return crypto.randomUUID();
   }
 
   /**
-   * Gets the common cookie options based on environment
-   * @returns Cookie options appropriate for the current environment
+   * Gets common cookie options for current environment
    */
   private getCookieOptions(): CookieOptions {
     return {
@@ -76,10 +68,9 @@ export class CookieService {
   }
 
   /**
-   * Sets the device ID cookie.
-   *
-   * @param res - Express response object
-   * @param deviceId - The device ID to set
+   * Sets device ID cookie
+   * @param res Express response
+   * @param deviceId Device ID to set
    */
   setDeviceIdCookie(res: Response, deviceId: string): void {
     const options: CookieOptions = {
@@ -90,13 +81,9 @@ export class CookieService {
   }
 
   /**
-   * Get or create a device ID cookie.
-   * If the device ID cookie is not present, generate a new one and set it in the response.
-   * Otherwise, return the existing device ID from the cookie.
-   *
-   * @param req - Express request object
-   * @param res - Express response object
-   * @returns The device ID
+   * Gets existing device ID or creates new one
+   * @param req Express request
+   * @param res Express response
    */
   getOrCreateDeviceId(req: Request, res: Response): string {
     if (!req.cookies['deviceId']) {
@@ -107,19 +94,14 @@ export class CookieService {
     return req.cookies['deviceId'] as string;
   }
 
-  // Authentication cookie operations
   /**
-   * Sets the access and refresh token cookies.
-   *
-   * @param res - Express response object
-   * @param accessToken - The access token to set
-   * @param refreshToken - The refresh token to set
+   * Sets auth token cookies
+   * @param res Express response
+   * @param tokens Auth tokens to set
    */
-  setAuthCookies(
-    res: Response,
-    accessToken: string,
-    refreshToken: string,
-  ): void {
+  setAuthCookies(res: Response, tokens: AuthTokens): void {
+    const [accessToken, refreshToken] = tokens;
+
     // Set access token cookie
     const accessTokenOptions: CookieOptions = {
       ...this.getCookieOptions(),
@@ -137,10 +119,8 @@ export class CookieService {
   }
 
   /**
-   * Clears all authentication-related cookies.
-   * Removes deviceId, CSRF token, access token, and refresh token.
-   *
-   * @param res - Express response object
+   * Clears all auth cookies
+   * @param res Express response
    */
   clearAuthCookies(res: Response): void {
     const options: CookieOptions = this.getCookieOptions();
@@ -153,10 +133,9 @@ export class CookieService {
   }
 
   /**
-   * Extracts a token from cookies by name with type safety
-   * @param req - Express request object with cookies
-   * @param tokenName - Name of the cookie to extract
-   * @returns The strongly typed token string or null if not found
+   * Extracts typed token from cookies
+   * @param req Request with cookies
+   * @param tokenName Cookie name to extract
    */
   extractTokenFromCookie<T extends TokenCookieName>(
     req: RequestWithCookies,
