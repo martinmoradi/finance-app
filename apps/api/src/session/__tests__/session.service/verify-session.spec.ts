@@ -14,9 +14,15 @@ describe('SessionService', () => {
       const getValidSessionSpy = jest.spyOn(service, 'getValidSession');
       getValidSessionSpy.mockResolvedValue(mockSession);
 
-      await service.verifySession(userId, deviceId);
+      await service.verifySession({
+        userId,
+        deviceId,
+      });
 
-      expect(getValidSessionSpy).toHaveBeenCalledWith(userId, deviceId);
+      expect(getValidSessionSpy).toHaveBeenCalledWith({
+        userId,
+        deviceId,
+      });
     });
 
     it('should return void when session is valid', async () => {
@@ -28,7 +34,10 @@ describe('SessionService', () => {
       jest.spyOn(service, 'getValidSession').mockResolvedValue(mockSession);
 
       // The method should return void (undefined)
-      const result = await service.verifySession(userId, deviceId);
+      const result = await service.verifySession({
+        userId,
+        deviceId,
+      });
 
       expect(result).toBeUndefined();
     });
@@ -46,12 +55,18 @@ describe('SessionService', () => {
       jest.spyOn(service, 'getValidSession').mockRejectedValue(validationError);
 
       // Expect the same exception to be propagated
-      await expect(service.verifySession(userId, deviceId)).rejects.toThrow(
-        validationError,
-      );
+      await expect(
+        service.verifySession({
+          userId,
+          deviceId,
+        }),
+      ).rejects.toThrow(validationError);
 
       try {
-        await service.verifySession(userId, deviceId);
+        await service.verifySession({
+          userId,
+          deviceId,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBe(validationError);
