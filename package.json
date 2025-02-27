@@ -22,7 +22,6 @@
     "playwright:ui": "turbo playwright:ui --filter=@repo/playwright-web",
     "playwright:debug": "turbo playwright:debug --filter=@repo/playwright-web",
     "playwright:ci": "turbo playwright:ci --filter=@repo/playwright-web",
-    "combine-coverage": "mkdir -p coverage && npx istanbul-merge --out coverage/coverage-final.json 'app/*/coverage/coverage-final.json' 'packages/*/coverage/coverage-final.json'",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:generate": "turbo db:generate --filter=@repo/database",
     "db:migrate": "turbo db:migrate --filter=@repo/database",

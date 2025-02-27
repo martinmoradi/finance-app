@@ -91,28 +91,34 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "src/**/*.(t|j)s",
-      "!**/**/index.ts",
-      "!**/**/*.config.ts",
-      "!src/**/*.test.ts",
-      "!src/**/*.spec.ts",
-      "!e2e/**",
-      "!**/**/__tests__/**/*.helper.ts",
-      "!src/**/__tests__/**/*.helper.ts",
-      "!**/**/tests/**/*.helper.ts",
-      "!**/**/*.fixtures.ts",
-      "!**/**/*.fixture.ts",
-      "!**/**/*.dto.ts",
-      "!**/**/main.ts",
-      "!src/database/__tests__"
+      "**/*.(t|j)s",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!**/config/**/*.ts",
+      "!**/*.config.ts",
+      "!**/index.ts",
+      "!**/*.{spec,test,e2e-spec}.ts",
+      "!**/__tests__/**",
+      "!**/test/**",
+      "!**/*.{fixture,fixtures,dto,mock}.ts",
+      "!**/main.ts",
+      "!**/constants.ts",
+      "!**/interfaces/**",
+      "!**/types/**",
+      "!**/enums/**",
+      "!apps/api/src/config/refresh-jwt.config.ts",
+      "!apps/api/src/utils/__tests__/parse-duration.spec.ts"
     ],
-    "coverageDirectory": "./coverage",
     "coverageReporters": [
       "json",
       "lcov",
       "text",
       "html"
     ],
-    "testEnvironment": "node"
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node",
+    "forceCoverageMatch": [
+      "**/*.ts"
+    ]
   }
 }
