@@ -1,3 +1,4 @@
+import { RequestContextStorage } from '@/middleware/request-context.storage';
 import { Injectable, Logger } from '@nestjs/common';
 import { getRequiredEnvVar } from '@repo/env-validation';
 
@@ -38,7 +39,7 @@ export class LoggerService {
   debug(message: string, context?: LogContext): void {
     this.logger.debug(
       `${this.prefix} ${message}`,
-      this.sanitizeContext(context),
+      this.enhanceContextWithRequestId(context),
     );
   }
 
@@ -46,7 +47,10 @@ export class LoggerService {
    * Info level for general application flow
    */
   info(message: string, context?: LogContext): void {
-    this.logger.log(`${this.prefix} ${message}`, this.sanitizeContext(context));
+    this.logger.log(
+      `${this.prefix} ${message}`,
+      this.enhanceContextWithRequestId(context),
+    );
   }
 
   /**
@@ -62,7 +66,7 @@ export class LoggerService {
   warn(message: string, context?: LogContext): void {
     this.logger.warn(
       `${this.prefix} ${message}`,
-      this.sanitizeContext(context),
+      this.enhanceContextWithRequestId(context),
     );
   }
 
@@ -93,7 +97,7 @@ export class LoggerService {
     this.logger.error(
       `${this.prefix} ${message}`,
       error instanceof Error ? error.stack : undefined,
-      this.sanitizeContext(errorContext),
+      this.enhanceContextWithRequestId(errorContext),
     );
   }
 
@@ -124,8 +128,22 @@ export class LoggerService {
     this.logger.error(
       `${this.prefix} [FATAL] ${message}`,
       error instanceof Error ? error.stack : undefined,
-      this.sanitizeContext(errorContext),
+      this.enhanceContextWithRequestId(errorContext),
     );
+  }
+  /**
+   * Enhances the context with the request ID if available
+   */
+  private enhanceContextWithRequestId(
+    context?: LogContext,
+  ): LogContext | undefined {
+    const requestId = RequestContextStorage.getRequestId();
+    if (!requestId) return this.sanitizeContext(context);
+
+    return this.sanitizeContext({
+      requestId,
+      ...context,
+    });
   }
 
   /**
