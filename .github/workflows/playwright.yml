@@ -1,4 +1,4 @@
-name: E2E tests
+name: Playwright Tests
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  e2e-tests:
-    name: End-to-End Tests
+  playwright-tests:
+    name: Playwright Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
