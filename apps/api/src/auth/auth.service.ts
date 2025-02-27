@@ -2,10 +2,12 @@ import {
   AuthenticationFailedException,
   AuthRepositoryException,
   InvalidCredentialsException,
+  InvalidDeviceIdException,
   SignoutFailedException,
   SignupFailedException,
   TokenGenerationFailedException,
   TokenType,
+  TokenValidationFailedException,
 } from '@/auth/exceptions/';
 import { SigninFailedException } from '@/auth/exceptions/signin-failed.exception';
 import refreshJwtConfig from '@/config/refresh-jwt.config';
@@ -13,7 +15,9 @@ import { LoggerService } from '@/logger/logger.service';
 import {
   InvalidRefreshTokenException,
   SessionCreationFailedException,
+  SessionExpiredException,
   SessionLimitExceededException,
+  SessionRefreshFailedException,
   SessionRepositoryException,
   SessionValidationException,
 } from '@/session/exceptions';
@@ -22,6 +26,7 @@ import { CreateUserDto } from '@/user/dto/create-user.dto';
 import {
   UserAlreadyExistsException,
   UserNotFoundException,
+  UserRepositoryException,
 } from '@/user/exceptions';
 import { UserService } from '@/user/user.service';
 import { parseDuration } from '@/utils/parse-duration';
@@ -32,8 +37,7 @@ import { AuthTokens, DatabaseUser, JwtPayload, PublicUser } from '@repo/types';
 import { hash, verify } from 'argon2';
 
 /**
- * Handles authentication operations including user registration, login, token management,
- * and session handling. Manages JWT tokens and session validation.
+ * Service handling authentication, user sessions, and token management
  */
 @Injectable()
 export class AuthService {
@@ -51,90 +55,81 @@ export class AuthService {
   /* -------------- Public Authentication Methods -------------- */
 
   /**
-   * Registers a new user with email/password and creates an initial session
-   * @throws {UserAlreadyExistsException} If email is already registered
-   * @throws {SignupFailedException} For any registration failure after email check
+   * Registers new user and creates initial session
+   * @throws {UserAlreadyExistsException} Email already registered
+   * @throws {SignupFailedException} Registration process failed
    */
   async signup(
     createUserDto: CreateUserDto,
     deviceId: string,
   ): Promise<[PublicUser, AuthTokens]> {
-    try {
-      const { password, ...userData } = createUserDto;
-      this.logger.debug('User signup attempt...', {
-        email: userData.email,
-        deviceId,
-      });
+    const { password, ...userData } = createUserDto;
 
-      // Check if email is already registered
+    this.logger.debug('Starting user signup', {
+      email: createUserDto.email,
+      deviceId,
+      action: 'signup',
+    });
+    try {
+      // 1. Device ID validation
+      this.validateDeviceId(deviceId);
+
+      // 2. Check for existing user
       const existingUser = await this.userService.findByEmail(userData.email);
       if (existingUser) {
-        this.logger.warn('Signup failed - email already exists', {
+        this.logger.warn('User already exists', {
           email: userData.email,
-          deviceId,
+          action: 'signup',
         });
         throw new UserAlreadyExistsException(userData.email);
       }
 
-      // Create user with hashed password
-      let databaseUser: DatabaseUser;
-      try {
-        const hashedPassword = await hash(password);
-        const result = await this.userService.create({
-          ...userData,
-          password: hashedPassword,
-        });
+      // 3. Create user with hashed password
+      const hashedPassword = await hash(password);
+      const databaseUser = await this.userService.create({
+        ...userData,
+        password: hashedPassword,
+      });
 
-        if (!result) {
-          throw new AuthRepositoryException('create', 'new-user');
-        }
-        databaseUser = result;
-      } catch (error) {
-        this.logger.error('Error during user signup', error);
-        throw new AuthRepositoryException('create', 'new-user', error as Error);
-      }
+      // 4. Generate tokens
+      const [[accessToken, refreshToken], refreshTokenId] =
+        await this.generateAuthTokens(databaseUser.id);
 
-      // Generate auth tokens and create session
-      let tokens: AuthTokens;
-      try {
-        tokens = await this.generateAuthTokens(databaseUser.id);
-      } catch (error) {
-        this.logger.error('Error during token generation', error);
-        throw new TokenGenerationFailedException(
-          TokenType.GENERATION,
-          error as Error,
-        );
-      }
-
+      // 5. Create session with refresh token
       try {
         const expiresAt = this.calculateRefreshTokenExpiration(
           this.jwtRefreshConfiguration.expiresIn,
         );
-        await this.createAuthSession(
-          databaseUser.id,
+        await this.sessionService.createSessionWithToken({
+          userId: databaseUser.id,
           deviceId,
-          tokens.refreshToken,
+          token: refreshToken,
+          tokenId: refreshTokenId,
           expiresAt,
-        );
+        });
       } catch (error) {
-        // Handle session limit exception
+        // If user has reached max sessions, log warning but allow signup to complete
         if (error instanceof SessionLimitExceededException) {
           this.logger.warn('Session limit exceeded during signup', {
             userId: databaseUser.id,
+            action: 'signup',
           });
-          return [this.sanitizeUserData(databaseUser), tokens]; // Return user despite session limit
+          return [
+            this.sanitizeUserData(databaseUser),
+            [accessToken, refreshToken],
+          ];
         }
-        // Existing rollback logic
+
+        // If session creation failed for any other reason, try to clean up the created user
         try {
           await this.userService.delete(databaseUser.id);
-          this.logger.debug('Rollback: User cleanup successful', {
-            userId: databaseUser.id,
-          });
         } catch (cleanupError) {
+          // If cleanup fails, log error but continue with original error handling
           this.logger.error(
             'Failed to cleanup user after session creation failed',
             {
               userId: databaseUser.id,
+              action: 'signup',
               error: cleanupError,
             },
           );
@@ -142,218 +137,419 @@ export class AuthService {
         throw error;
       }
 
+      // 6. Sanitize user data and log success
       const publicUser = this.sanitizeUserData(databaseUser);
-      this.logger.info('User signup successful', {
+      this.logger.info('User signup completed successfully', {
         userId: databaseUser.id,
         email: publicUser.email,
         deviceId,
+        action: 'signup',
       });
 
-      return [publicUser, tokens];
+      // 7. Return sanitized user and tokens
+      return [publicUser, [accessToken, refreshToken]];
     } catch (error) {
-      // Re-throw known errors
+      // Let lower-level errors propagate (already logged)
       if (
-        error instanceof UserAlreadyExistsException ||
-        error instanceof TokenGenerationFailedException
-      ) {
-        throw error;
-      }
-
-      // Handle session-related errors
-      if (
-        error instanceof SessionValidationException ||
-        error instanceof SessionCreationFailedException
+        error instanceof UserRepositoryException ||
+        error instanceof SessionRepositoryException ||
+        error instanceof TokenGenerationFailedException ||
+        error instanceof SessionCreationFailedException ||
+        error instanceof InvalidDeviceIdException
       ) {
         throw new SignupFailedException(error);
       }
-
-      this.logger.error('Unexpected error during user signup', error, {
+      // Let error return to controller for 409 conflict
+      if (error instanceof UserAlreadyExistsException) {
+        throw error;
+      }
+      // Already wrapped errors - don't log again
+      if (error instanceof SignupFailedException) {
+        throw error;
+      }
+      // Unexpected errors
+      this.logger.error('Unexpected error during signup', {
+        error: error as Error,
         email: createUserDto.email,
-        deviceId,
+        action: 'signup',
       });
       throw new SignupFailedException(error as Error);
     }
   }
 
   /**
-   * Authenticates an existing user and creates a new session
-   * @throws {TokenGenerationFailedException} If token creation fails
-   * @throws {SigninFailedException} For unexpected errors during login
+   * Authenticates user and creates new session
+   * @throws {SigninFailedException} Authentication process failed
+   * @throws {TokenGenerationFailedException} Token creation failed
    */
   async signin(
     user: PublicUser,
     deviceId: string,
   ): Promise<[PublicUser, AuthTokens]> {
     try {
-      const tokens = await this.generateAuthTokens(user.id);
+      this.logger.debug('Starting user signin', {
+        userId: user.id,
+        deviceId,
+        action: 'signin',
+      });
+
+      // 1. Validate device ID
+      this.validateDeviceId(deviceId);
+
+      // 2. Generate tokens
+      const [[accessToken, refreshToken], refreshTokenId] =
+        await this.generateAuthTokens(user.id);
+
+      // 3. Create session with refresh token
       const expiresAt = this.calculateRefreshTokenExpiration(
         this.jwtRefreshConfiguration.expiresIn,
       );
-
-      try {
-        await this.createAuthSession(
-          user.id,
-          deviceId,
-          tokens.refreshToken,
-          expiresAt,
-        );
-      } catch (error) {
-        // Wrap session creation errors
-        throw new SigninFailedException(error as Error);
-      }
-
-      return [user, tokens];
-    } catch (error) {
-      if (error instanceof TokenGenerationFailedException) {
-        throw error;
-      }
-      this.logger.error('Signin process failed', error, {
+      await this.sessionService.createSessionWithToken({
         userId: user.id,
         deviceId,
+        token: refreshToken,
+        tokenId: refreshTokenId,
+        expiresAt,
       });
-      throw error; // Already wrapped
+
+      // 4. Log success and return user and tokens
+      this.logger.info('User signin successful', {
+        userId: user.id,
+        email: user.email,
+        deviceId,
+        action: 'signin',
+      });
+      return [user, [accessToken, refreshToken]];
+    } catch (error) {
+      // Let lower-level errors propagate (already logged)
+      if (
+        error instanceof TokenGenerationFailedException ||
+        error instanceof SigninFailedException ||
+        error instanceof InvalidDeviceIdException ||
+        error instanceof AuthRepositoryException ||
+        error instanceof InvalidDeviceIdException
+      ) {
+        throw new SigninFailedException(error as Error);
+      }
+      // Already wrapped errors - don't log again
+      if (error instanceof SigninFailedException) {
+        throw error;
+      }
+      // Truly unexpected errors
+      this.logger.error('Unexpected error during user signin', error, {
+        userId: user.id,
+        deviceId,
+        action: 'signin',
+      });
+      throw new SigninFailedException(error as Error);
     }
   }
 
   /**
-   * Invalidates a user's session for the specified device
-   * @throws {SignoutFailedException} If session deletion fails
+   * Invalidates user session for specified device
+   * @throws {SignoutFailedException} Session deletion failed
    */
   async signout(user: PublicUser, deviceId: string): Promise<void> {
+    this.logger.debug('Starting user signout', {
+      userId: user.id,
+      deviceId,
+      action: 'signout',
+    });
     try {
+      // 1. Validate device ID
+      this.validateDeviceId(deviceId);
+
+      // 2. Delete session
       await this.sessionService.deleteSession(user.id, deviceId);
+
+      // 3. Log success
       this.logger.info('User signout successful', {
         userId: user.id,
         email: user.email,
         deviceId,
+        action: 'signout',
       });
     } catch (error) {
-      const wrappedError = new SignoutFailedException(error as Error);
-      this.logger.error('Error during user signout', wrappedError);
-      throw wrappedError;
+      // Let lower-level errors propagate (already logged)
+      if (
+        error instanceof SessionRepositoryException ||
+        error instanceof InvalidDeviceIdException
+      ) {
+        throw new SignoutFailedException(error);
+      }
+      // Already wrapped errors - don't log again
+      if (error instanceof SignoutFailedException) {
+        throw error;
+      }
+      // Truly unexpected errors
+      this.logger.error('Unexpected error during user signout', error, {
+        userId: user.id,
+        deviceId,
+        action: 'signout',
+      });
+      throw new SignoutFailedException(error as Error);
     }
   }
 
   /* -------------- Validation Methods -------------- */
 
   /**
-   * Verifies email/password combination and returns user if valid
-   * @throws {UserNotFoundException} If no user exists with provided email
-   * @throws {InvalidCredentialsException} If password verification fails
+   * Validates user credentials
+   * @throws {AuthenticationFailedException}
    */
   async validateCredentials(
     email: string,
     password: string,
   ): Promise<PublicUser> {
     try {
-      this.logger.debug('Validating user credentials...', { email });
+      this.logger.debug('Starting credentials validation', {
+        email,
+        action: 'validateCredentials',
+      });
 
-      // Find user by email
-      const databaseUser = await this.userService.findByEmail(email);
-      if (!databaseUser) {
-        this.logger.warn('Invalid credentials - user not found', { email });
-        throw new UserNotFoundException();
-      }
+      // 1. Find user by email
+      const databaseUser = await this.userService.findByEmailOrThrow(email);
 
-      // Verify password
+      // 2. Verify password
       const isPasswordValid = await verify(databaseUser.password, password);
       if (!isPasswordValid) {
-        this.logger.warn('Invalid credentials - incorrect password', { email });
         throw new InvalidCredentialsException();
       }
 
-      this.logger.info('Credentials validation successful', { email });
+      // 3. Log success and return sanitized user
+      this.logger.info('Credentials validation successful', {
+        email,
+        action: 'validateCredentials',
+      });
       return this.sanitizeUserData(databaseUser);
     } catch (error) {
+      // Let lower-level errors propagate (already logged)
+      if (error instanceof UserRepositoryException) {
+        throw new AuthenticationFailedException(error as Error);
+      }
+
+      // Log business validation errors
       if (
-        error instanceof UserNotFoundException ||
-        error instanceof InvalidCredentialsException
+        error instanceof InvalidCredentialsException ||
+        error instanceof UserNotFoundException
       ) {
+        this.logger.warn('Credentials validation failed - validation error', {
+          errorType: error.constructor.name,
+          reason: error.message,
+          email,
+        });
+        throw new AuthenticationFailedException(error);
+      }
+
+      if (error instanceof AuthenticationFailedException) {
         throw error;
       }
-      this.logger.error('Error during credentials validation', error);
+
+      // Truly unexpected errors
+      this.logger.error(
+        'Unexpected error during credentials validation',
+        error,
+        {
+          email,
+          action: 'validateCredentials',
+        },
+      );
+
       throw new AuthenticationFailedException(error as Error);
     }
   }
 
   /**
-   * Validates access token and associated session
-   * @throws {AuthenticationFailedException} If user or session validation fails
+   * Validates access token and session
+   * @throws {TokenValidationFailedException("access")} Token or session validation failed
    */
   async validateAccessToken(
     userId: string,
     deviceId: string,
   ): Promise<PublicUser> {
-    this.logger.debug('Validating access token...', { userId, deviceId });
+    this.logger.debug('Starting access token validation', {
+      userId,
+      deviceId,
+      action: 'validateAccessToken',
+    });
 
     try {
-      // Verify user exists and has valid session
+      // 1. Validate device ID
+      this.validateDeviceId(deviceId);
+
+      // 2. Verify user exists and has valid session
       const [databaseUser] = await Promise.all([
         this.userService.findByIdOrThrow(userId),
         this.sessionService.verifySession(userId, deviceId),
       ]);
 
+      // 3. Log success and return sanitized user
       this.logger.info('Access token validation successful', {
         userId,
         deviceId,
+        action: 'validateAccessToken',
       });
       return this.sanitizeUserData(databaseUser);
     } catch (error) {
-      this.logger.error('Access token validation failed', error, {
-        userId,
-        deviceId,
-      });
-      throw new AuthenticationFailedException(error as Error);
+      // Let lower-level errors propagate (already logged)
+      if (
+        error instanceof UserRepositoryException ||
+        error instanceof SessionValidationException ||
+        error instanceof InvalidDeviceIdException ||
+        error instanceof UserNotFoundException ||
+        error instanceof SessionExpiredException
+      ) {
+        throw new TokenValidationFailedException('access', error);
+      }
+      // Already wrapped errors - don't log again
+      if (error instanceof TokenValidationFailedException) {
+        throw error;
+      }
+      // Truly unexpected errors
+      this.logger.error(
+        'Unexpected error during access token validation',
+        error,
+        {
+          userId,
+          deviceId,
+          action: 'validateAccessToken',
+        },
+      );
+      throw new TokenValidationFailedException('access', error as Error);
     }
   }
 
   /**
-   * Validates refresh token and associated session
-   * @throws {AuthenticationFailedException} If token or session is invalid
+   * Validates refresh token and session
+   * @throws {TokenValidationFailedException("refresh")} Token or session validation failed
    */
   async validateRefreshToken(
     userId: string,
     refreshToken: string,
     deviceId: string,
   ): Promise<PublicUser> {
-    this.logger.debug('Validating refresh token...', { userId, deviceId });
+    this.logger.debug('Starting refresh token validation', {
+      userId,
+      deviceId,
+      action: 'validateRefreshToken',
+    });
 
     try {
+      // 1. Validate device ID
+      this.validateDeviceId(deviceId);
+
+      // 2. Find user by ID
       const databaseUser = await this.userService.findByIdOrThrow(userId);
-      await this.sessionService.validateSession(userId, deviceId, refreshToken);
+
+      // 3. Validate session
+      const session = await this.sessionService.getValidSession(
+        userId,
+        deviceId,
+      );
+
+      // 4. Check if token has been rotated
+      const payload: JwtPayload = this.jwtService.decode(refreshToken);
+      if (payload.jti !== session.tokenId) {
+        this.logger.warn('Token rotation detected - token reuse attempt', {
+          userId,
+          deviceId,
+          action: 'validateRefreshToken',
+        });
+        throw new InvalidRefreshTokenException();
+      }
+
+      // 5. Log success and return sanitized user
+      this.logger.info('Refresh token validation successful', {
+        userId,
+        deviceId,
+        action: 'validateRefreshToken',
+      });
       return this.sanitizeUserData(databaseUser);
     } catch (error) {
-      // Add handling for repository errors
-      if (error instanceof SessionRepositoryException) {
-        throw new AuthenticationFailedException(error);
+      // Let lower-level errors propagate (already logged)
+      if (
+        error instanceof SessionRepositoryException ||
+        error instanceof UserNotFoundException ||
+        error instanceof InvalidRefreshTokenException ||
+        error instanceof InvalidDeviceIdException ||
+        error instanceof SessionValidationException ||
+        error instanceof UserRepositoryException
+      ) {
+        throw new TokenValidationFailedException('refresh', error);
       }
-      if (error instanceof InvalidRefreshTokenException) {
-        throw new AuthenticationFailedException(error);
+      if (error instanceof TokenValidationFailedException) {
+        throw error;
       }
-      throw new AuthenticationFailedException(error as Error);
+      this.logger.error(
+        'Unexpected error during refresh token validation',
+        error,
+        {
+          userId,
+          deviceId,
+        },
+      );
+      throw new TokenValidationFailedException('refresh', error as Error);
     }
   }
 
   /**
-   * Generates new access/refresh tokens and updates session
-   * @throws {TokenGenerationFailedException} If token creation fails
+   * Generates new token pair and updates session
+   * @throws {TokenGenerationFailedException} Token refresh failed
    */
-  async renewAccessToken(user: PublicUser): Promise<[PublicUser, AuthTokens]> {
+  async refreshTokens(
+    user: PublicUser,
+    deviceId: string,
+  ): Promise<[PublicUser, AuthTokens]> {
+    this.logger.debug('Starting tokens refresh', {
+      userId: user.id,
+      deviceId,
+      action: 'refreshTokens',
+    });
     try {
-      // Generate new tokens
-      const tokens = await this.generateAuthTokens(user.id);
+      // 1. Validate device ID
+      this.validateDeviceId(deviceId);
 
-      this.logger.info('Access token renewal successful', {
+      // 2. Generate new tokens
+      const [[accessToken, refreshToken], refreshTokenId] =
+        await this.generateAuthTokens(user.id);
+
+      // 3. Refresh session with new token
+      const hashedRefreshToken = await hash(refreshToken);
+      await this.sessionService.refreshSessionWithToken({
+        userId: user.id,
+        deviceId,
+        token: hashedRefreshToken,
+        tokenId: refreshTokenId,
+      });
+
+      // 4. Log success and return user and tokens
+      this.logger.info('Tokens refreshed successfully', {
         userId: user.id,
         email: user.email,
+        deviceId,
+        action: 'refreshTokens',
       });
-      return [user, tokens];
+      return [user, [accessToken, refreshToken]];
     } catch (error) {
-      this.logger.error('Access token renewal failed', error, {
+      // Let lower-level errors propagate (already logged)
+      if (
+        error instanceof SessionRefreshFailedException ||
+        error instanceof InvalidDeviceIdException
+      ) {
+        throw new TokenGenerationFailedException(TokenType.REFRESH, error);
+      }
+      // Already wrapped errors - don't log again
+      if (error instanceof TokenGenerationFailedException) {
+        throw error;
+      }
+      // Truly unexpected errors
+      this.logger.error('Unexpected error during tokens refresh', error, {
         userId: user.id,
+        deviceId,
+        action: 'refreshTokens',
       });
       throw new TokenGenerationFailedException(
-        TokenType.RENEWAL,
+        TokenType.REFRESH,
         error as Error,
       );
     }
@@ -362,26 +558,42 @@ export class AuthService {
   /* -------------- Private Helper Methods -------------- */
 
   /**
-   * Generates JWT access and refresh tokens for a user
-   * @throws {TokenGenerationFailedException} If either token generation fails
+   * Generates access and refresh JWT tokens
+   * @throws {TokenGenerationFailedException} Token generation failed
    */
-  private async generateAuthTokens(userId: string): Promise<AuthTokens> {
-    this.logger.debug('Generating auth tokens...', { userId });
-
+  private async generateAuthTokens(
+    userId: string,
+  ): Promise<[AuthTokens, string]> {
+    this.logger.debug('Starting token generation', {
+      userId,
+      action: 'generateAuthTokens',
+    });
     try {
-      const payload: JwtPayload = { sub: userId };
+      // 1. Generate a unique ID for the refresh token
+      const refreshTokenId = crypto.randomUUID();
+
+      // 2. Create the access token payload
+      const accessPayload: JwtPayload = { sub: userId };
+
+      // 3. Create the refresh token payload
+      const refreshPayload: JwtPayload = {
+        sub: userId,
+        jti: refreshTokenId,
+      };
+
+      // 4. Generate the tokens
       const [accessToken, refreshToken] = await Promise.all([
-        this.jwtService.signAsync(payload),
-        this.jwtService.signAsync(payload, this.jwtRefreshConfiguration),
+        this.jwtService.signAsync(accessPayload),
+        this.jwtService.signAsync(refreshPayload, this.jwtRefreshConfiguration),
       ]);
 
-      this.logger.debug('Auth tokens generated successfully', {
-        userId,
-        tokenExpiration: this.jwtRefreshConfiguration.expiresIn,
-      });
-      return { accessToken, refreshToken };
+      // 5. Return the tokens and refresh token ID
+      return [[accessToken, refreshToken], refreshTokenId];
     } catch (error) {
-      this.logger.error('Failed to generate auth tokens', error, { userId });
+      this.logger.error('Failed to generate auth tokens', error as Error, {
+        userId,
+        action: 'generateAuthTokens',
+      });
       throw new TokenGenerationFailedException(
         TokenType.GENERATION,
         error as Error,
@@ -389,7 +601,7 @@ export class AuthService {
     }
   }
 
-  /** Removes sensitive fields from user object before exposing to client */
+  /** Removes sensitive data from user object */
   private sanitizeUserData(user: DatabaseUser): PublicUser {
     return {
       id: user.id,
@@ -398,7 +610,7 @@ export class AuthService {
     };
   }
 
-  /** Converts JWT expiration configuration to concrete Date object */
+  /** Converts JWT expiration to Date object */
   private calculateRefreshTokenExpiration(expiresIn: string | number): Date {
     if (typeof expiresIn === 'string') {
       const durationInMs = parseDuration(expiresIn);
@@ -407,23 +619,17 @@ export class AuthService {
     return new Date(Date.now() + expiresIn * 1000);
   }
 
-  /** Creates session record with refresh token and expiration */
-  private async createAuthSession(
-    userId: string,
-    deviceId: string,
-    refreshToken: string,
-    expiresAt: Date,
-  ): Promise<void> {
-    try {
-      await this.sessionService.createSessionWithToken(
-        userId,
-        deviceId,
-        refreshToken,
-        expiresAt,
-      );
-    } catch (error) {
-      this.logger.error('Session creation failed', error, { userId, deviceId });
-      throw error;
+  /**
+   * Validates device ID format
+   * @throws {InvalidDeviceIdException} Invalid device ID format
+   */
+  validateDeviceId(deviceId: string): void {
+    // UUID v4 regex pattern
+    const uuidV4Pattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidV4Pattern.test(deviceId)) {
+      this.logger.warn('Invalid device ID format', { deviceId });
+      throw new InvalidDeviceIdException();
     }
   }
 }
