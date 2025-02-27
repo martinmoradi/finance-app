@@ -13,6 +13,12 @@ import {
 } from '@repo/database';
 import cookieParser from 'cookie-parser';
 
+export function generateUniqueEmail(): string {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 8);
+  return `test-${timestamp}-${randomString}@example.com`;
+}
+
 export interface TestContext {
   app: INestApplication;
   moduleRef: TestingModule;
@@ -47,10 +53,11 @@ export const setupAuthTests = () => {
     userService = moduleRef.get(UserService);
     throttlerStorage = moduleRef.get(ThrottlerStorage);
     sessionService = moduleRef.get(SessionService);
+
     // Start transaction for test isolation
     await startTransaction(connection.pool);
 
-    // Reset the throttler storage
+    // Reset the throttler storage more reliably
     if (throttlerStorage) {
       // Get the internal storage map
       const storage = (throttlerStorage as any).storage;
@@ -58,6 +65,11 @@ export const setupAuthTests = () => {
       // Clear the map instead of replacing it
       if (storage && typeof storage.clear === 'function') {
         storage.clear();
+      } else if (storage) {
+        // If clear isn't available but storage exists, try to reset it another way
+        Object.keys(storage).forEach((key) => {
+          delete storage[key];
+        });
       }
     }
   });
