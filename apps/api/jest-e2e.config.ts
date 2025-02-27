@@ -22,6 +22,8 @@ module.exports = {
     '!**/**/*.fixtures.ts',
     '!**/**/*.fixture.ts',
     '!**/**/*.dto.ts',
+    '!**/**/main.ts',
+    '!src/database/__tests__',
   ],
   coverageDirectory: './coverage',
   coverageReporters: ['json', 'lcov', 'text', 'html'],

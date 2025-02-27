@@ -102,7 +102,9 @@
       "!**/**/tests/**/*.helper.ts",
       "!**/**/*.fixtures.ts",
       "!**/**/*.fixture.ts",
-      "!**/**/*.dto.ts"
+      "!**/**/*.dto.ts",
+      "!**/**/main.ts",
+      "!src/database/__tests__"
     ],
     "coverageDirectory": "./coverage",
     "coverageReporters": [
