@@ -5,8 +5,4 @@ import { Injectable } from '@nestjs/common';
  * Handles the root route and returns a greeting message
  */
 @Injectable()
-export class AppService {
-  getHello(): string {
-    return 'Hello World!';
-  }
-}
+export class AppService {}
