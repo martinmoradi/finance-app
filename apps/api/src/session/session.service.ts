@@ -1,6 +1,8 @@
 import { LoggerService } from '@/logger/logger.service';
 import { CreateSessionWithTokenDto } from '@/session/dto/create-session-with-token.dto';
+import { SelectSessionDto } from '@/session/dto/select-session.dto';
 import { RefreshSessionWithTokenDto } from '@/session/dto/refresh-session-with-token.dto';
+import { ValidateSessionWithTokenDto } from '@/session/dto/validate-session-with-token.dto';
 import {
   EnforceSessionLimitException,
   InvalidRefreshTokenException,
@@ -109,11 +111,11 @@ export class SessionService {
    * Validates session and refresh token.
    * @throws {SessionValidationException}
    */
-  async validateSessionWithToken(
-    userId: string,
-    deviceId: string,
-    refreshToken: string,
-  ): Promise<DatabaseSession> {
+  async validateSessionWithToken({
+    userId,
+    deviceId,
+    refreshToken,
+  }: ValidateSessionWithTokenDto): Promise<DatabaseSession> {
     this.logger.debug('Starting session validation with token', {
       userId,
       deviceId,
@@ -121,7 +123,7 @@ export class SessionService {
     });
     try {
       // 1. Find session
-      const session = await this.findSessionOrThrow(userId, deviceId);
+      const session = await this.findSessionOrThrow({ userId, deviceId });
 
       // 2. Check if session has expired based on timestamp
       this.validateSessionExpiration(session);
@@ -186,7 +188,7 @@ export class SessionService {
     });
     try {
       // 1. Find session
-      const session = await this.findSessionOrThrow(userId, deviceId);
+      const session = await this.findSessionOrThrow({ userId, deviceId });
 
       // 2. Update session
       const updatedSession = await this.updateSession({
@@ -227,10 +229,10 @@ export class SessionService {
    * Returns session if it exists and is valid.
    * @throws {SessionValidationException}
    */
-  async getValidSession(
-    userId: string,
-    deviceId: string,
-  ): Promise<DatabaseSession> {
+  async getValidSession({
+    userId,
+    deviceId,
+  }: SelectSessionDto): Promise<DatabaseSession> {
     this.logger.debug('Starting session validation', {
       userId,
       deviceId,
@@ -238,7 +240,7 @@ export class SessionService {
     });
     try {
       // 1. Find session
-      const session = await this.findSessionOrThrow(userId, deviceId);
+      const session = await this.findSessionOrThrow({ userId, deviceId });
 
       // 2. Check if session has expired
       this.validateSessionExpiration(session);
@@ -275,8 +277,8 @@ export class SessionService {
    * Verifies session exists and is valid.
    * @throws {SessionValidationException}
    */
-  async verifySession(userId: string, deviceId: string): Promise<void> {
-    await this.getValidSession(userId, deviceId);
+  async verifySession({ userId, deviceId }: SelectSessionDto): Promise<void> {
+    await this.getValidSession({ userId, deviceId });
   }
 
   /**
@@ -285,10 +287,10 @@ export class SessionService {
    * Logs error if database operation fails.
    * @throws {SessionRepositoryException}
    */
-  async deleteSession(
-    userId: string,
-    deviceId: string,
-  ): Promise<DatabaseSession | null> {
+  async deleteSession({
+    userId,
+    deviceId,
+  }: SelectSessionDto): Promise<DatabaseSession | null> {
     this.logger.debug('Starting database session deletion', {
       userId,
       deviceId,
@@ -426,7 +428,10 @@ export class SessionService {
         const oldest = sessions.reduce((a, b) =>
           a.lastUsedAt <= b.lastUsedAt ? a : b,
         );
-        await this.deleteSession(oldest.userId, oldest.deviceId);
+        await this.deleteSession({
+          userId: oldest.userId,
+          deviceId: oldest.deviceId,
+        });
         sessions.splice(sessions.indexOf(oldest), 1);
         this.logger.info('Removed oldest session due to limit', {
           userId: oldest.userId,
@@ -481,10 +486,10 @@ export class SessionService {
           deviceId: existingSession.deviceId,
           action: 'cleanUpExistingSession',
         });
-        await this.deleteSession(
-          existingSession.userId,
-          existingSession.deviceId,
-        );
+        await this.deleteSession({
+          userId: existingSession.userId,
+          deviceId: existingSession.deviceId,
+        });
       }
     } catch (error) {
       // Let lower-level errors propagate (already logged)
@@ -576,10 +581,10 @@ export class SessionService {
    * @throws {SessionNotFoundException}
    * @throws {SessionRepositoryException}
    */
-  private async findSessionOrThrow(
-    userId: string,
-    deviceId: string,
-  ): Promise<DatabaseSession> {
+  private async findSessionOrThrow({
+    userId,
+    deviceId,
+  }: SelectSessionDto): Promise<DatabaseSession> {
     this.logger.debug('Starting database session find', {
       userId,
       deviceId,
