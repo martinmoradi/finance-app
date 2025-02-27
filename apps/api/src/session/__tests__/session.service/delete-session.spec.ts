@@ -22,7 +22,10 @@ describe('SessionService', () => {
 
       repository.delete.mockResolvedValue(mockSession);
 
-      await service.deleteSession(userId, deviceId);
+      await service.deleteSession({
+        userId,
+        deviceId,
+      });
 
       expect(repository.delete).toHaveBeenCalledWith(userId, deviceId);
     });
@@ -34,12 +37,18 @@ describe('SessionService', () => {
 
       repository.delete.mockResolvedValue(null);
 
-      await expect(service.deleteSession(userId, deviceId)).rejects.toThrow(
-        SessionRepositoryException,
-      );
+      await expect(
+        service.deleteSession({
+          userId,
+          deviceId,
+        }),
+      ).rejects.toThrow(SessionRepositoryException);
 
       try {
-        await service.deleteSession(userId, deviceId);
+        await service.deleteSession({
+          userId,
+          deviceId,
+        });
         fail('Expected SessionRepositoryException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionRepositoryException);
@@ -60,7 +69,10 @@ describe('SessionService', () => {
 
       repository.delete.mockResolvedValue(mockSession);
 
-      await service.deleteSession(userId, deviceId);
+      await service.deleteSession({
+        userId,
+        deviceId,
+      });
 
       expect(logger.debug).toHaveBeenCalledWith(
         'Starting database session deletion',
@@ -81,7 +93,10 @@ describe('SessionService', () => {
 
       repository.delete.mockResolvedValue(mockSession);
 
-      await service.deleteSession(userId, deviceId);
+      await service.deleteSession({
+        userId,
+        deviceId,
+      });
 
       expect(logger.info).toHaveBeenCalledWith('Session deleted successfully', {
         userId,
@@ -104,7 +119,10 @@ describe('SessionService', () => {
       repository.delete.mockRejectedValue(originalError);
 
       try {
-        await service.deleteSession(userId, deviceId);
+        await service.deleteSession({
+          userId,
+          deviceId,
+        });
         fail('Expected SessionRepositoryException was not thrown');
       } catch (error) {
         expect(error).toBe(originalError);
@@ -120,9 +138,12 @@ describe('SessionService', () => {
       const originalError = new Error('Unexpected error');
       repository.delete.mockRejectedValue(originalError);
 
-      await expect(service.deleteSession(userId, deviceId)).rejects.toThrow(
-        SessionRepositoryException,
-      );
+      await expect(
+        service.deleteSession({
+          userId,
+          deviceId,
+        }),
+      ).rejects.toThrow(SessionRepositoryException);
 
       expect(logger.error).toHaveBeenCalledWith(
         'Database error during session delete',
@@ -135,7 +156,10 @@ describe('SessionService', () => {
       );
 
       try {
-        await service.deleteSession(userId, deviceId);
+        await service.deleteSession({
+          userId,
+          deviceId,
+        });
         fail('Expected SessionRepositoryException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionRepositoryException);
@@ -156,7 +180,10 @@ describe('SessionService', () => {
 
       repository.delete.mockResolvedValue(mockSession);
 
-      const result = await service.deleteSession(userId, deviceId);
+      const result = await service.deleteSession({
+        userId,
+        deviceId,
+      });
 
       expect(result).toBe(mockSession);
     });
