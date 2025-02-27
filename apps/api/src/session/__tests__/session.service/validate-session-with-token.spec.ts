@@ -38,7 +38,11 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(mockSession);
       (verify as jest.Mock).mockResolvedValue(true);
 
-      await service.validateSessionWithToken(userId, deviceId, token);
+      await service.validateSessionWithToken({
+        userId,
+        deviceId,
+        refreshToken: token,
+      });
 
       expect(repository.findOne).toHaveBeenCalledWith(userId, deviceId);
     });
@@ -58,7 +62,11 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(validSession);
       (verify as jest.Mock).mockResolvedValue(true);
 
-      await service.validateSessionWithToken(userId, deviceId, token);
+      await service.validateSessionWithToken({
+        userId,
+        deviceId,
+        refreshToken: token,
+      });
 
       // This test is indirect - we verify that if session is valid, no exception is thrown
       // We'll test the negative case in a separate test
@@ -73,7 +81,11 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(mockSession);
       (verify as jest.Mock).mockResolvedValue(true);
 
-      await service.validateSessionWithToken(userId, deviceId, token);
+      await service.validateSessionWithToken({
+        userId,
+        deviceId,
+        refreshToken: token,
+      });
 
       expect(verify).toHaveBeenCalledWith(mockSession.token, token);
     });
@@ -88,11 +100,19 @@ describe('SessionService', () => {
       (verify as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        service.validateSessionWithToken(userId, deviceId, token),
+        service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        }),
       ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -111,7 +131,11 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(mockSession);
       (verify as jest.Mock).mockResolvedValue(true);
 
-      await service.validateSessionWithToken(userId, deviceId, token);
+      await service.validateSessionWithToken({
+        userId,
+        deviceId,
+        refreshToken: token,
+      });
 
       expect(logger.debug).toHaveBeenCalledWith(
         'Starting session validation with token',
@@ -134,7 +158,11 @@ describe('SessionService', () => {
       (verify as jest.Mock).mockResolvedValue(false);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(logger.warn).toHaveBeenCalledWith('Invalid refresh token', {
@@ -155,7 +183,11 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(mockSession);
       (verify as jest.Mock).mockResolvedValue(true);
 
-      await service.validateSessionWithToken(userId, deviceId, token);
+      await service.validateSessionWithToken({
+        userId,
+        deviceId,
+        refreshToken: token,
+      });
 
       expect(logger.info).toHaveBeenCalledWith(
         'Session validated successfully',
@@ -180,11 +212,19 @@ describe('SessionService', () => {
       repository.findOne.mockRejectedValue(originalError);
 
       await expect(
-        service.validateSessionWithToken(userId, deviceId, token),
+        service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        }),
       ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -203,11 +243,19 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.validateSessionWithToken(userId, deviceId, token),
+        service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        }),
       ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -227,11 +275,19 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(expiredSession);
 
       await expect(
-        service.validateSessionWithToken(userId, deviceId, token),
+        service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        }),
       ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -250,11 +306,19 @@ describe('SessionService', () => {
       (verify as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        service.validateSessionWithToken(userId, deviceId, token),
+        service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        }),
       ).rejects.toThrow(SessionValidationException);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -274,7 +338,11 @@ describe('SessionService', () => {
       repository.findOne.mockRejectedValue(originalError);
 
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -299,7 +367,11 @@ describe('SessionService', () => {
 
       // First check that the right type of exception is thrown
       await expect(
-        service.validateSessionWithToken(userId, deviceId, token),
+        service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        }),
       ).rejects.toThrow(SessionValidationException);
 
       // Check the logging - this should now happen at the validateSessionWithToken level
@@ -315,7 +387,11 @@ describe('SessionService', () => {
 
       // Check the cause chain
       try {
-        await service.validateSessionWithToken(userId, deviceId, token);
+        await service.validateSessionWithToken({
+          userId,
+          deviceId,
+          refreshToken: token,
+        });
         fail('Expected SessionValidationException was not thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(SessionValidationException);
@@ -335,11 +411,11 @@ describe('SessionService', () => {
       repository.findOne.mockResolvedValue(mockSession);
       (verify as jest.Mock).mockResolvedValue(true);
 
-      const result = await service.validateSessionWithToken(
+      const result = await service.validateSessionWithToken({
         userId,
         deviceId,
-        token,
-      );
+        refreshToken: token,
+      });
 
       expect(result).toBe(mockSession);
     });
