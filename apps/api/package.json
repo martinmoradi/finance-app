@@ -94,6 +94,7 @@
       "**/*.(t|j)s",
       "!**/index.ts",
       "!**/*.config.ts",
+      "!**/config/refresh-jwt.config.ts",
       "!**/*.test.ts",
       "!**/*.spec.ts",
       "!e2e/**",
