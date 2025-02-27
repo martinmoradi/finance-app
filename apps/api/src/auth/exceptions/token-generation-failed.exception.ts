@@ -11,7 +11,10 @@ export enum TokenType {
  * Exception thrown when token generation fails.
  */
 export class TokenGenerationFailedException extends InternalServerErrorException {
+  public readonly tokenType: TokenType;
+
   constructor(tokenType: TokenType, cause?: Error) {
     super(`Failed to generate ${tokenType} token`, { cause });
+    this.tokenType = tokenType;
   }
 }
