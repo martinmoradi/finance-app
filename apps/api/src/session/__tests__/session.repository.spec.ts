@@ -121,29 +121,42 @@ describe('SessionRepository', () => {
     });
   });
 
-  describe('updateLastUsedAt', () => {
-    it('should update lastUsedAt timestamp', async () => {
+  describe('update', () => {
+    it('should update session fields', async () => {
       const updatedSession = createMockSession({
         lastUsedAt: new Date('2025-01-02'),
       });
       mockDb.returning.mockResolvedValue([updatedSession]);
 
-      const result = await sessionRepository.updateLastUsedAt(
-        mockSessionData.userId,
-        mockSessionData.deviceId,
-      );
+      const updateData = {
+        userId: mockSessionData.userId,
+        deviceId: mockSessionData.deviceId,
+        lastUsedAt: new Date(),
+      };
+
+      const result = await sessionRepository.update(updateData);
 
       expect(mockDb.update).toHaveBeenCalledWith(sessions);
-      expect(mockDb.set).toHaveBeenCalledWith({ lastUsedAt: expect.any(Date) });
+      expect(mockDb.set).toHaveBeenCalledWith(updateData);
+      expect(mockDb.where).toHaveBeenCalledWith(
+        and(
+          eq(sessions.userId, mockSessionData.userId),
+          eq(sessions.deviceId, mockSessionData.deviceId),
+        ),
+      );
       expect(result).toEqual(updatedSession);
     });
 
     it('should return null when update fails', async () => {
       mockDb.returning.mockResolvedValue([]);
-      const result = await sessionRepository.updateLastUsedAt(
-        'nonexistent',
-        'device1',
-      );
+
+      const updateData = {
+        userId: 'nonexistent',
+        deviceId: 'device1',
+        lastUsedAt: new Date(),
+      };
+
+      const result = await sessionRepository.update(updateData);
       expect(result).toBeNull();
     });
   });
