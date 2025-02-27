@@ -182,11 +182,10 @@ describe('CookieService', () => {
 
   describe('setAuthCookies', () => {
     it('should set auth cookies with correct options in development', () => {
-      service.setAuthCookies(
-        mockResponse as Response,
+      service.setAuthCookies(mockResponse as Response, [
         'test-access',
         'test-refresh',
-      );
+      ]);
 
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'accessToken',
@@ -227,11 +226,10 @@ describe('CookieService', () => {
           }
         });
 
-      service.setAuthCookies(
-        mockResponse as Response,
+      service.setAuthCookies(mockResponse as Response, [
         'test-access',
         'test-refresh',
-      );
+      ]);
 
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'accessToken',
