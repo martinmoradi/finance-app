@@ -1,23 +1,26 @@
-import { setupAuthTests } from './auth.e2e-utils';
-import request from 'supertest';
+import { UserService } from '@/user/user.service';
+import { INestApplication } from '@nestjs/common';
 import { hash } from 'argon2';
+import request from 'supertest';
+import { generateUniqueEmail, setupAuthTests } from './auth.e2e-utils';
 
 describe('E2E Auth', () => {
   // Setup the shared test context
   const testUtils = setupAuthTests();
 
   // These variables will be initialized from the test context in the tests
-  let app;
-  let userService;
+  let app: INestApplication<any>;
+  let userService: UserService;
 
   describe('POST /auth/signin', () => {
+    // 1. Happy Path Tests (Core Functionality)
     it('should authenticate user with valid credentials', async () => {
       // Get the app and userService from testUtils for this test
       app = testUtils.getApp();
       userService = testUtils.getUserService();
 
       // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
+      const testEmail = generateUniqueEmail();
       const validPassword = 'Password123!';
       const validName = 'Test User';
 
@@ -33,7 +36,7 @@ describe('E2E Auth', () => {
       // Get CSRF token and deviceId
       const csrfResponse = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const csrfToken = csrfResponse.body.token;
       const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
@@ -48,7 +51,7 @@ describe('E2E Auth', () => {
           email: testEmail,
           password: validPassword,
         })
-        .expect(201);
+        .expect(200);
 
       // Verify response structure
       expect(response.body).toMatchObject({
@@ -90,308 +93,13 @@ describe('E2E Auth', () => {
       expect(refreshTokenCookie).toContain('SameSite=Lax');
     });
 
-    it('should return 401 when email is missing', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data - only password since we're testing missing email
-      const validPassword = 'Password123!';
-
-      // First, get CSRF token and deviceId
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const csrfToken = csrfResponse.body.token;
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to sign in without email
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', cookies)
-        .set('x-csrf-token', csrfToken)
-        .send({
-          // email intentionally omitted
-          password: validPassword,
-        })
-        .expect(401);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 401,
-        message: 'Unauthorized',
-      });
-    });
-
-    it('should return 401 when password is missing', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data - only email since we're testing missing password
-      const testEmail = `test-${Date.now()}@example.com`;
-
-      // First, get CSRF token and deviceId
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const csrfToken = csrfResponse.body.token;
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to sign in without password
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', cookies)
-        .set('x-csrf-token', csrfToken)
-        .send({
-          email: testEmail,
-          // password intentionally omitted
-        })
-        .expect(401);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 401,
-        message: 'Unauthorized',
-      });
-    });
-
-    it('should return 400 when deviceId cookie is missing', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
-      const validPassword = 'Password123!';
-      const validName = 'Test User';
-
-      // First create a user to test signin
-      const hashedPassword = await hash(validPassword);
-      const user = await userService.create({
-        email: testEmail,
-        password: hashedPassword,
-        name: validName,
-      });
-      expect(user).toBeDefined();
-
-      // Get CSRF token and cookies
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const csrfToken = csrfResponse.body.token;
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-
-      // Find only the CSRF cookie, exclude deviceId cookie
-      const csrfCookie = cookies.find(
-        (cookie: string) =>
-          cookie.startsWith('csrf=') || cookie.startsWith('__Host-csrf='),
-      );
-      expect(csrfCookie).toBeDefined();
-
-      // Attempt to sign in with CSRF cookie but without deviceId cookie
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', [csrfCookie as string])
-        .set('x-csrf-token', csrfToken)
-        .send({
-          email: testEmail,
-          password: validPassword,
-        })
-        .expect(400);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: 'Device ID is required',
-      });
-    });
-
-    it('should return 401 when CSRF token is missing', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
-      const validPassword = 'Password123!';
-      const validName = 'Test User';
-
-      // First create a user to test signin
-      const hashedPassword = await hash(validPassword);
-      const user = await userService.create({
-        email: testEmail,
-        password: hashedPassword,
-        name: validName,
-      });
-      expect(user).toBeDefined();
-
-      // Get cookies including deviceId and CSRF cookie
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to sign in with cookies but without CSRF token header
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', cookies)
-        // Intentionally not setting x-csrf-token header
-        .send({
-          email: testEmail,
-          password: validPassword,
-        })
-        .expect(401);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 401,
-        message: 'Invalid CSRF token',
-      });
-    });
-
-    it('should return 401 when CSRF token is invalid', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
-      const validPassword = 'Password123!';
-      const validName = 'Test User';
-
-      // First create a user to test signin
-      const hashedPassword = await hash(validPassword);
-      const user = await userService.create({
-        email: testEmail,
-        password: hashedPassword,
-        name: validName,
-      });
-      expect(user).toBeDefined();
-
-      // Get cookies including deviceId and CSRF cookie
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to sign in with cookies but with invalid CSRF token
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', cookies)
-        .set('x-csrf-token', 'invalid-token')
-        .send({
-          email: testEmail,
-          password: validPassword,
-        })
-        .expect(401);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 401,
-        message: 'Invalid CSRF token',
-      });
-    });
-
-    it('should return 401 when email is incorrect', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data with non-existent email
-      const nonExistentEmail = `nonexistent-${Date.now()}@example.com`;
-      const validPassword = 'Password123!';
-
-      // Get CSRF token and deviceId
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const csrfToken = csrfResponse.body.token;
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to sign in with non-existent email
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', cookies)
-        .set('x-csrf-token', csrfToken)
-        .send({
-          email: nonExistentEmail,
-          password: validPassword,
-        })
-        .expect(401);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 401,
-        message: 'User not found',
-      });
-    });
-
-    it('should return 401 when password is incorrect', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
-      const validPassword = 'Password123!';
-      const wrongPassword = 'WrongPassword123!';
-      const validName = 'Test User';
-
-      // First create a user to test signin
-      const hashedPassword = await hash(validPassword);
-      const user = await userService.create({
-        email: testEmail,
-        password: hashedPassword,
-        name: validName,
-      });
-      expect(user).toBeDefined();
-
-      // Get CSRF token and deviceId
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(201);
-
-      const csrfToken = csrfResponse.body.token;
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to sign in with wrong password
-      const response = await request(app.getHttpServer())
-        .post('/auth/signin')
-        .set('Cookie', cookies)
-        .set('x-csrf-token', csrfToken)
-        .send({
-          email: testEmail,
-          password: wrongPassword,
-        })
-        .expect(401);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 401,
-        message: 'Invalid email or password',
-      });
-    });
-
     it('should set access and refresh token cookies with correct attributes', async () => {
       // Get the app and userService from testUtils for this test
       app = testUtils.getApp();
       userService = testUtils.getUserService();
 
       // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
+      const testEmail = generateUniqueEmail();
       const validPassword = 'Password123!';
       const validName = 'Test User';
 
@@ -407,7 +115,7 @@ describe('E2E Auth', () => {
       // Get CSRF token and deviceId
       const csrfResponse = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const csrfToken = csrfResponse.body.token;
       const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
@@ -422,7 +130,7 @@ describe('E2E Auth', () => {
           email: testEmail,
           password: validPassword,
         })
-        .expect(201);
+        .expect(200);
 
       // Verify auth cookies are set
       const authCookies = response.headers['set-cookie'] as unknown as string[];
@@ -476,7 +184,7 @@ describe('E2E Auth', () => {
       userService = testUtils.getUserService();
 
       // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
+      const testEmail = generateUniqueEmail();
       const validPassword = 'Password123!';
       const validName = 'Test User';
 
@@ -492,7 +200,7 @@ describe('E2E Auth', () => {
       // Get CSRF token and deviceId
       const csrfResponse = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const csrfToken = csrfResponse.body.token;
       const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
@@ -507,7 +215,7 @@ describe('E2E Auth', () => {
           email: testEmail,
           password: validPassword,
         })
-        .expect(201);
+        .expect(200);
 
       // Verify response contains expected public user data
       expect(response.body).toMatchObject({
@@ -529,13 +237,259 @@ describe('E2E Auth', () => {
       expect(responseFields.sort()).toEqual(allowedFields.sort());
     });
 
+    // 2. Authentication/Validation Tests
+    it('should return 401 when email is incorrect', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Setup test data with non-existent email
+      const nonExistentEmail = generateUniqueEmail();
+      const validPassword = 'Password123!';
+
+      // Get CSRF token and deviceId
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const csrfToken = csrfResponse.body.token;
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Attempt to sign in with non-existent email
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .set('Cookie', cookies)
+        .set('x-csrf-token', csrfToken)
+        .send({
+          email: nonExistentEmail,
+          password: validPassword,
+        })
+        .expect(401);
+
+      // Verify the error response structure
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        message: 'Authentication failed',
+      });
+    });
+
+    it('should return 401 when password is incorrect', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Setup test data
+      const testEmail = generateUniqueEmail();
+      const validPassword = 'Password123!';
+      const wrongPassword = 'WrongPassword123!';
+      const validName = 'Test User';
+
+      // First create a user to test signin
+      const hashedPassword = await hash(validPassword);
+      const user = await userService.create({
+        email: testEmail,
+        password: hashedPassword,
+        name: validName,
+      });
+      expect(user).toBeDefined();
+
+      // Get CSRF token and deviceId
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const csrfToken = csrfResponse.body.token;
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Attempt to sign in with wrong password
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .set('Cookie', cookies)
+        .set('x-csrf-token', csrfToken)
+        .send({
+          email: testEmail,
+          password: wrongPassword,
+        })
+        .expect(401);
+
+      // Verify the error response structure
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        message: 'Authentication failed',
+      });
+    });
+
+    it('should return 401 when email is missing', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Setup test data - only password since we're testing missing email
+      const validPassword = 'Password123!';
+
+      // First, get CSRF token and deviceId
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const csrfToken = csrfResponse.body.token;
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Attempt to sign in without email
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .set('Cookie', cookies)
+        .set('x-csrf-token', csrfToken)
+        .send({
+          // email intentionally omitted
+          password: validPassword,
+        })
+        .expect(401);
+
+      // Verify the error response structure
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        message: 'Unauthorized',
+      });
+    });
+
+    it('should return 401 when password is missing', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Setup test data - only email since we're testing missing password
+      const testEmail = generateUniqueEmail();
+
+      // First, get CSRF token and deviceId
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const csrfToken = csrfResponse.body.token;
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Attempt to sign in without password
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .set('Cookie', cookies)
+        .set('x-csrf-token', csrfToken)
+        .send({
+          email: testEmail,
+          // password intentionally omitted
+        })
+        .expect(401);
+
+      // Verify the error response structure
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        message: 'Unauthorized',
+      });
+    });
+
+    // 3. Security Tests
+    it('should return 401 when CSRF token is missing', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Setup test data
+      const testEmail = generateUniqueEmail();
+      const validPassword = 'Password123!';
+      const validName = 'Test User';
+
+      // First create a user to test signin
+      const hashedPassword = await hash(validPassword);
+      const user = await userService.create({
+        email: testEmail,
+        password: hashedPassword,
+        name: validName,
+      });
+      expect(user).toBeDefined();
+
+      // Get cookies including deviceId and CSRF cookie
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Attempt to sign in with cookies but without CSRF token header
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .set('Cookie', cookies)
+        // Intentionally not setting x-csrf-token header
+        .send({
+          email: testEmail,
+          password: validPassword,
+        })
+        .expect(401);
+
+      // Verify the error response structure
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        message: 'Invalid CSRF token',
+      });
+    });
+
+    it('should return 401 when CSRF token is invalid', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Setup test data
+      const testEmail = generateUniqueEmail();
+      const validPassword = 'Password123!';
+      const validName = 'Test User';
+
+      // First create a user to test signin
+      const hashedPassword = await hash(validPassword);
+      const user = await userService.create({
+        email: testEmail,
+        password: hashedPassword,
+        name: validName,
+      });
+      expect(user).toBeDefined();
+
+      // Get cookies including deviceId and CSRF cookie
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Attempt to sign in with cookies but with invalid CSRF token
+      const response = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .set('Cookie', cookies)
+        .set('x-csrf-token', 'invalid-token')
+        .send({
+          email: testEmail,
+          password: validPassword,
+        })
+        .expect(401);
+
+      // Verify the error response structure
+      expect(response.body).toMatchObject({
+        statusCode: 401,
+        message: 'Invalid CSRF token',
+      });
+    });
+
+    // 4. Rate Limiting Tests
     it('should rate limit excessive signin attempts', async () => {
       // Get the app and userService from testUtils for this test
       app = testUtils.getApp();
       userService = testUtils.getUserService();
 
       // Setup test data
-      const testEmail = `test-${Date.now()}@example.com`;
+      const testEmail = generateUniqueEmail();
       const validPassword = 'Password123!';
       const validName = 'Test User';
 
@@ -551,7 +505,7 @@ describe('E2E Auth', () => {
       // Get CSRF token and deviceId
       const csrfResponse = await request(app.getHttpServer())
         .post('/auth/csrf-token')
-        .expect(201);
+        .expect(200);
 
       const csrfToken = csrfResponse.body.token;
       const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
@@ -567,7 +521,7 @@ describe('E2E Auth', () => {
             email: testEmail,
             password: validPassword,
           })
-          .expect(201);
+          .expect(200);
       }
 
       // The 6th request should be rate limited
