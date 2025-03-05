@@ -1,6 +1,6 @@
 'use client';
 
-import { signinAction } from '@/actions/auth/signin';
+import { signin } from '@/actions/auth/signin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,7 @@ export function SigninForm() {
 
   const onSubmit = async (data: SigninFormValues) => {
     try {
-      const result = await signinAction(data);
+      const result = await signin(data);
 
       if (!result.success) {
         // Set the error at the root level
