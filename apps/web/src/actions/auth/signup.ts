@@ -16,9 +16,6 @@ import { cookies } from 'next/headers';
 
 /**
  * Server action to handle user signup
- *
- * @param signupFieldsData - User registration data validated against zod schema
- * @returns ApiResponse with status and relevant messages
  */
 export async function signup(
   credentials: SignupCredentials,

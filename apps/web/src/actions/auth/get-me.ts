@@ -5,6 +5,9 @@ import { get } from '@/lib/api/request';
 import { createErrorResponse } from '@/lib/utils/errors';
 import { ApiResponse, ErrorCode, PublicUser } from '@repo/types';
 
+/**
+ * Server action to get the current user's information
+ */
 export async function getMe(): Promise<ApiResponse<PublicUser>> {
   try {
     // 1. Get auth headers

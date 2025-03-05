@@ -13,6 +13,9 @@ import {
 } from '@repo/types';
 import { cookies } from 'next/headers';
 
+/**
+ * Server action to handle user signin
+ */
 export async function signin(
   credentials: SigninCredentials,
 ): Promise<ApiResponse<PublicUser>> {
