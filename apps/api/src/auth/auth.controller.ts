@@ -63,10 +63,9 @@ export class AuthController {
     @Res() res: Response,
   ): Response {
     const token = this.csrfProvider.generateToken(req, res);
-    const deviceId = this.cookieService.getOrCreateDeviceId(req, res);
+    this.cookieService.getOrCreateDeviceId(req, res);
     return res.status(200).json({
       token,
-      deviceId,
     });
   }
 
