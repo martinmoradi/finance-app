@@ -8,14 +8,7 @@ export type ApiResponse<T> =
         validationErrors?: Record<string, string[]>;
         details?: unknown;
       };
-      headers?: Headers;
     };
-
-export interface ApiClientContext {
-  headers?: Record<string, string>;
-  baseUrl?: string;
-  timeoutMs?: number;
-}
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -27,6 +20,7 @@ export interface RequestOptions<T> {
   signal?: AbortSignal;
   timeoutMs?: number;
   skipCsrfCheck?: boolean;
+  baseUrl?: string;
 }
 
 export enum ErrorCode {
