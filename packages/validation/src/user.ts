@@ -1,4 +1,4 @@
-import { NewUser } from '@repo/types';
+import { NewUser, SigninCredentials } from '@repo/types';
 import { z } from 'zod';
 
 export const createUserSchema = z.object({
@@ -21,3 +21,8 @@ export const createUserSchema = z.object({
       'Password must contain at least one uppercase letter, one lowercase letter, and one number',
     ),
 }) satisfies z.ZodType<NewUser>;
+
+export const signinSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+}) satisfies z.ZodType<SigninCredentials>;
