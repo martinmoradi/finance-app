@@ -16,7 +16,7 @@ export async function signout(): Promise<ApiResponse<void>> {
     const session = await getSession();
 
     // 2. If no session, return error
-    if (!session) {
+    if (!session.isAuthenticated) {
       return createErrorResponse<void>(
         ErrorCode.UNKNOWN_ERROR,
         'No session found',
@@ -27,7 +27,7 @@ export async function signout(): Promise<ApiResponse<void>> {
     const headers = await getAuthHeaders();
 
     // 4. Make the API request
-    const response = await post('/auth/signout', session, {
+    const response = await post('/auth/signout', session.user, {
       headers: headers as Record<string, string>,
     });
 
