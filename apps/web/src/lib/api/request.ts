@@ -6,11 +6,7 @@ import { ApiResponse, ErrorCode, RequestOptions } from '@repo/types';
 
 // Core request function
 export async function request<T, D = unknown>(
-  options: RequestOptions<D> & {
-    baseUrl?: string;
-    headers?: Record<string, string>;
-    timeoutMs?: number;
-  },
+  options: RequestOptions<D>,
 ): Promise<ApiResponse<T>> {
   const baseUrl =
     options.baseUrl || process.env.NODE_ENV === 'development'
@@ -19,26 +15,26 @@ export async function request<T, D = unknown>(
   const timeoutMs = options.timeoutMs || 10000;
 
   try {
-    // Set up abort controller for timeout
+    // 1. Set up abort controller for timeout
     const controller = new AbortController();
     const signal = options.signal || controller.signal;
 
-    // Set timeout
+    // 2. Set timeout
     const timeout = setTimeout(() => {
       controller.abort();
     }, timeoutMs);
 
-    // Prepare headers
+    // 3. Prepare headers
     const headers = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...options.headers,
     };
 
-    // Prepare request URL
+    // 4. Prepare request URL
     const url = `${baseUrl}${options.path}`;
 
-    // Prepare request options
+    // 5. Prepare request options
     const requestOptions: RequestInit = {
       method: options.method,
       headers,
@@ -46,18 +42,18 @@ export async function request<T, D = unknown>(
       credentials: 'include', // Include cookies
     };
 
-    // Add body for non-GET requests
+    // 6. Add body for non-GET requests
     if (options.method !== 'GET' && options.data) {
       requestOptions.body = JSON.stringify(options.data);
     }
 
-    // Execute the request
+    // 7. Execute the request
     const response = await fetch(url, requestOptions);
 
-    // Clear the timeout
+    // 8. Clear the timeout
     clearTimeout(timeout);
 
-    // Handle HTTP errors
+    // 9. Handle HTTP errors
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
       return {
@@ -69,11 +65,10 @@ export async function request<T, D = unknown>(
             `Request failed with status ${response.status}`,
           details: errorBody,
         },
-        headers: response.headers,
       };
     }
 
-    // Parse and return successful response
+    // 10. Parse and return successful response
     const data = (await response.json()) as T;
     return {
       success: true,
@@ -83,6 +78,7 @@ export async function request<T, D = unknown>(
   } catch (error) {
     // Handle network and other errors
     if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error('Request timed out', { timeout: timeoutMs });
       return createErrorResponse<T>(
         ErrorCode.NETWORK_ERROR,
         'Request timed out',
@@ -90,6 +86,8 @@ export async function request<T, D = unknown>(
       );
     }
 
+    // Handle unexpected errors
+    console.error('Unexpected error in request:', error);
     return createErrorResponse<T>(
       ErrorCode.NETWORK_ERROR,
       error instanceof Error ? error.message : 'Unknown error occurred',
@@ -101,11 +99,7 @@ export async function request<T, D = unknown>(
 // Convenience functions
 export function get<T>(
   path: string,
-  options?: Partial<RequestOptions<unknown>> & {
-    baseUrl?: string;
-    headers?: Record<string, string>;
-    timeoutMs?: number;
-  },
+  options?: Partial<RequestOptions<unknown>>,
 ): Promise<ApiResponse<T>> {
   return request<T>({
     method: 'GET',
@@ -117,11 +111,7 @@ export function get<T>(
 export function post<T, D = unknown>(
   path: string,
   data: D,
-  options?: Partial<RequestOptions<D>> & {
-    baseUrl?: string;
-    headers?: Record<string, string>;
-    timeoutMs?: number;
-  },
+  options?: Partial<RequestOptions<D>>,
 ): Promise<ApiResponse<T>> {
   return request<T, D>({
     method: 'POST',
@@ -134,11 +124,7 @@ export function post<T, D = unknown>(
 export function put<T, D = unknown>(
   path: string,
   data: D,
-  options?: Partial<RequestOptions<D>> & {
-    baseUrl?: string;
-    headers?: Record<string, string>;
-    timeoutMs?: number;
-  },
+  options?: Partial<RequestOptions<D>>,
 ): Promise<ApiResponse<T>> {
   return request<T, D>({
     method: 'PUT',
@@ -150,11 +136,7 @@ export function put<T, D = unknown>(
 
 export function del<T>(
   path: string,
-  options?: Partial<RequestOptions<unknown>> & {
-    baseUrl?: string;
-    headers?: Record<string, string>;
-    timeoutMs?: number;
-  },
+  options?: Partial<RequestOptions<unknown>>,
 ): Promise<ApiResponse<T>> {
   return request<T>({
     method: 'DELETE',
