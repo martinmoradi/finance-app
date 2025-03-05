@@ -1,32 +1,21 @@
 'use server';
 
+import { getAuthHeaders } from '@/lib/api/auth/get-auth-headers';
 import { get } from '@/lib/api/request';
 import { createErrorResponse } from '@/lib/utils/errors';
-import { ErrorCode, PublicUser } from '@repo/types';
-import { ApiResponse } from '@repo/types';
-import { cookies } from 'next/headers';
-import { buildCookieHeader } from '@/lib/utils/cookies';
+import { ApiResponse, ErrorCode, PublicUser } from '@repo/types';
 
 export async function getMe(): Promise<ApiResponse<PublicUser>> {
   try {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('accessToken');
-    const deviceId = cookieStore.get('deviceId');
+    // 1. Get auth headers
+    const headers = await getAuthHeaders();
 
-    // Create a Cookie header with all necessary cookies
-    const headers: Record<string, string> = {};
-    if (accessToken?.value && deviceId?.value) {
-      // Manually create a cookie header with both required cookies
-      headers['Cookie'] = buildCookieHeader({
-        accessToken: accessToken.value,
-        deviceId: deviceId.value,
-      });
-    }
-
+    // 2. Make the API request
     const response = await get<PublicUser>('/auth/me', {
-      headers,
+      headers: headers as Record<string, string>,
     });
 
+    // 3. Handle HTTP errors
     if (!response.success) {
       console.error('Me response error:', response);
       return createErrorResponse<PublicUser>(
@@ -36,9 +25,11 @@ export async function getMe(): Promise<ApiResponse<PublicUser>> {
       );
     }
 
+    // 4. Return the response
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error in getMe:', error);
+    // Handle unexpected errors
+    console.error('Unexpected error in getMeAction:', error);
     return createErrorResponse<PublicUser>(
       ErrorCode.SERVER_ERROR,
       'An unexpected error occurred during getMe',
