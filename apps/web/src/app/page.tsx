@@ -1,5 +1,7 @@
 'use client';
 
+import { signout } from '@/actions/auth/signout';
+import { Button } from '@/components/ui/button';
 import Me from './me';
 
 export default function Home() {
@@ -7,6 +9,8 @@ export default function Home() {
     <>
       <div>Home page</div>
       <Me />
+
+      <Button onClick={signout}>Sign out</Button>
     </>
   );
 }
