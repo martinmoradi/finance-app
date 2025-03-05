@@ -1,0 +1,11 @@
+# API service (running in Docker)
+api.local.dev {
+    tls /etc/caddy/certs/api.local.dev+4.pem /etc/caddy/certs/api.local.dev+4-key.pem
+    reverse_proxy api:3001
+}
+
+# Frontend service (running on host)
+app.local.dev {
+    tls /etc/caddy/certs/api.local.dev+4.pem /etc/caddy/certs/api.local.dev+4-key.pem
+    reverse_proxy host.docker.internal:3000
+}

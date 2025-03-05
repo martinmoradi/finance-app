@@ -1,4 +1,20 @@
 services:
+  # Caddy HTTPS Proxy
+  caddy:
+    container_name: caddy_dev
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '443:443' # HTTPS port
+      - '80:80' # HTTP port (for redirects)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./certs:/etc/caddy/certs
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app_network_dev
+
   # PostgreSQL Database Service
   postgres:
     container_name: postgres_dev
@@ -99,6 +115,10 @@ volumes:
     name: finance_app_postgres_dev_data # Named volume for database persistence
   postgres_test_data:
     name: finance_app_postgres_test_data
+  caddy_data:
+    name: caddy_data # Added missing volume for Caddy data
+  caddy_config:
+    name: caddy_config # Added missing volume for Caddy config
 
 # Docker Network Configuration
 networks:
