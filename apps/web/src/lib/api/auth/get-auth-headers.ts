@@ -5,6 +5,9 @@ import { createErrorResponse } from '@/lib/utils/errors';
 import { ErrorCode } from '@repo/types';
 import { cookies } from 'next/headers';
 
+/**
+ * Server action helper to get the authentication headers
+ */
 export async function getAuthHeaders() {
   // 1. Get cookies
   const cookieStore = await cookies();

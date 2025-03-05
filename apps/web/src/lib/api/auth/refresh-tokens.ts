@@ -8,6 +8,9 @@ import { createErrorResponse } from '@/lib/utils/errors';
 import { ApiResponse, ErrorCode, PublicUser } from '@repo/types';
 import { cookies } from 'next/headers';
 
+/**
+ * Server action to refresh user tokens
+ */
 export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
   try {
     // 1. Get session cookie

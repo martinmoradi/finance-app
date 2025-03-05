@@ -7,8 +7,6 @@ import { cookies } from 'next/headers';
 /**
  * Gets the CSRF headers required for authenticated requests.
  * Fetches a new CSRF token if one doesn't exist.
- *
- * @returns {Promise<Record<string, string>>} Object containing Cookie and x-csrf-token headers
  */
 export async function getCsrfHeaders(): Promise<Record<string, string>> {
   // 1. Get cookie store and determine CSRF cookie name

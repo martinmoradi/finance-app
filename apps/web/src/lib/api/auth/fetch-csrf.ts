@@ -6,6 +6,9 @@ import { createErrorResponse } from '@/lib/utils/errors';
 import { ApiResponse, CsrfTokenResponse, ErrorCode } from '@repo/types';
 import { cookies } from 'next/headers';
 
+/**
+ * Server action helper to fetch a new CSRF token
+ */
 export async function fetchCsrfToken(): Promise<
   ApiResponse<CsrfTokenResponse>
 > {
