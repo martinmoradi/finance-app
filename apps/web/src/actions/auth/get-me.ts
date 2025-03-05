@@ -1,6 +1,8 @@
 'use server';
 
 import { getAuthHeaders } from '@/lib/api/auth/get-auth-headers';
+import { getSession } from '@/lib/api/auth/get-session';
+import { refreshTokens } from '@/lib/api/auth/refresh-tokens';
 import { get } from '@/lib/api/request';
 import { createErrorResponse } from '@/lib/utils/errors';
 import { ApiResponse, ErrorCode, PublicUser } from '@repo/types';
@@ -13,12 +15,28 @@ export async function getMe(): Promise<ApiResponse<PublicUser>> {
     // 1. Get auth headers
     const headers = await getAuthHeaders();
 
-    // 2. Make the API request
+    // 2. Get session
+    const session = await getSession();
+
+    // 3. If no session, return error
+    if (!session.isAuthenticated) {
+      return createErrorResponse<PublicUser>(
+        ErrorCode.UNKNOWN_ERROR,
+        'No session found',
+      );
+    }
+
+    // 4. Refresh tokens if expired
+    if (session.isExpired) {
+      await refreshTokens();
+    }
+
+    // 5. Make the API request
     const response = await get<PublicUser>('/auth/me', {
       headers: headers as Record<string, string>,
     });
 
-    // 3. Handle HTTP errors
+    // 6. Handle HTTP errors
     if (!response.success) {
       console.error('Me response error:', response);
       return createErrorResponse<PublicUser>(
@@ -28,7 +46,7 @@ export async function getMe(): Promise<ApiResponse<PublicUser>> {
       );
     }
 
-    // 4. Return the response
+    // 7. Return the response
     return { success: true, data: response.data };
   } catch (error) {
     // Handle unexpected errors
