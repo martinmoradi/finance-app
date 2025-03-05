@@ -16,7 +16,7 @@ export const corsConfig = {
   credentials: true,
 
   // Allow these headers in requests
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
 
   // How long the browser should cache the CORS response
   maxAge: 86400, // 24 hours
