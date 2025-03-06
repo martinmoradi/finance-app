@@ -43,8 +43,9 @@ export async function signin(
     const setCookieHeader = response.headers?.get('Set-Cookie');
     const parsedCookies = parseAndSetCookies(cookieStore, setCookieHeader!);
 
-    // 5. Get access token
+    // 5. Get tokens
     const accessToken = parsedCookies['accessToken'];
+    const refreshToken = parsedCookies['refreshToken'];
 
     // 6. Handle no access token
     if (!accessToken) {
@@ -54,8 +55,16 @@ export async function signin(
       );
     }
 
-    // 7. Set session cookie
-    createSessionCookie(response.data, accessToken);
+    // 7. Handle no refresh token
+    if (!refreshToken) {
+      return createErrorResponse<PublicUser>(
+        ErrorCode.UNKNOWN_ERROR,
+        'No refresh token found',
+      );
+    }
+
+    // 8. Set session cookie
+    await createSessionCookie(response.data, accessToken, refreshToken);
 
     return { success: true, data: response.data };
   } catch (error) {

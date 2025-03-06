@@ -1,11 +1,16 @@
 'use server';
 
-import { createSessionCookie } from '@/lib/api/auth/create-session-cookie';
 import { getAuthHeaders } from '@/lib/api/auth/get-auth-headers';
+import {
+  getSessionOptions,
+  sessionOptions,
+} from '@/lib/api/auth/session.config';
 import { post } from '@/lib/api/request';
 import { parseAndSetCookies } from '@/lib/utils/cookies';
 import { createErrorResponse } from '@/lib/utils/errors';
-import { ApiResponse, ErrorCode, PublicUser } from '@repo/types';
+import { ApiResponse, ErrorCode, PublicUser, SessionData } from '@repo/types';
+import { getIronSession } from 'iron-session';
+import { jwtDecode } from 'jwt-decode';
 import { cookies } from 'next/headers';
 
 /**
@@ -15,7 +20,12 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
   try {
     // 1. Get session cookie
     const cookieStore = await cookies();
-    const session = cookieStore.get('session');
+    const session = await getIronSession<SessionData>(
+      cookieStore,
+      sessionOptions,
+    );
+
+    const user = session.user;
 
     // 2. Handle no session
     if (!session) {
@@ -25,11 +35,9 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
       );
     }
 
-    // 3. Parse session cookie
-    const { user } = JSON.parse(session.value) as { user: PublicUser };
-
     // 4. Get auth headers
-    const headers = await getAuthHeaders();
+    const headers = await getAuthHeaders({ isRefresh: true });
+    console.log('headers', headers);
     const response = await post<PublicUser>('/auth/refresh', user, {
       headers: headers as Record<string, string>,
     });
@@ -48,8 +56,9 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
     const setCookieHeader = response.headers?.get('Set-Cookie');
     const parsedCookies = parseAndSetCookies(cookieStore, setCookieHeader!);
 
-    // 7. Get access token
+    // 7. Get tokens
     const accessToken = parsedCookies['accessToken'];
+    const refreshToken = parsedCookies['refreshToken'];
 
     // 8. Handle no access token
     if (!accessToken) {
@@ -59,8 +68,30 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
       );
     }
 
-    // 9. Set session cookie
-    createSessionCookie(response.data, accessToken);
+    // 9. Handle no refresh token
+    if (!refreshToken) {
+      return createErrorResponse<PublicUser>(
+        ErrorCode.UNKNOWN_ERROR,
+        'No refresh token found',
+      );
+    }
+
+    // 10. Get JWT payload
+    const jwtPayload = jwtDecode(accessToken);
+    const expiresAt = jwtPayload.exp! * 1000;
+    const ttlInSeconds = Math.floor((expiresAt - Date.now()) / 1000);
+
+    // Update session configuration with new TTL
+    session.updateConfig(getSessionOptions(ttlInSeconds));
+
+    // Update session with refreshed data
+    session.user = response.data;
+    session.isAuthenticated = true;
+    session.expiresSoon = expiresAt - Date.now() < 5 * 60 * 1000;
+    session.expiresAt = expiresAt;
+    session.refreshToken = refreshToken;
+    // Save the session with the updated data
+    await session.save();
 
     return { success: true, data: response.data };
   } catch (error) {

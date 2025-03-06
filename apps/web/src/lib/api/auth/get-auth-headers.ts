@@ -1,14 +1,21 @@
 'use server';
 
+import { getSession } from '@/lib/api/auth/get-session';
 import { buildCookieHeader } from '@/lib/utils/cookies';
 import { createErrorResponse } from '@/lib/utils/errors';
 import { ErrorCode } from '@repo/types';
 import { cookies } from 'next/headers';
 
+interface GetAuthHeadersOptions {
+  isRefresh?: boolean;
+}
+
 /**
  * Server action helper to get the authentication headers
  */
-export async function getAuthHeaders() {
+export async function getAuthHeaders({
+  isRefresh = false,
+}: GetAuthHeadersOptions = {}) {
   // 1. Get cookies
   const cookieStore = await cookies();
   const csrfCookieName =
@@ -17,8 +24,15 @@ export async function getAuthHeaders() {
   const deviceId = cookieStore.get('deviceId');
   const accessToken = cookieStore.get('accessToken');
 
+  const session = await getSession();
+
   // 2. Handle missing cookies
-  if (!accessToken?.value || !deviceId?.value || !csrf?.value) {
+  if (
+    !accessToken?.value ||
+    !deviceId?.value ||
+    !csrf?.value ||
+    !session.isAuthenticated
+  ) {
     return createErrorResponse(
       ErrorCode.AUTHENTICATION_ERROR,
       'Unauthenticated',
@@ -31,6 +45,7 @@ export async function getAuthHeaders() {
     [csrfCookieName]: csrf.value,
     deviceId: deviceId.value,
     accessToken: accessToken.value,
+    ...(isRefresh ? { refreshToken: session.refreshToken } : {}),
   };
   headers['Cookie'] = buildCookieHeader(cookieData);
 

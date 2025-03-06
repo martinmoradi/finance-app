@@ -61,6 +61,7 @@ export async function signup(
 
     // 5. Get access token
     const accessToken = parsedCookies['accessToken'];
+    const refreshToken = parsedCookies['refreshToken'];
 
     // 8. Handle no access token
     if (!accessToken) {
@@ -70,8 +71,16 @@ export async function signup(
       );
     }
 
-    // 9. Set session cookie
-    createSessionCookie(response.data, accessToken);
+    // 9. Handle no refresh token
+    if (!refreshToken) {
+      return createErrorResponse<PublicUser>(
+        ErrorCode.UNKNOWN_ERROR,
+        'No refresh token found',
+      );
+    }
+
+    // 10. Set session cookie
+    await createSessionCookie(response.data, accessToken, refreshToken);
 
     return { success: true, data: response.data };
   } catch (error) {
