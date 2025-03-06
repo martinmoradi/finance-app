@@ -1,8 +1,8 @@
 'use server';
 
-import { getSession } from '@/lib/api/auth/get-session';
-import { buildCookieHeader } from '@/lib/utils/cookies';
-import { createErrorResponse } from '@/lib/utils/errors';
+import { getSession } from '@/features/auth/actions/get-session';
+import { buildCookieHeader } from '@/features/auth/utils/cookies';
+import { createErrorResponse } from '@/lib/errors';
 import { ErrorCode } from '@repo/types';
 import { cookies } from 'next/headers';
 

@@ -3,37 +3,37 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuthStore } from '@/stores/useAuthStore';
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createUserSchema } from '@repo/validation';
+import { signinSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
-import { redirect } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 
-type SignupFormValues = z.infer<typeof createUserSchema>;
+type SigninFormValues = z.infer<typeof signinSchema>;
 
-export function SignupForm() {
+export function SigninForm() {
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm<SignupFormValues>({
-    resolver: zodResolver(createUserSchema),
+  } = useForm<SigninFormValues>({
+    resolver: zodResolver(signinSchema),
     defaultValues: {
-      name: '',
       email: '',
       password: '',
     },
   });
 
-  const { signup } = useAuthStore();
-
-  const onSubmit = async (data: SignupFormValues) => {
+  const { signin } = useAuthStore();
+  const router = useRouter();
+  const onSubmit = async (data: SigninFormValues) => {
     try {
-      const result = await signup(data);
+      const result = await signin(data);
+      console.log('signin result', result.success, result);
 
       if (!result.success) {
         setError('root', {
@@ -43,13 +43,13 @@ export function SignupForm() {
         return;
       }
 
-      redirect('/');
+      router.push('/');
     } catch (error) {
       console.error(error);
       setError('root', {
-        message: 'An unexpected error occurred. Please try again.',
+        message: 'TEST An unexpected error occurred. Please try again.',
       });
-      toast.error('An unexpected error occurred. Please try again.');
+      toast.error('TEST An unexpected error occurred. Please try again.');
     }
   };
 
@@ -64,19 +64,6 @@ export function SignupForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='name'>Name</Label>
-          <Input
-            id='name'
-            {...register('name')}
-            placeholder='Enter your name'
-            className={errors.name ? 'border-red-300 focus:border-red-500' : ''}
-          />
-          {errors.name && (
-            <p className='text-sm text-red-500'>{errors.name.message}</p>
-          )}
-        </div>
-
         <div className='space-y-2'>
           <Label htmlFor='email'>Email</Label>
           <Input
@@ -113,18 +100,18 @@ export function SignupForm() {
           {isSubmitting ? (
             <>
               <Loader2 className='h-4 w-4 mr-2 animate-spin' />
-              Creating account...
+              Signing in...
             </>
           ) : (
-            'Sign up'
+            'Sign in'
           )}
         </Button>
       </form>
 
       <p className='mt-4 text-center text-sm text-gray-500'>
-        Already have an account?{' '}
-        <a href='/signin' className='text-blue-600 hover:underline'>
-          Sign in
+        Don&apos;t have an account?{' '}
+        <a href='/signup' className='text-blue-600 hover:underline'>
+          Sign up
         </a>
       </p>
     </div>

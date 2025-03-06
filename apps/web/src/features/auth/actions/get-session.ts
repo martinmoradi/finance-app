@@ -1,6 +1,6 @@
 'use server';
 
-import { sessionOptions } from '@/lib/api/auth/session.config';
+import { sessionOptions } from '@/features/auth/config/session.config';
 import { SessionCookie, SessionData } from '@repo/types';
 import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';

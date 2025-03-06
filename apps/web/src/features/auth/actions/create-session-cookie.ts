@@ -1,6 +1,6 @@
 'use server';
 
-import { getSessionOptions } from '@/lib/api/auth/session.config';
+import { getSessionOptions } from '@/features/auth/config/session.config';
 import { PublicUser } from '@repo/types';
 import { getIronSession } from 'iron-session';
 import { jwtDecode } from 'jwt-decode';

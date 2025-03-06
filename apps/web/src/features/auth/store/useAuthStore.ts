@@ -1,6 +1,6 @@
-import { signin } from '@/actions/auth/signin';
-import { signout } from '@/actions/auth/signout';
-import { signup } from '@/actions/auth/signup';
+import { signin } from '@/features/auth/actions/signin';
+import { signout } from '@/features/auth/actions/signout';
+import { signup } from '@/features/auth/actions/signup';
 import {
   ApiResponse,
   PublicUser,
@@ -9,7 +9,7 @@ import {
 } from '@repo/types';
 import { create } from 'zustand';
 
-interface AuthState {
+interface Auth {
   // State
   user: PublicUser | null;
   isAuthenticated: boolean;
@@ -25,7 +25,7 @@ interface AuthState {
   signout: () => Promise<ApiResponse<void>>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuth = create<Auth>((set) => ({
   // Initial state
   user: null,
   isAuthenticated: false,
@@ -89,14 +89,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signout: async () => {
     try {
-      const response = await signout();
-      if (response.success) {
-        set({ user: null, isAuthenticated: false });
-        return response;
-      } else {
-        set({ error: response.error });
-        return response;
-      }
+      await signout();
+      set({ user: null, isAuthenticated: false });
+      return { success: true, data: undefined };
     } catch (error) {
       console.error(error);
       return {

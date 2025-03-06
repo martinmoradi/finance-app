@@ -1,7 +1,4 @@
-import {
-  createErrorResponse,
-  mapHttpStatusToErrorCode,
-} from '@/lib/utils/errors';
+import { createErrorResponse, mapHttpStatusToErrorCode } from '@/lib/errors';
 import { ApiResponse, ErrorCode, RequestOptions } from '@repo/types';
 
 // Core request function

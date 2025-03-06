@@ -1,8 +1,8 @@
 'use server';
 
-import { post } from '@/lib/api/request';
-import { parseAndSetCookies } from '@/lib/utils/cookies';
-import { createErrorResponse } from '@/lib/utils/errors';
+import { post } from '@/lib/request';
+import { parseAndSetCookies } from '@/features/auth/utils/cookies';
+import { createErrorResponse } from '@/lib/errors';
 import { ApiResponse, CsrfTokenResponse, ErrorCode } from '@repo/types';
 import { cookies } from 'next/headers';
 

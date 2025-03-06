@@ -1,4 +1,4 @@
-import { SigninForm } from '@/app/(auth)/_components/signin-form';
+import { SigninForm } from '@/features/auth/components/signin-form';
 import Link from 'next/link';
 
 const SigninPage = () => {

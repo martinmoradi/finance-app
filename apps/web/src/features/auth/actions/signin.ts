@@ -1,10 +1,14 @@
 'use server';
 
-import { createSessionCookie } from '@/lib/api/auth/create-session-cookie';
-import { getCsrfHeaders } from '@/lib/api/auth/get-csrf-headers';
-import { post } from '@/lib/api/request';
-import { parseAndSetCookies } from '@/lib/utils/cookies';
-import { createErrorResponse } from '@/lib/utils/errors';
+import { createSessionCookie } from '@/features/auth/actions/create-session-cookie';
+import { getCsrfHeaders } from '@/features/auth/actions/get-csrf-headers';
+import { post } from '@/lib/request';
+import {
+  parseCookiesFromHeader,
+  ParsedCookie,
+  setCookiesFromParsedData,
+} from '@/features/auth/utils/cookies';
+import { createErrorResponse } from '@/lib/errors';
 import {
   ApiResponse,
   ErrorCode,
@@ -38,32 +42,46 @@ export async function signin(
       );
     }
 
-    // 4. Set cookies from response
+    // 4. Parse cookies from response
     const cookieStore = await cookies();
     const setCookieHeader = response.headers?.get('Set-Cookie');
-    const parsedCookies = parseAndSetCookies(cookieStore, setCookieHeader!);
+    const parsedCookies = parseCookiesFromHeader(setCookieHeader!);
 
-    // 5. Get tokens
-    const accessToken = parsedCookies['accessToken'];
-    const refreshToken = parsedCookies['refreshToken'];
+    // 5. Filter cookies and get tokens
+    let accessToken: string | undefined;
+    let refreshToken: string | undefined;
+    const filteredCookies = parsedCookies.filter((cookie: ParsedCookie) => {
+      if (cookie.name === 'refreshToken') {
+        refreshToken = cookie.value;
+        return false; // Remove from the array
+      }
+      if (cookie.name === 'accessToken') {
+        accessToken = cookie.value;
+        return true; // Keep in the array
+      }
+      return true; // Keep all other cookies
+    });
 
-    // 6. Handle no access token
-    if (!accessToken) {
+    // 6. Handle no access token or refresh token
+    if (!accessToken || !refreshToken) {
       return createErrorResponse<PublicUser>(
         ErrorCode.UNKNOWN_ERROR,
-        'No access token found',
+        'No access token or refresh token found',
       );
     }
 
-    // 7. Handle no refresh token
-    if (!refreshToken) {
+    // 7. Set cookies
+    setCookiesFromParsedData(cookieStore, filteredCookies);
+
+    // 8. Handle no access token
+    if (!accessToken || !refreshToken) {
       return createErrorResponse<PublicUser>(
         ErrorCode.UNKNOWN_ERROR,
-        'No refresh token found',
+        'No access token or refresh token found',
       );
     }
 
-    // 8. Set session cookie
+    // 9. Create session cookie
     await createSessionCookie(response.data, accessToken, refreshToken);
 
     return { success: true, data: response.data };

@@ -1,13 +1,13 @@
 'use server';
 
-import { getAuthHeaders } from '@/lib/api/auth/get-auth-headers';
+import { getAuthHeaders } from '@/features/auth/actions/get-auth-headers';
 import {
   getSessionOptions,
   sessionOptions,
-} from '@/lib/api/auth/session.config';
-import { post } from '@/lib/api/request';
-import { parseAndSetCookies } from '@/lib/utils/cookies';
-import { createErrorResponse } from '@/lib/utils/errors';
+} from '@/features/auth/config/session.config';
+import { post } from '@/lib/request';
+import { parseAndSetCookies } from '@/features/auth/utils/cookies';
+import { createErrorResponse } from '@/lib/errors';
 import { ApiResponse, ErrorCode, PublicUser, SessionData } from '@repo/types';
 import { getIronSession } from 'iron-session';
 import { jwtDecode } from 'jwt-decode';

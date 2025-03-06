@@ -1,7 +1,7 @@
 'use server';
 
-import { fetchCsrfToken } from '@/lib/api/auth/fetch-csrf';
-import { buildCookieHeader } from '@/lib/utils/cookies';
+import { fetchCsrfToken } from '@/features/auth/actions/fetch-csrf';
+import { buildCookieHeader } from '@/features/auth/utils/cookies';
 import { cookies } from 'next/headers';
 
 /**

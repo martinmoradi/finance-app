@@ -1,10 +1,10 @@
 'use server';
 
-import { getAuthHeaders } from '@/lib/api/auth/get-auth-headers';
-import { getSession } from '@/lib/api/auth/get-session';
-import { refreshTokens } from '@/lib/api/auth/refresh-tokens';
-import { get } from '@/lib/api/request';
-import { createErrorResponse } from '@/lib/utils/errors';
+import { getAuthHeaders } from '@/features/auth/actions/get-auth-headers';
+import { getSession } from '@/features/auth/actions/get-session';
+import { refreshTokens } from '@/features/auth/actions/refresh-tokens';
+import { get } from '@/lib/request';
+import { createErrorResponse } from '@/lib/errors';
 import { ApiResponse, ErrorCode, PublicUser } from '@repo/types';
 
 /**

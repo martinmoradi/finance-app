@@ -1,10 +1,12 @@
 'use server';
 
-import { getAuthHeaders } from '@/lib/api/auth/get-auth-headers';
-import { getSession } from '@/lib/api/auth/get-session';
-import { post } from '@/lib/api/request';
-import { createErrorResponse } from '@/lib/utils/errors';
-import { ApiResponse, ErrorCode } from '@repo/types';
+import { getAuthHeaders } from '@/features/auth/actions/get-auth-headers';
+import { getSession } from '@/features/auth/actions/get-session';
+import { sessionOptions } from '@/features/auth/config/session.config';
+import { post } from '@/lib/request';
+import { createErrorResponse } from '@/lib/errors';
+import { ApiResponse, ErrorCode, SessionData } from '@repo/types';
+import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
 
 /**
@@ -42,12 +44,20 @@ export async function signout(): Promise<ApiResponse<void>> {
 
     // 6. Delete cookies
     const cookieStore = await cookies();
+    const ironSession = await getIronSession<SessionData>(
+      cookieStore,
+      sessionOptions,
+    );
+    ironSession.user = null;
+    ironSession.isAuthenticated = false;
+    ironSession.refreshToken = '';
+
+    ironSession.destroy();
 
     cookieStore.getAll().forEach((cookie) => {
       cookieStore.delete(cookie.name);
     });
 
-    // 7. Return success
     return { success: true, data: undefined };
   } catch (error) {
     // If unexpected error, return error
