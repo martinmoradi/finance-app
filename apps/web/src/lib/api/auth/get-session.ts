@@ -1,43 +1,43 @@
 'use server';
 
-import { PublicUser } from '@repo/types';
+import { sessionOptions } from '@/lib/api/auth/session.config';
+import { SessionCookie, SessionData } from '@repo/types';
+import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
-
-type SessionData = {
-  data: PublicUser;
-  expiresAt: number;
-};
-
-type Session =
-  | {
-      isAuthenticated: true;
-      user: PublicUser;
-      isExpired: boolean;
-      expiresSoon: boolean;
-    }
-  | {
-      isAuthenticated: false;
-    };
 
 /**
  * Server action helper to get the current user's session
  */
-export async function getSession(): Promise<Session> {
+export async function getSession(): Promise<SessionCookie> {
   const cookieStore = await cookies();
-  const session = cookieStore.get('session');
+  const session = await getIronSession<SessionData>(
+    cookieStore,
+    sessionOptions,
+  );
 
-  if (!session) {
+  // Check if session exists and is authenticated
+  if (!session.isAuthenticated || !session.user) {
     return { isAuthenticated: false };
   }
 
-  const sessionData = JSON.parse(session.value) as SessionData;
-  const isExpired = Date.now() > sessionData.expiresAt;
-  const expiresSoon = sessionData.expiresAt - Date.now() < 5 * 60 * 1000; // 5 minutes
+  // Get current time
+  const now = Date.now();
+
+  // Check if we have an expiresAt value
+  const expiresAt = session.expiresAt || 0;
+
+  // Determine if expired or expiring soon
+  const isExpired = expiresAt > 0 ? now > expiresAt : false;
+  const expiresSoon =
+    expiresAt > 0
+      ? expiresAt - now < 5 * 60 * 1000 && expiresAt > now
+      : session.expiresSoon || false;
 
   return {
     isAuthenticated: true,
-    user: sessionData.data,
+    user: session.user,
     isExpired,
     expiresSoon,
+    refreshToken: session.refreshToken,
   };
 }
