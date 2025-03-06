@@ -1,14 +1,16 @@
 'use client';
 
-import { signin } from '@/actions/auth/signin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signinSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
+import { useRouter } from 'next/navigation';
 
 type SigninFormValues = z.infer<typeof signinSchema>;
 
@@ -26,25 +28,28 @@ export function SigninForm() {
     },
   });
 
+  const { signin } = useAuthStore();
+  const router = useRouter();
   const onSubmit = async (data: SigninFormValues) => {
     try {
       const result = await signin(data);
+      console.log('signin result', result.success, result);
 
       if (!result.success) {
-        // Set the error at the root level
         setError('root', {
           message: result.error?.message || 'An error occurred during signup',
         });
+        toast.error(result.error?.message || 'An error occurred during signup');
         return;
       }
 
-      // Handle successful signup (e.g., redirect or show success message)
-      window.location.href = '/'; // Or use Next.js router
+      router.push('/');
     } catch (error) {
       console.error(error);
       setError('root', {
-        message: 'An unexpected error occurred. Please try again.',
+        message: 'TEST An unexpected error occurred. Please try again.',
       });
+      toast.error('TEST An unexpected error occurred. Please try again.');
     }
   };
 

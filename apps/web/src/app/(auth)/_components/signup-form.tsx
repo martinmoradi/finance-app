@@ -3,11 +3,13 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { signup } from '@/actions/auth/signup';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
+import { redirect } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 type SignupFormValues = z.infer<typeof createUserSchema>;
@@ -27,25 +29,27 @@ export function SignupForm() {
     },
   });
 
+  const { signup } = useAuthStore();
+
   const onSubmit = async (data: SignupFormValues) => {
     try {
       const result = await signup(data);
 
       if (!result.success) {
-        // Set the error at the root level
         setError('root', {
           message: result.error?.message || 'An error occurred during signup',
         });
+        toast.error(result.error?.message || 'An error occurred during signup');
         return;
       }
 
-      // Handle successful signup (e.g., redirect or show success message)
-      window.location.href = '/'; // Or use Next.js router
+      redirect('/');
     } catch (error) {
       console.error(error);
       setError('root', {
         message: 'An unexpected error occurred. Please try again.',
       });
+      toast.error('An unexpected error occurred. Please try again.');
     }
   };
 
