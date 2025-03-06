@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { useAuth } from '@/features/auth/store/useAuthStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signinSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
@@ -28,7 +28,7 @@ export function SigninForm() {
     },
   });
 
-  const { signin } = useAuthStore();
+  const { signin } = useAuth();
   const router = useRouter();
   const onSubmit = async (data: SigninFormValues) => {
     try {
