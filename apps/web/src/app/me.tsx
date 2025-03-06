@@ -1,8 +1,10 @@
 import { getMe } from '@/actions/auth/get-me';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useState } from 'react';
 
 export default function Me() {
   const [result, setResult] = useState<string>('No result yet');
+  const { user } = useAuthStore();
 
   const handleGetMe = async () => {
     console.log('Fetching user data...');
@@ -25,6 +27,10 @@ export default function Me() {
         Debug: Get Me
       </button>
       <pre className='mt-4 p-2 bg-gray-100 rounded'>{result}</pre>
+      <h1>User :</h1>
+      <pre className='mt-4 p-2 bg-gray-100 rounded'>
+        {JSON.stringify(user, null, 2)}
+      </pre>
     </div>
   );
 }
