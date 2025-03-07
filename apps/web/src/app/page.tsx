@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/features/auth/store/useAuthStore';
+import { useAuth } from '@/features/auth/store/useAuth';
 import Me from './me';
 import { useRouter } from 'next/navigation';
 

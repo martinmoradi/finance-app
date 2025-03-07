@@ -1,6 +1,6 @@
 import { getMe } from '@/features/auth/actions/get-me';
 import { refreshTokens } from '@/features/auth/actions/refresh-tokens';
-import { useAuth } from '@/features/auth/store/useAuthStore';
+import { useAuth } from '@/features/auth/store/useAuth';
 import { useState } from 'react';
 
 export default function Me() {
