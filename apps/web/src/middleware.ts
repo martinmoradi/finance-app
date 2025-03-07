@@ -12,21 +12,30 @@ export default async function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.includes(path);
   const isPublicRoute = publicRoutes.includes(path);
 
+  // Route authentication
   const session = await getIronSession<SessionData>(
     request,
     response,
     sessionOptions,
   );
-
   if (isProtectedRoute && !session.isAuthenticated) {
     return NextResponse.redirect(new URL('/signin', request.nextUrl));
   }
-
   if (isPublicRoute && session.isAuthenticated) {
     return NextResponse.redirect(new URL('/', request.nextUrl));
   }
 
-  return response;
+  // Request ID
+  const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-request-id', requestId);
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export const config = {
