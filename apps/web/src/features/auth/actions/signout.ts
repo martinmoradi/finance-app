@@ -1,48 +1,30 @@
 'use server';
 
-import { getAuthHeaders } from '@/features/auth/actions/get-auth-headers';
-import { getSession } from '@/features/auth/actions/get-session';
 import { sessionOptions } from '@/features/auth/config/session.config';
-import { post } from '@/lib/request';
 import { createErrorResponse } from '@/lib/errors';
-import { ApiResponse, ErrorCode, SessionData } from '@repo/types';
+import { post } from '@/lib/request';
+import { ErrorCode, SessionData } from '@repo/types';
 import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
+import { withAuth } from './with-auth';
 
 /**
  * Server action to handle user signout
  */
-export async function signout(): Promise<ApiResponse<void>> {
+export const signout = withAuth<void>(async (headers, session) => {
+  const requestId = headers['x-request-id'] || crypto.randomUUID();
   try {
-    // 1. Get server side session
-    const session = await getSession();
-
-    // 2. If no session, return error
-    if (!session.isAuthenticated) {
-      return createErrorResponse<void>(
-        ErrorCode.UNKNOWN_ERROR,
-        'No session found',
-      );
-    }
-
-    // 3. Get auth headers
-    const headers = await getAuthHeaders();
-
-    // 4. Make the API request
+    // 1. Make the API request
     const response = await post('/auth/signout', session.user, {
-      headers: headers as Record<string, string>,
+      headers: headers,
     });
 
-    // 5. If request fails, return error
+    // 2. If request fails, return error
     if (!response.success) {
-      return createErrorResponse<void>(
-        ErrorCode.UNKNOWN_ERROR,
-        'Failed to signout',
-        `HTTP error! status: ${response.error.code}`,
-      );
+      return response; // (ApiError)
     }
 
-    // 6. Delete cookies
+    // 3. Delete cookies
     const cookieStore = await cookies();
     const ironSession = await getIronSession<SessionData>(
       cookieStore,
@@ -58,14 +40,16 @@ export async function signout(): Promise<ApiResponse<void>> {
       cookieStore.delete(cookie.name);
     });
 
+    // 4. Return success
     return { success: true, data: undefined };
   } catch (error) {
     // If unexpected error, return error
     console.error('Unexpected error in signoutAction:', error);
-    return createErrorResponse<void>(
+    return createErrorResponse(
       ErrorCode.UNKNOWN_ERROR,
       'Failed to signout',
-      error instanceof Error ? error.message : 'Unknown error',
+      requestId,
+      { originalError: error },
     );
   }
-}
+});
