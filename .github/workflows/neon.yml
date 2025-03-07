@@ -1,5 +1,4 @@
-name: Create/Delete Branch for Pull Request
-
+name: Neon database
 on:
   pull_request:
     types:
@@ -20,7 +19,14 @@ jobs:
     steps:
       - name: Get branch name
         id: branch_name
-        uses: tj-actions/branch-names@v8
+        uses:
+          tj-actions/branch-names@v8
+
+          # Set up pnpm package manager
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10.2.0
 
   create_neon_branch:
     name: Create Neon Branch
