@@ -4,21 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/store/useAuth';
+import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signinSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
 
 type SigninFormValues = z.infer<typeof signinSchema>;
 
 export function SigninForm() {
+  const router = useRouter();
+  const { signin, status, clearErrors } = useAuth();
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     setError,
   } = useForm<SigninFormValues>({
     resolver: zodResolver(signinSchema),
@@ -28,34 +33,30 @@ export function SigninForm() {
     },
   });
 
-  const { signin } = useAuth();
-  const router = useRouter();
+  // Clear auth errors when component unmounts
+  useEffect(() => {
+    return () => {
+      clearErrors();
+    };
+  }, [clearErrors]);
+
   const onSubmit = async (data: SigninFormValues) => {
-    try {
-      const result = await signin(data);
-      console.log('signin result', result.success, result);
+    // Clear any previous errors
+    clearErrors();
 
-      if (!result.success) {
-        setError('root', {
-          message: result.error?.message || 'An error occurred during signup',
-        });
-        toast.error(result.error?.message || 'An error occurred during signup');
-        return;
-      }
+    const result = await signin(data);
 
+    if (!result.success) {
+      handleAuthFormError(result, setError, 'signin');
+    } else {
+      toast.success('Signed in successfully');
       router.push('/');
-    } catch (error) {
-      console.error(error);
-      setError('root', {
-        message: 'An unexpected error occurred. Please try again.',
-      });
-      toast.error('An unexpected error occurred. Please try again.');
     }
   };
 
   return (
     <div className='w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md'>
-      <h2 className='text-2xl font-bold mb-6 text-center'>Create an account</h2>
+      <h2 className='text-2xl font-bold mb-6 text-center'>Sign in</h2>
 
       {errors.root && (
         <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm'>
@@ -74,6 +75,7 @@ export function SigninForm() {
             className={
               errors.email ? 'border-red-300 focus:border-red-500' : ''
             }
+            disabled={status === 'loading'}
           />
           {errors.email && (
             <p className='text-sm text-red-500'>{errors.email.message}</p>
@@ -86,18 +88,22 @@ export function SigninForm() {
             id='password'
             type='password'
             {...register('password')}
-            placeholder='Create a password'
+            placeholder='Enter your password'
             className={
               errors.password ? 'border-red-300 focus:border-red-500' : ''
             }
+            disabled={status === 'loading'}
           />
           {errors.password && (
             <p className='text-sm text-red-500'>{errors.password.message}</p>
           )}
         </div>
 
-        <Button type='submit' className='w-full mt-6' disabled={isSubmitting}>
-          {isSubmitting ? (
+        <Button
+          type='submit'
+          className='w-full mt-6'
+          disabled={status === 'loading'}>
+          {status === 'loading' ? (
             <>
               <Loader2 className='h-4 w-4 mr-2 animate-spin' />
               Signing in...

@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/store/useAuth';
+import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -15,10 +17,13 @@ import { z } from 'zod';
 type SignupFormValues = z.infer<typeof createUserSchema>;
 
 export function SignupForm() {
+  const router = useRouter();
+  const { signup, status, clearErrors } = useAuth();
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     setError,
   } = useForm<SignupFormValues>({
     resolver: zodResolver(createUserSchema),
@@ -29,27 +34,24 @@ export function SignupForm() {
     },
   });
 
-  const { signup } = useAuth();
+  // Clear auth errors when component unmounts
+  useEffect(() => {
+    return () => {
+      clearErrors();
+    };
+  }, [clearErrors]);
 
   const onSubmit = async (data: SignupFormValues) => {
-    try {
-      const result = await signup(data);
+    // Clear any previous errors
+    clearErrors();
 
-      if (!result.success) {
-        setError('root', {
-          message: result.error?.message || 'An error occurred during signup',
-        });
-        toast.error(result.error?.message || 'An error occurred during signup');
-        return;
-      }
+    const result = await signup(data);
 
-      redirect('/');
-    } catch (error) {
-      console.error(error);
-      setError('root', {
-        message: 'An unexpected error occurred. Please try again.',
-      });
-      toast.error('An unexpected error occurred. Please try again.');
+    if (!result.success) {
+      handleAuthFormError(result, setError, 'signup');
+    } else {
+      toast.success('Account created successfully');
+      router.push('/');
     }
   };
 
@@ -71,6 +73,7 @@ export function SignupForm() {
             {...register('name')}
             placeholder='Enter your name'
             className={errors.name ? 'border-red-300 focus:border-red-500' : ''}
+            disabled={status === 'loading'}
           />
           {errors.name && (
             <p className='text-sm text-red-500'>{errors.name.message}</p>
@@ -87,6 +90,7 @@ export function SignupForm() {
             className={
               errors.email ? 'border-red-300 focus:border-red-500' : ''
             }
+            disabled={status === 'loading'}
           />
           {errors.email && (
             <p className='text-sm text-red-500'>{errors.email.message}</p>
@@ -103,14 +107,18 @@ export function SignupForm() {
             className={
               errors.password ? 'border-red-300 focus:border-red-500' : ''
             }
+            disabled={status === 'loading'}
           />
           {errors.password && (
             <p className='text-sm text-red-500'>{errors.password.message}</p>
           )}
         </div>
 
-        <Button type='submit' className='w-full mt-6' disabled={isSubmitting}>
-          {isSubmitting ? (
+        <Button
+          type='submit'
+          className='w-full mt-6'
+          disabled={status === 'loading'}>
+          {status === 'loading' ? (
             <>
               <Loader2 className='h-4 w-4 mr-2 animate-spin' />
               Creating account...
