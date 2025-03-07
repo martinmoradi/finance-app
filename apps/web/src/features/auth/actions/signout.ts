@@ -4,6 +4,7 @@ import { sessionOptions } from '@/features/auth/config/session.config';
 import { createErrorResponse } from '@/lib/errors';
 import { post } from '@/lib/request';
 import { ErrorCode, SessionData } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
 import { withAuth } from './with-auth';
@@ -44,7 +45,21 @@ export const signout = withAuth<void>(async (headers, session) => {
     return { success: true, data: undefined };
   } catch (error) {
     // If unexpected error, return error
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        request_id: requestId,
+        error_type:
+          error instanceof Error ? error.name : 'unexpected_signout_error',
+      },
+      extra: {
+        request_id: requestId,
+        message: 'Unexpected error in signoutAction',
+      },
+    });
+
     console.error('Unexpected error in signoutAction:', error);
+
     return createErrorResponse(
       ErrorCode.UNKNOWN_ERROR,
       'Failed to signout',

@@ -1,5 +1,6 @@
 import { createErrorResponse, mapHttpStatusToErrorCode } from '@/lib/errors';
 import { ApiResponse, ErrorCode, RequestOptions } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 
 // Core request function
 export async function request<T, D = unknown>(
@@ -56,6 +57,22 @@ export async function request<T, D = unknown>(
       const errorBody = (await response.json().catch(() => ({}))) as Error;
       const errorCode = mapHttpStatusToErrorCode(response.status);
 
+      Sentry.captureException(
+        new Error(`Request API error: ${response.status} ${response.status}`),
+        {
+          tags: {
+            api_endpoint: options.path,
+            http_method: options.method,
+            status_code: response.status,
+          },
+          extra: {
+            request_id: requestId,
+            errorBody,
+            url: response.url,
+          },
+        },
+      );
+
       return createErrorResponse(
         errorCode,
         errorBody.message || `Request failed with status ${response.status}`,
@@ -79,6 +96,18 @@ export async function request<T, D = unknown>(
   } catch (error) {
     // Handle network and other errors
     if (error instanceof DOMException && error.name === 'AbortError') {
+      Sentry.captureMessage('API request timeout', {
+        level: 'error',
+        tags: {
+          api_endpoint: options.path,
+          http_method: options.method,
+        },
+        extra: {
+          request_id: requestId,
+          timeout: timeoutMs,
+        },
+      });
+
       console.error('Request timed out', { timeout: timeoutMs });
       return createErrorResponse(
         ErrorCode.NETWORK_ERROR,
@@ -90,6 +119,18 @@ export async function request<T, D = unknown>(
 
     // Handle unexpected errors
     console.error('Unexpected error in request:', error);
+    Sentry.captureException(error, {
+      tags: {
+        api_endpoint: options.path,
+        http_method: options.method,
+        error_type:
+          error instanceof Error ? error.name : 'unexpected_request_error',
+      },
+      extra: {
+        request_id: requestId,
+        message: 'Unexpected error in API request',
+      },
+    });
     return createErrorResponse(
       ErrorCode.NETWORK_ERROR,
       error instanceof Error ? error.message : 'Unknown error occurred',

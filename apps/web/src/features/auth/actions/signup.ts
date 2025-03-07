@@ -11,6 +11,7 @@ import {
   SignupCredentials,
 } from '@repo/types';
 import { createUserSchema } from '@repo/validation';
+import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 
 /**
@@ -58,7 +59,21 @@ export async function signup(
     return { success: true, data: response.data };
   } catch (error) {
     // Handle unexpected errors
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        request_id: requestId,
+        error_type:
+          error instanceof Error ? error.name : 'unexpected_signup_error',
+      },
+      extra: {
+        request_id: requestId,
+        message: 'Unexpected error in signupAction',
+      },
+    });
+
     console.error('Unexpected error in signupAction:', error);
+
     return createErrorResponse(
       ErrorCode.SERVER_ERROR,
       'An unexpected error occurred during signup',

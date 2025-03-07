@@ -10,7 +10,9 @@ import {
   PublicUser,
   SigninCredentials,
 } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
+
 /**
  * Server action to handle user signin
  */
@@ -42,7 +44,21 @@ export async function signin(
     return { success: true, data: response.data };
   } catch (error) {
     // Handle unexpected errors
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        request_id: requestId,
+        error_type:
+          error instanceof Error ? error.name : 'unexpected_signin_error',
+      },
+      extra: {
+        request_id: requestId,
+        message: 'Unexpected error in signinAction',
+      },
+    });
+
     console.error('Unexpected error in signinAction:', error);
+
     return createErrorResponse(
       ErrorCode.SERVER_ERROR,
       'An unexpected error occurred during signin',

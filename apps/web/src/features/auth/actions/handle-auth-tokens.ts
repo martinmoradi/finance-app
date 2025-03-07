@@ -1,15 +1,15 @@
 'use server';
 
-import { ErrorCode } from '@repo/types';
+import { createSessionCookie } from '@/features/auth/actions/create-session-cookie';
 import {
+  parseCookiesFromHeader,
   ParsedCookie,
   setCookiesFromParsedData,
 } from '@/features/auth/utils/cookies';
-import { parseCookiesFromHeader } from '@/features/auth/utils/cookies';
 import { createErrorResponse } from '@/lib/errors';
-import { PublicUser } from '@repo/types';
+import { ErrorCode, PublicUser } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 import { cookies, headers } from 'next/headers';
-import { createSessionCookie } from '@/features/auth/actions/create-session-cookie';
 
 export async function handleAuthTokens(
   setCookieHeaders: string,
@@ -40,6 +40,18 @@ export async function handleAuthTokens(
 
     // 3. Handle no access token or refresh token
     if (!accessToken || !refreshToken) {
+      Sentry.captureMessage(
+        'HandleAuthTokens: No access token or refresh token found',
+        {
+          level: 'error',
+          tags: {
+            request_id: requestId,
+          },
+          extra: {
+            user,
+          },
+        },
+      );
       return createErrorResponse(
         ErrorCode.UNKNOWN_ERROR,
         'No access token or refresh token found',
@@ -50,18 +62,22 @@ export async function handleAuthTokens(
     // 4. Set cookies
     setCookiesFromParsedData(cookieStore, filteredCookies);
 
-    // 5. Handle no tokens
-    if (!accessToken || !refreshToken) {
-      return createErrorResponse(
-        ErrorCode.UNKNOWN_ERROR,
-        'No access token or refresh token found',
-        requestId,
-      );
-    }
-
-    // 6. Create session cookie
+    // 5. Create session cookie
     await createSessionCookie(user, accessToken, refreshToken);
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        error_type:
+          error instanceof Error
+            ? error.name
+            : 'unexpected_handle_auth_tokens_error',
+      },
+      extra: {
+        request_id: requestId,
+        message: 'Unexpected error in handleAuthTokens',
+      },
+    });
     console.error('Error handling auth tokens:', error);
     return createErrorResponse(
       ErrorCode.UNKNOWN_ERROR,

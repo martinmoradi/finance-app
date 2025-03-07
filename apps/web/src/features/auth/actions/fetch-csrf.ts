@@ -1,11 +1,11 @@
 'use server';
 
-import { post } from '@/lib/request';
 import { parseAndSetCookies } from '@/features/auth/utils/cookies';
 import { createErrorResponse } from '@/lib/errors';
+import { post } from '@/lib/request';
 import { ApiResponse, CsrfTokenResponse, ErrorCode } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 import { cookies, headers } from 'next/headers';
-
 /**
  * Server action helper to fetch a new CSRF token
  */
@@ -31,6 +31,19 @@ export async function fetchCsrfToken(): Promise<
     // 4. Return the response
     return { success: true, data: response.data };
   } catch (error) {
+    Sentry.captureException(error, {
+      level: 'error',
+      tags: {
+        api_endpoint: '/auth/csrf-token',
+        http_method: 'POST',
+        error_type:
+          error instanceof Error ? error.name : 'unexpected_fetch_csrf_error',
+      },
+      extra: {
+        request_id: requestId,
+        message: 'Unexpected error in fetchCsrfToken',
+      },
+    });
     console.error('Unexpected error in fetchCsrfToken:', error);
     return createErrorResponse(
       ErrorCode.UNKNOWN_ERROR,

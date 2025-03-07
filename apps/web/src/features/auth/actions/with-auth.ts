@@ -3,6 +3,7 @@ import { getSession } from '@/features/auth/actions/get-session';
 import { refreshTokens } from '@/features/auth/actions/refresh-tokens';
 import { createErrorResponse } from '@/lib/errors';
 import { ApiResponse, ErrorCode, SessionCookie } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 
 type ServerActionWithAuth<T, P extends unknown[] = unknown[]> = (
@@ -46,7 +47,21 @@ export function withAuth<T, P extends unknown[] = unknown[]>(
         ...args,
       );
     } catch (error) {
+      Sentry.captureException(error, {
+        level: 'error',
+        tags: {
+          request_id: requestId,
+          error_type:
+            error instanceof Error ? error.name : 'unexpected_with_auth_error',
+        },
+        extra: {
+          request_id: requestId,
+          message: 'Unexpected error in withAuth',
+        },
+      });
+
       console.error(`Unexpected error in authenticated server action:`, error);
+
       return createErrorResponse(
         ErrorCode.SERVER_ERROR,
         'An unexpected error occurred',

@@ -10,6 +10,7 @@ import {
   SigninCredentials,
   SignupCredentials,
 } from '@repo/types';
+import * as Sentry from '@sentry/nextjs';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -55,8 +56,19 @@ export const useAuth = create<AuthState & AuthActions>()(
           }
           return response;
         } catch (error) {
-          console.error('Unhandled exception in auth store:', error);
           const clientErrorId = crypto.randomUUID();
+
+          Sentry.captureException(error, {
+            level: 'error',
+            tags: {
+              error_type:
+                error instanceof Error ? error.name : 'unexpected_signup_error',
+            },
+            extra: {
+              client_error_id: clientErrorId,
+              message: 'Unexpected error in auth store: signupAction',
+            },
+          });
           const errorResponse = createErrorResponse(
             ErrorCode.UNKNOWN_ERROR,
             'An unexpected client error occurred',
@@ -88,8 +100,20 @@ export const useAuth = create<AuthState & AuthActions>()(
             return response;
           }
         } catch (error) {
-          console.error('Unhandled exception in auth store:', error);
           const clientErrorId = crypto.randomUUID();
+
+          Sentry.captureException(error, {
+            level: 'error',
+            tags: {
+              error_type:
+                error instanceof Error ? error.name : 'unexpected_signin_error',
+            },
+            extra: {
+              client_error_id: clientErrorId,
+              message: 'Unexpected error in auth store: signinAction',
+            },
+          });
+
           const errorResponse = createErrorResponse(
             ErrorCode.UNKNOWN_ERROR,
             'An unexpected client error occurred',
@@ -114,8 +138,22 @@ export const useAuth = create<AuthState & AuthActions>()(
           });
           return { success: true, data: undefined };
         } catch (error) {
-          console.error('Unhandled exception in auth store:', error);
           const clientErrorId = crypto.randomUUID();
+
+          Sentry.captureException(error, {
+            level: 'error',
+            tags: {
+              error_type:
+                error instanceof Error
+                  ? error.name
+                  : 'unexpected_signout_error',
+            },
+            extra: {
+              client_error_id: clientErrorId,
+              message: 'Unexpected error in auth store: signoutAction',
+            },
+          });
+
           const errorResponse = createErrorResponse(
             ErrorCode.UNKNOWN_ERROR,
             'An unexpected client error occurred',

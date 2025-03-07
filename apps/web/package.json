@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev-sentry": "next dev",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
@@ -20,6 +21,7 @@
     "@repo/env-validation": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/validation": "workspace:*",
+    "@sentry/nextjs": "^9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "iron-session": "^8.0.4",
