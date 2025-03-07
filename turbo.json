@@ -104,6 +104,9 @@
     "db:reset": {
       "dependsOn": ["^build"],
       "cache": false
+    },
+    "db:push:neon": {
+      "dependsOn": ["^build"]
     }
   }
 }
