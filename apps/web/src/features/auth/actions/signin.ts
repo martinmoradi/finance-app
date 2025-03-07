@@ -10,13 +10,16 @@ import {
   PublicUser,
   SigninCredentials,
 } from '@repo/types';
-
+import { headers } from 'next/headers';
 /**
  * Server action to handle user signin
  */
 export async function signin(
   credentials: SigninCredentials,
 ): Promise<ApiResponse<PublicUser>> {
+  const requestId =
+    (await headers()).get('x-request-id') || crypto.randomUUID();
+
   try {
     // 1. Get CSRF headers
     const headers = await getCsrfHeaders();
@@ -28,12 +31,7 @@ export async function signin(
 
     // 3. Handle HTTP errors
     if (!response.success) {
-      console.error('Signin response error:', response);
-      return createErrorResponse<PublicUser>(
-        ErrorCode.UNKNOWN_ERROR,
-        'Failed to signin',
-        `HTTP error! status: ${response.error.code}`,
-      );
+      return response; // (ApiError)
     }
 
     // 4. Handle auth tokens and cookies
@@ -45,10 +43,11 @@ export async function signin(
   } catch (error) {
     // Handle unexpected errors
     console.error('Unexpected error in signinAction:', error);
-    return createErrorResponse<PublicUser>(
+    return createErrorResponse(
       ErrorCode.SERVER_ERROR,
       'An unexpected error occurred during signin',
-      error instanceof Error ? error.message : undefined,
+      requestId,
+      { originalError: error },
     );
   }
 }

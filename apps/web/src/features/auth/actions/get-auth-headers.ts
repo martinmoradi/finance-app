@@ -4,7 +4,7 @@ import { getSession } from '@/features/auth/actions/get-session';
 import { buildCookieHeader } from '@/features/auth/utils/cookies';
 import { createErrorResponse } from '@/lib/errors';
 import { ErrorCode } from '@repo/types';
-import { cookies } from 'next/headers';
+import { cookies, headers as nextHeaders } from 'next/headers';
 
 interface GetAuthHeadersOptions {
   isRefresh?: boolean;
@@ -16,6 +16,8 @@ interface GetAuthHeadersOptions {
 export async function getAuthHeaders({
   isRefresh = false,
 }: GetAuthHeadersOptions = {}) {
+  const requestId =
+    (await nextHeaders()).get('x-request-id') || crypto.randomUUID();
   // 1. Get cookies
   const cookieStore = await cookies();
   const csrfCookieName =
@@ -36,11 +38,14 @@ export async function getAuthHeaders({
     return createErrorResponse(
       ErrorCode.AUTHENTICATION_ERROR,
       'Unauthenticated',
+      requestId,
     );
   }
 
   // 3. Build headers
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    'x-request-id': requestId,
+  };
   const cookieData: Record<string, string> = {
     [csrfCookieName]: csrf.value,
     deviceId: deviceId.value,

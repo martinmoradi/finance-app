@@ -11,12 +11,14 @@ import { createErrorResponse } from '@/lib/errors';
 import { ApiResponse, ErrorCode, PublicUser, SessionData } from '@repo/types';
 import { getIronSession } from 'iron-session';
 import { jwtDecode } from 'jwt-decode';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 /**
  * Server action to refresh user tokens
  */
 export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
+  const requestId =
+    (await headers()).get('x-request-id') || crypto.randomUUID();
   try {
     // 1. Get session cookie
     const cookieStore = await cookies();
@@ -29,9 +31,10 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
 
     // 2. Handle no session
     if (!session) {
-      return createErrorResponse<PublicUser>(
+      return createErrorResponse(
         ErrorCode.UNKNOWN_ERROR,
         'No session found',
+        requestId,
       );
     }
 
@@ -44,12 +47,7 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
 
     // 5. Handle HTTP errors
     if (!response.success) {
-      console.error('Refresh response error', response);
-      return createErrorResponse<PublicUser>(
-        ErrorCode.UNKNOWN_ERROR,
-        'Failed to refresh tokens',
-        `HTTP error! status: ${response.error.code}`,
-      );
+      return response; // (ApiError)
     }
 
     // 6. Set cookies from response
@@ -62,17 +60,19 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
 
     // 8. Handle no access token
     if (!accessToken) {
-      return createErrorResponse<PublicUser>(
+      return createErrorResponse(
         ErrorCode.UNKNOWN_ERROR,
         'No access token found',
+        requestId,
       );
     }
 
     // 9. Handle no refresh token
     if (!refreshToken) {
-      return createErrorResponse<PublicUser>(
+      return createErrorResponse(
         ErrorCode.UNKNOWN_ERROR,
         'No refresh token found',
+        requestId,
       );
     }
 
@@ -97,10 +97,11 @@ export async function refreshTokens(): Promise<ApiResponse<PublicUser>> {
   } catch (error) {
     // Handle unexpected errors
     console.error('Unexpected error in refreshTokens:', error);
-    return createErrorResponse<PublicUser>(
+    return createErrorResponse(
       ErrorCode.SERVER_ERROR,
       'An unexpected error occurred during refreshTokens',
-      error instanceof Error ? error.message : undefined,
+      requestId,
+      { originalError: error },
     );
   }
 }

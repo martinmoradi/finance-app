@@ -11,6 +11,7 @@ import {
   SignupCredentials,
 } from '@repo/types';
 import { createUserSchema } from '@repo/validation';
+import { headers } from 'next/headers';
 
 /**
  * Server action to handle user signup
@@ -18,6 +19,8 @@ import { createUserSchema } from '@repo/validation';
 export async function signup(
   credentials: SignupCredentials,
 ): Promise<ApiResponse<PublicUser>> {
+  const requestId =
+    (await headers()).get('x-request-id') || crypto.randomUUID();
   try {
     // 1. Validate with Zod
     const validationResult = createUserSchema.safeParse(credentials);
@@ -44,12 +47,7 @@ export async function signup(
 
     // 5. Handle HTTP errors
     if (!response.success) {
-      console.error('Signup response error:', response);
-      return createErrorResponse<PublicUser>(
-        ErrorCode.UNKNOWN_ERROR,
-        'Failed to signup',
-        `HTTP error! status: ${response.error.code}`,
-      );
+      return response; // (ApiError)
     }
 
     // 6. Handle auth tokens and cookies
@@ -61,10 +59,11 @@ export async function signup(
   } catch (error) {
     // Handle unexpected errors
     console.error('Unexpected error in signupAction:', error);
-    return createErrorResponse<PublicUser>(
+    return createErrorResponse(
       ErrorCode.SERVER_ERROR,
       'An unexpected error occurred during signup',
-      error instanceof Error ? error.message : undefined,
+      requestId,
+      { originalError: error },
     );
   }
 }

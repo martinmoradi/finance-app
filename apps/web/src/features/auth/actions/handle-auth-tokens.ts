@@ -8,13 +8,15 @@ import {
 import { parseCookiesFromHeader } from '@/features/auth/utils/cookies';
 import { createErrorResponse } from '@/lib/errors';
 import { PublicUser } from '@repo/types';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createSessionCookie } from '@/features/auth/actions/create-session-cookie';
 
 export async function handleAuthTokens(
   setCookieHeaders: string,
   user: PublicUser,
 ) {
+  const requestId =
+    (await headers()).get('x-request-id') || crypto.randomUUID();
   try {
     const cookieStore = await cookies();
 
@@ -38,9 +40,10 @@ export async function handleAuthTokens(
 
     // 3. Handle no access token or refresh token
     if (!accessToken || !refreshToken) {
-      return createErrorResponse<PublicUser>(
+      return createErrorResponse(
         ErrorCode.UNKNOWN_ERROR,
         'No access token or refresh token found',
+        requestId,
       );
     }
 
@@ -49,9 +52,10 @@ export async function handleAuthTokens(
 
     // 5. Handle no tokens
     if (!accessToken || !refreshToken) {
-      return createErrorResponse<PublicUser>(
+      return createErrorResponse(
         ErrorCode.UNKNOWN_ERROR,
         'No access token or refresh token found',
+        requestId,
       );
     }
 
@@ -59,9 +63,11 @@ export async function handleAuthTokens(
     await createSessionCookie(user, accessToken, refreshToken);
   } catch (error) {
     console.error('Error handling auth tokens:', error);
-    return createErrorResponse<PublicUser>(
+    return createErrorResponse(
       ErrorCode.UNKNOWN_ERROR,
       'Error handling auth tokens',
+      requestId,
+      { originalError: error },
     );
   }
 }

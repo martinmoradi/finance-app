@@ -2,13 +2,15 @@
 
 import { fetchCsrfToken } from '@/features/auth/actions/fetch-csrf';
 import { buildCookieHeader } from '@/features/auth/utils/cookies';
-import { cookies } from 'next/headers';
+import { cookies, headers as nextHeaders } from 'next/headers';
 
 /**
  * Gets the CSRF headers required for authenticated requests.
  * Fetches a new CSRF token if one doesn't exist.
  */
 export async function getCsrfHeaders(): Promise<Record<string, string>> {
+  const requestId =
+    (await nextHeaders()).get('x-request-id') || crypto.randomUUID();
   // 1. Get cookie store and determine CSRF cookie name
   const cookieStore = await cookies();
   const csrfCookieName =
@@ -34,7 +36,9 @@ export async function getCsrfHeaders(): Promise<Record<string, string>> {
 
   // 4. Build cookie headers with CSRF and device info
   const deviceId = cookieStore.get('deviceId');
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    'x-request-id': requestId,
+  };
 
   const cookieData: Record<string, string> = {
     [csrfCookieName]: currentCsrf.value,
