@@ -11,6 +11,14 @@ export async function request<T, D = unknown>(
       : `${process.env.NEXT_PUBLIC_API_URL}`;
   const timeoutMs = options.timeoutMs || 10000;
 
+  const requestId = options.headers?.['x-request-id'] || crypto.randomUUID();
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'x-request-id': requestId,
+    ...options.headers,
+  };
+
   try {
     // 1. Set up abort controller for timeout
     const controller = new AbortController();
@@ -20,13 +28,6 @@ export async function request<T, D = unknown>(
     const timeout = setTimeout(() => {
       controller.abort();
     }, timeoutMs);
-
-    // 3. Prepare headers
-    const headers = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...options.headers,
-    };
 
     // 4. Prepare request URL
     const url = `${baseUrl}${options.path}`;
@@ -52,17 +53,20 @@ export async function request<T, D = unknown>(
 
     // 9. Handle HTTP errors
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        error: {
-          code: mapHttpStatusToErrorCode(response.status),
-          message:
-            errorBody.message ||
-            `Request failed with status ${response.status}`,
-          details: errorBody,
+      const errorBody = (await response.json().catch(() => ({}))) as Error;
+      const errorCode = mapHttpStatusToErrorCode(response.status);
+
+      return createErrorResponse(
+        errorCode,
+        errorBody.message || `Request failed with status ${response.status}`,
+        response.headers.get('x-request-id') || requestId,
+        {
+          originalError: errorBody,
+          statusCode: response.status,
+          url: response.url,
+          method: options.method,
         },
-      };
+      );
     }
 
     // 10. Parse and return successful response
@@ -76,18 +80,20 @@ export async function request<T, D = unknown>(
     // Handle network and other errors
     if (error instanceof DOMException && error.name === 'AbortError') {
       console.error('Request timed out', { timeout: timeoutMs });
-      return createErrorResponse<T>(
+      return createErrorResponse(
         ErrorCode.NETWORK_ERROR,
         'Request timed out',
+        requestId,
         { timeout: timeoutMs },
       );
     }
 
     // Handle unexpected errors
     console.error('Unexpected error in request:', error);
-    return createErrorResponse<T>(
+    return createErrorResponse(
       ErrorCode.NETWORK_ERROR,
       error instanceof Error ? error.message : 'Unknown error occurred',
+      requestId,
       { error },
     );
   }
