@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/features/auth/store/useAuthStore';
+import { useAuth } from '@/features/auth/store/useAuth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
