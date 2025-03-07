@@ -1,14 +1,26 @@
-export type ApiResponse<T> =
-  | { success: true; data: T; headers?: Headers }
-  | {
-      success: false;
-      error: {
-        code: string;
-        message: string;
-        validationErrors?: Record<string, string[]>;
-        details?: unknown;
-      };
-    };
+export type ApiResponse<T> = ApiSuccess<T> | ApiError;
+
+export type ApiSuccess<T> = {
+  success: true;
+  data: T;
+  headers?: Headers;
+};
+
+export type ApiError = {
+  success: false;
+  error: ApiErrorDetails;
+};
+
+export type ApiErrorDetails = {
+  code: ErrorCode;
+  message: string;
+  validationErrors?: Record<string, string[]>;
+  httpStatus?: number;
+  path?: string;
+  timestamp?: string;
+  details?: unknown;
+  requestId?: string;
+};
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
