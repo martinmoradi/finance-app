@@ -6,7 +6,7 @@
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=web",
     "dev:api": "turbo dev --filter=api",
-    "start": "turbo start",
+    "start": "turbo start --filter=api",
     "docker:dev:up": "docker compose -f docker-compose.yml up",
     "docker:dev:build": "docker compose -f docker-compose.yml up --build",
     "docker:down": "docker compose down -v",
