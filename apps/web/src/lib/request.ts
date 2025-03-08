@@ -7,9 +7,10 @@ export async function request<T, D = unknown>(
   options: RequestOptions<D>,
 ): Promise<ApiResponse<T>> {
   const baseUrl =
-    options.baseUrl || process.env.NODE_ENV === 'development'
+    options.baseUrl ||
+    (process.env.NODE_ENV === 'development'
       ? 'http://localhost:3001'
-      : `${process.env.NEXT_PUBLIC_API_URL}`;
+      : `${process.env.NEXT_PUBLIC_API_URL}`);
   const timeoutMs = options.timeoutMs || 10000;
 
   const requestId = options.headers?.['x-request-id'] || crypto.randomUUID();
@@ -20,20 +21,20 @@ export async function request<T, D = unknown>(
     ...options.headers,
   };
 
+  // 1. Set up abort controller for timeout
+  const controller = new AbortController();
+  const signal = options.signal || controller.signal;
+
+  // 2. Set timeout
+  let timeout: NodeJS.Timeout | null = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
   try {
-    // 1. Set up abort controller for timeout
-    const controller = new AbortController();
-    const signal = options.signal || controller.signal;
-
-    // 2. Set timeout
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
-
-    // 4. Prepare request URL
+    // 3. Prepare request URL
     const url = `${baseUrl}${options.path}`;
 
-    // 5. Prepare request options
+    // 4. Prepare request options
     const requestOptions: RequestInit = {
       method: options.method,
       headers,
@@ -41,21 +42,26 @@ export async function request<T, D = unknown>(
       credentials: 'include', // Include cookies
     };
 
-    // 6. Add body for non-GET requests
+    // 5. Add body for non-GET requests
     if (options.method !== 'GET' && options.data) {
       requestOptions.body = JSON.stringify(options.data);
     }
 
-    // 7. Execute the request
+    // 6. Execute the request
     const response = await fetch(url, requestOptions);
 
-    // 8. Clear the timeout
-    clearTimeout(timeout);
+    // 7. Clear the timeout
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
 
-    // 9. Handle HTTP errors
+    // 8. Handle HTTP errors
     if (!response.ok) {
       const errorBody = (await response.json().catch(() => ({}))) as Error;
       const errorCode = mapHttpStatusToErrorCode(response.status);
+      const responseRequestId =
+        response.headers.get('x-request-id') || requestId;
 
       Sentry.captureException(
         new Error(`Request API error: ${response.status} ${response.status}`),
@@ -76,7 +82,7 @@ export async function request<T, D = unknown>(
       return createErrorResponse(
         errorCode,
         errorBody.message || `Request failed with status ${response.status}`,
-        response.headers.get('x-request-id') || requestId,
+        responseRequestId,
         {
           originalError: errorBody,
           statusCode: response.status,
@@ -86,7 +92,7 @@ export async function request<T, D = unknown>(
       );
     }
 
-    // 10. Parse and return successful response
+    // 9. Parse and return successful response
     const data = (await response.json()) as T;
     return {
       success: true,
@@ -94,8 +100,17 @@ export async function request<T, D = unknown>(
       headers: response.headers,
     };
   } catch (error) {
-    // Handle network and other errors
+    // 10. Clear the timeout if it's still active
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+    }
+
+    // 11. Handle network and other errors
     if (error instanceof DOMException && error.name === 'AbortError') {
+      // 12. Handle abort errors (including timeouts)
+      const timeoutDetails = { timeout: timeoutMs };
+
       Sentry.captureMessage('API request timeout', {
         level: 'error',
         tags: {
@@ -108,16 +123,17 @@ export async function request<T, D = unknown>(
         },
       });
 
-      console.error('Request timed out', { timeout: timeoutMs });
+      console.error('Request timed out', timeoutDetails);
+
       return createErrorResponse(
         ErrorCode.NETWORK_ERROR,
         'Request timed out',
         requestId,
-        { timeout: timeoutMs },
+        timeoutDetails,
       );
     }
 
-    // Handle unexpected errors
+    // 13. Handle unexpected errors
     console.error('Unexpected error in request:', error);
     Sentry.captureException(error, {
       tags: {
@@ -131,6 +147,7 @@ export async function request<T, D = unknown>(
         message: 'Unexpected error in API request',
       },
     });
+
     return createErrorResponse(
       ErrorCode.NETWORK_ERROR,
       error instanceof Error ? error.message : 'Unknown error occurred',
