@@ -1,18 +1,18 @@
 import js from '@eslint/js';
-import eslintConfigPrettier from 'eslint-config-prettier';
-import tseslint from 'typescript-eslint';
-import pluginReactHooks from 'eslint-plugin-react-hooks';
-import pluginReact from 'eslint-plugin-react';
-import globals from 'globals';
 import pluginNext from '@next/eslint-plugin-next';
+import eslintConfigPrettier from 'eslint-config-prettier';
 import pluginA11y from 'eslint-plugin-jsx-a11y';
+import pluginReact from 'eslint-plugin-react';
+import pluginReactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 import { config as baseConfig } from './base.js';
 
 /**
  * A custom ESLint configuration for libraries that use Next.js.
  *
  * @type {import("eslint").Linter.Config}
- * */
+ */
 export const nextJsConfig = [
   ...baseConfig,
   js.configs.recommended,
@@ -32,21 +32,23 @@ export const nextJsConfig = [
   },
   {
     plugins: {
-      next: pluginNext,
+      // Important: The key name must match how Next.js rules are prefixed
+      '@next/next': pluginNext,
       'jsx-a11y': pluginA11y,
+      'react-hooks': pluginReactHooks,
     },
     rules: {
       ...pluginNext.configs.recommended.rules,
       ...pluginNext.configs['core-web-vitals'].rules,
-      // Critical A11y Rules (changed to error)
+      ...pluginReactHooks.configs.recommended.rules,
+      /* Critical A11y Rules (changed to error) */
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/aria-props': 'error',
       'jsx-a11y/aria-proptypes': 'error',
       'jsx-a11y/aria-unsupported-elements': 'error',
       'jsx-a11y/role-has-required-aria-props': 'error',
       'jsx-a11y/html-has-lang': 'error',
-
-      // Keep as warnings (UX improvements but might need exceptions)
+      /* Keep as warnings (UX improvements but might need exceptions) */
       'jsx-a11y/anchor-has-content': 'warn',
       'jsx-a11y/anchor-is-valid': 'warn',
       'jsx-a11y/click-events-have-key-events': 'warn',
@@ -63,17 +65,21 @@ export const nextJsConfig = [
       'jsx-a11y/no-noninteractive-tabindex': 'warn',
       'jsx-a11y/no-onchange': 'warn',
       'jsx-a11y/no-static-element-interactions': 'warn',
-    },
-  },
-  {
-    plugins: {
-      'react-hooks': pluginReactHooks,
+      'react/react-in-jsx-scope': 'off',
     },
     settings: { react: { version: 'detect' } },
+  },
+  // Special rules for test files
+  {
+    files: [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/__tests__/**/*',
+      '**/__mocks__/**/*',
+    ],
     rules: {
-      ...pluginReactHooks.configs.recommended.rules,
-      // React scope no longer necessary with new JSX transform.
-      'react/react-in-jsx-scope': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];
