@@ -18,7 +18,8 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Install all dependencies (including dev for building)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Removed cache mount that was causing issues
+RUN pnpm install --frozen-lockfile
 
 # Copy source code from pruned output
 COPY --from=builder /app/out/full/ .
@@ -42,7 +43,8 @@ COPY --from=installer /app/package.json .
 COPY --from=installer /app/pnpm-lock.yaml .
 
 # Only install production dependencies
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+# Removed cache mount that was causing issues
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy built application
 COPY --from=installer /app/apps/api/dist /app/apps/api/dist
