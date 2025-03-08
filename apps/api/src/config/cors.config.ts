@@ -38,7 +38,7 @@ const originsHandler = (
 };
 
 export const corsConfig = {
-  origin: originsHandler,
+  origins: originsHandler,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
