@@ -18,7 +18,8 @@
     "API_URL",
     "SESSION_SECRET",
     "SENTRY_AUTH_TOKEN",
-    "DATABASE_URL_UNPOOLED"
+    "DATABASE_URL_UNPOOLED",
+    "NEXT_RUNTIME"
   ],
   "tasks": {
     "build": {
