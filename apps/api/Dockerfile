@@ -31,7 +31,11 @@ FROM base AS runner
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
-USER nestjs
+
+# Debug: Check if files exist before proceeding
+RUN echo "Checking build artifacts..."
+RUN ls -la /app || echo "app directory not found"
+RUN ls -la /app/apps/api/dist || echo "dist directory not found"
 
 # Copy production dependencies
 COPY --from=prod-deps /app/node_modules /app/node_modules
@@ -41,6 +45,12 @@ COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
 # Copy package dependencies
 COPY --from=build /app/packages/*/dist /app/packages/*/dist
 COPY --from=build /app/packages/*/package.json /app/packages/*/package.json
+
+# Debug: Check again after copying
+RUN echo "Checking after copy..."
+RUN ls -la /app/apps/api/dist || echo "dist directory still not found"
+
+USER nestjs
 
 # Expose port and start application
 EXPOSE 3001
