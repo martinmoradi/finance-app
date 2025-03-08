@@ -119,7 +119,6 @@ export const mapApiErrorsToFormErrors = <T extends FieldValues>(
     });
     return;
   }
-
   // For non-validation errors, set a root error
   setError('root' as Path<T>, {
     type: 'server',
