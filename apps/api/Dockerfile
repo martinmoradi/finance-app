@@ -2,13 +2,11 @@
 FROM node:23-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-# Install pnpm directly instead of using corepack
 RUN npm install -g pnpm
 WORKDIR /app
 
 # Stage 2: Prune monorepo
 FROM base AS builder
-# Install turbo directly with npm instead of pnpm
 RUN npm install -g turbo
 COPY . .
 RUN turbo prune api --docker
@@ -25,7 +23,8 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm-lock.yaml .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY --from=builder /app/out/full/ .
-RUN pnpm turbo run build --filter=api...
+# With 8GB RAM, we can parallelize the build more
+RUN pnpm turbo run build --filter=api... --concurrency=4
 
 # Stage 5: Final production image
 FROM base AS runner
@@ -39,6 +38,9 @@ COPY --from=prod-deps /app/node_modules /app/node_modules
 # Copy built application
 COPY --from=build /app/apps/api/dist /app/apps/api/dist
 COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
+# Copy package dependencies
+COPY --from=build /app/packages/*/dist /app/packages/*/dist
+COPY --from=build /app/packages/*/package.json /app/packages/*/package.json
 
 # Expose port and start application
 EXPOSE 3001
