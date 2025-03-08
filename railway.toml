@@ -1,35 +1,19 @@
+# Force Railway to use Nixpacks and ignore Dockerfile
 [build]
-builder = "nixpacks"
+builder = "NIXPACKS"
 buildCommand = "pnpm install && pnpm turbo build --filter=api..."
-watchPatterns = [
-  "apps/api/**",
-  "packages/**"
-]
+dockerfilePath = "" # Explicitly set to empty to ignore Dockerfile
 
 [deploy]
-startCommand = "cd apps/api && node dist/main.js"
+startCommand = "node apps/api/dist/main.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
-restartPolicyType = "on_failure"
+restartPolicyType = "ALWAYS"
 
+# Define environments for production and preview
 [environments]
   [environments.production]
   branch = "main"
-  autoDeploy = true
 
   [environments.preview]
   branchRegex = "^(develop|PR-.+)$"
-  autoDeploy = true
-
-[nix]
-channel = "stable"
-
-# Optional: Configure resources for your service
-[resources]
-memory = 512
-cpu = 0.5
-
-# Sync build status back to GitHub
-[github]
-autoDeploy = true
-deployWithPullRequestSynchronize = true
