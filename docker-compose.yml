@@ -76,7 +76,7 @@ services:
     container_name: api_dev
     build:
       context: . # Build from repository root
-      dockerfile: ./apps/api/Dockerfile
+      dockerfile: ./apps/api/Dockerfile.dev
     restart: unless-stopped
     ports:
       - '3001:3001' # Main API port

@@ -1,34 +1,45 @@
-FROM node:23-slim
-
-# Install required system packages
-RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
-
-# Install pnpm
+# Stage 1: Base setup
+FROM node:23-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+# Install pnpm directly instead of using corepack
 RUN npm install -g pnpm
-
-# Set Node environment
-ENV NODE_ENV=development
-
-# Install nodemon globally for better hot reloading
-RUN npm install -g nodemon
-
 WORKDIR /app
 
-# Copy workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
-COPY packages/typescript-config/package.json ./packages/typescript-config/
-COPY packages/env-validation/package.json ./packages/env-validation/
-COPY packages/types/package.json ./packages/types/
-COPY packages/validation/package.json ./packages/validation/
-COPY packages/database/package.json ./packages/database/
+# Stage 2: Prune monorepo
+FROM base AS builder
+# Install turbo directly with npm instead of pnpm
+RUN npm install -g turbo
+COPY . .
+RUN turbo prune api --docker
 
-# Install dependencies
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install
+# Stage 3: Install production dependencies
+FROM base AS prod-deps
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml .
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
+# Stage 4: Install all dependencies and build
+FROM base AS build
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm-lock.yaml .
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+COPY --from=builder /app/out/full/ .
+RUN pnpm turbo run build --filter=api...
+
+# Stage 5: Final production image
+FROM base AS runner
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+USER nestjs
+
+# Copy production dependencies
+COPY --from=prod-deps /app/node_modules /app/node_modules
+# Copy built application
+COPY --from=build /app/apps/api/dist /app/apps/api/dist
+COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
+
+# Expose port and start application
 EXPOSE 3001
-
-CMD ["pnpm", "--filter", "api", "dev"]
+CMD [ "node", "apps/api/dist/main.js" ]
