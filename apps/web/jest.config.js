@@ -63,6 +63,7 @@ const customJestConfig = {
     '!sentry.node.config.ts',
     '!**/components/ui/**',
     '!global-error.tsx',
+    '!fonts.ts',
   ],
 };
 
