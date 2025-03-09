@@ -33,6 +33,14 @@ jobs:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       PLAYWRIGHT_BASE_URL: http://localhost:3000
       PLAYWRIGHT_API_URL: http://localhost:3001
+      ALLOWED_ORIGINS: http://localhost:3000
+      JWT_SECRET: HuJp8YdLf3CyejPX6rLyoJM0eJV9DQYeJfm6ZAO/5o0=
+      JWT_EXPIRES_IN: 15m
+      REFRESH_TOKEN_SECRET: Oe8GIMo0128znSUtk3Z9biFD8bP3sdRs27PEl9VHm3w=
+      REFRESH_TOKEN_EXPIRES_IN: 7d
+      CSRF_SECRET: WGtFuZH/f3QYl+2xrGRSxT/WwBtcN9rNeRXWOurO5u8=
+      COOKIE_SECRET: +NwyGpZuHFN2zQYQzHNpd1XEg16M3q0RSu1VodCmTTM=
+      NODE_ENV: CI
 
     steps:
       # Check out our repository code
@@ -71,13 +79,11 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Install Playwright package
-      - name: Install Playwright
-        run: pnpm add -D @playwright/test --filter=playwright-web
-
-      # Install Playwright Browsers
-      - name: Install Playwright Browsers
-        run: pnpm --filter=playwright-web exec playwright install --with-deps
+        # Prepare database schema
+      - name: Create database schema
+        run: pnpm --filter=@repo/database test:db:push:ci
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finance_app_test
 
       # Split the start command into separate processes
       - name: Start API Server
@@ -98,12 +104,19 @@ jobs:
 
       # Run the E2E tests
       - name: Run E2E Tests
-        run: pnpm test:e2e
+        run: pnpm test:e2e:ci
 
-      # Upload test artifacts on failure
-      - name: Upload Playwright report
-        if: failure()
+      # Upload coverage reports
+      - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: coverage-report
+          path: '**/coverage/'
+          retention-days: 30
+
+      # Upload coverage reports to Codecov
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: e2e

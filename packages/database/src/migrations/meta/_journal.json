@@ -8,6 +8,62 @@
       "when": 1738943198329,
       "tag": "0000_true_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1739137443045,
+      "tag": "0001_gigantic_terror",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1739425619893,
+      "tag": "0002_abandoned_red_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1739461907408,
+      "tag": "0003_groovy_krista_starr",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1739499925568,
+      "tag": "0004_long_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1739500335943,
+      "tag": "0005_classy_hellion",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1739502952167,
+      "tag": "0006_sweet_iceman",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1740593068273,
+      "tag": "0007_eminent_clint_barton",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1740599669551,
+      "tag": "0008_lively_wendell_vaughn",
+      "breakpoints": true
     }
   ]
 }

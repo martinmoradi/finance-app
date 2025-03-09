@@ -7,6 +7,7 @@ export const baseConfig = defineConfig({
     environment: 'node',
     environment: 'node',
     include: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['node_modules/**', 'dist/**', 'turbo/**'],
     passWithNoTests: true,
   },
 });

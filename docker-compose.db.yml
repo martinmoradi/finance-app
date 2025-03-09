@@ -1,0 +1,65 @@
+services:
+  postgres:
+    container_name: postgres_dev
+    image: postgres:17.2-alpine
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_app_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - db_network_dev
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres_test:
+    container_name: postgres_test
+    image: postgres:17.2-alpine
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_app_test
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - db_network_dev
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    container_name: pgadmin_dev
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    ports:
+      - '5050:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - db_network_dev
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_dev_data:
+    name: finance_app_postgres_dev_data
+  postgres_test_data:
+    name: finance_app_postgres_test_data
+
+networks:
+  db_network_dev:
+    driver: bridge
+    name: finance_app_db_network_dev

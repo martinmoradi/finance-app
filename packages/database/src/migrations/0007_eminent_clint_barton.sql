@@ -1,0 +1,1 @@
+ALTER TABLE "sessions" ADD COLUMN "token_updated_at" timestamp DEFAULT now() NOT NULL;
