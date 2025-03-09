@@ -16,7 +16,10 @@
     "next.config.js",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "jest.config.js",
+    "jest.setup.ts",
+    "eslint.config.mjs"
   ],
   "exclude": ["node_modules"]
 }
