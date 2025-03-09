@@ -31,7 +31,8 @@
     "test:db:studio": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test drizzle-kit studio",
     "db:clean": "tsx src/clean.ts",
     "test:db:clean": "TEST=true DATABASE_URL=postgresql://postgres:postgres@localhost:5433/finance_app_test tsx src/clean.ts",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:push:neon": "DATABASE_URL=postgresql://neondb_owner:npg_1AICvJGEh3Xq@ep-wild-smoke-a2ozkt4u-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require drizzle-kit push"
   },
   "dependencies": {
     "@repo/env-validation": "workspace:*",

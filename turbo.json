@@ -13,19 +13,19 @@
     "REFRESH_TOKEN_SECRET",
     "REFRESH_TOKEN_EXPIRES_IN",
     "COOKIE_SECRET",
-    "CSRF_SECRET"
+    "CSRF_SECRET",
+    "ENABLE_EXPERIMENTAL_COREPACK",
+    "API_URL",
+    "SESSION_SECRET",
+    "SENTRY_AUTH_TOKEN",
+    "DATABASE_URL_UNPOOLED",
+    "NEXT_RUNTIME"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", "src/**/*.ts", "tsconfig.json"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**",
-        "public/dist/**",
-        "*.tsbuildinfo"
-      ]
+      "outputs": ["dist/**", "public/dist/**", "*.tsbuildinfo", ".next/**"]
     },
     "start": {
       "dependsOn": ["^build"],
@@ -110,6 +110,9 @@
     "db:reset": {
       "dependsOn": ["^build"],
       "cache": false
+    },
+    "db:push:neon": {
+      "dependsOn": ["^build"]
     }
   }
 }

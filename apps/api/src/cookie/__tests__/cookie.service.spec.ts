@@ -1,3 +1,4 @@
+import { cookieConfig } from '@/config/cookie.config';
 import { CookieService } from '@/cookie/cookie.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRequiredEnvVar } from '@repo/env-validation';
@@ -75,33 +76,14 @@ describe('CookieService', () => {
   });
 
   describe('setDeviceIdCookie', () => {
-    it('should set device ID cookie with correct options in development', () => {
+    it('should set device ID cookie with correct options', () => {
       service.setDeviceIdCookie(mockResponse as Response, 'test-device-id');
 
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'deviceId',
         'test-device-id',
         {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 365 * 24 * 60 * 60 * 1000,
-        },
-      );
-    });
-
-    it('should set device ID cookie with correct options in production', () => {
-      jest.mocked(getRequiredEnvVar).mockReturnValue('production');
-
-      service.setDeviceIdCookie(mockResponse as Response, 'test-device-id');
-
-      expect(mockResponse.cookie).toHaveBeenCalledWith(
-        'deviceId',
-        'test-device-id',
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
+          ...cookieConfig,
           maxAge: 365 * 24 * 60 * 60 * 1000,
         },
       );
@@ -115,32 +97,28 @@ describe('CookieService', () => {
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(4);
 
       // Device ID
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('deviceId', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'deviceId',
+        cookieConfig,
+      );
 
-      // CSRF
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('csrf', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-      });
+      // CSRF - development uses 'csrf' cookie name
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'csrf',
+        cookieConfig,
+      );
 
       // Access Token
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('accessToken', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'accessToken',
+        cookieConfig,
+      );
 
       // Refresh Token
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refreshToken', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        cookieConfig,
+      );
     });
 
     it('should clear all auth cookies in production', () => {
@@ -151,103 +129,55 @@ describe('CookieService', () => {
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(4);
 
       // Device ID
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('deviceId', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'deviceId',
+        cookieConfig,
+      );
 
-      // CSRF
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('__Host-csrf', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
+      // CSRF - production uses '__Host-csrf' cookie name
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        '__Host-csrf',
+        cookieConfig,
+      );
 
       // Access Token
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('accessToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'accessToken',
+        cookieConfig,
+      );
 
       // Refresh Token
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refreshToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'refreshToken',
+        cookieConfig,
+      );
     });
   });
 
   describe('setAuthCookies', () => {
-    it('should set auth cookies with correct options in development', () => {
+    it('should set auth cookies with correct options', () => {
       service.setAuthCookies(mockResponse as Response, [
         'test-access',
         'test-refresh',
       ]);
 
+      // Access token
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'accessToken',
         'test-access',
         expect.objectContaining({
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
+          ...cookieConfig,
+          maxAge: expect.any(Number),
         }),
       );
 
+      // Refresh token
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'refreshToken',
         'test-refresh',
         expect.objectContaining({
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          path: '/auth/refresh',
-        }),
-      );
-    });
-
-    it('should set auth cookies with correct options in production', () => {
-      // Override only NODE_ENV, keep JWT expiration values
-      jest
-        .mocked(getRequiredEnvVar)
-        .mockImplementation((key: string): string => {
-          switch (key) {
-            case 'NODE_ENV':
-              return 'production';
-            case 'JWT_EXPIRES_IN':
-              return '15m';
-            case 'REFRESH_TOKEN_EXPIRES_IN':
-              return '7d';
-            default:
-              return 'dummy-value';
-          }
-        });
-
-      service.setAuthCookies(mockResponse as Response, [
-        'test-access',
-        'test-refresh',
-      ]);
-
-      expect(mockResponse.cookie).toHaveBeenCalledWith(
-        'accessToken',
-        'test-access',
-        expect.objectContaining({
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
-        }),
-      );
-
-      expect(mockResponse.cookie).toHaveBeenCalledWith(
-        'refreshToken',
-        'test-refresh',
-        expect.objectContaining({
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
+          ...cookieConfig,
+          maxAge: expect.any(Number),
           path: '/auth/refresh',
         }),
       );
@@ -279,9 +209,7 @@ describe('CookieService', () => {
         'deviceId',
         'mock-uuid',
         {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
+          ...cookieConfig,
           maxAge: 365 * 24 * 60 * 60 * 1000,
         },
       );

@@ -5,15 +5,20 @@ coverage:
         # Overall project target
         target: 80%
         threshold: 2%
-      unit:
-        flags:
-          - unit
-        target: 85%
-      e2e:
-        flags:
-          - e2e
-        target: 60%
-
+    patch:
+      default:
+        # Setting a more reasonable target for new code
+        target: 75%
+        # Optional: Add some flexibility
+        threshold: 5%
+  unit:
+    flags:
+      - unit
+    target: 85%
+  e2e:
+    flags:
+      - e2e
+    target: 60%
 flags:
   unit:
     paths:
@@ -25,7 +30,6 @@ flags:
       - apps/
       - packages/
     carryforward: true
-
 comment:
   layout: 'reach, diff, flags, files'
   behavior: default

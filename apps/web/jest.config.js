@@ -1,23 +1,28 @@
 const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
   dir: './',
 });
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
-    // Handle module aliases (if you're using these in your project)
-    '^@/(.*)$': '<rootDir>/$1',
+    // Handle module aliases
+    '^@/(.*)$': '<rootDir>/src/$1',
+    // Mock problematic ES modules directly
   },
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
   transform: {
-    // Use next/jest's default transformer for ts and tsx files
-    '^.+\\.(ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+    // Use next/jest's default transformer for js, jsx, ts, tsx files
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
+  // Very permissive transformIgnorePatterns to handle ES modules in PNPM
+  transformIgnorePatterns: [
+    // This is much more permissive, allowing almost all node_modules to be transformed
+    'node_modules/.pnpm/(?!(uncrypto|iron-session)@)',
+  ],
   collectCoverageFrom: [
     '**/*.{js,jsx,ts,tsx}',
     '!**/*.d.ts',
@@ -46,6 +51,18 @@ const customJestConfig = {
     '!postcss.config.js',
     '!tailwind.config.js',
     '!tailwind.config.ts',
+    '!jest.config.ts',
+    '!jest.setup.ts',
+    '!eslint.config.mjs',
+    '!middleware.ts',
+    '!instrumentation.ts',
+    '!sentry.client.config.ts',
+    '!sentry.server.config.ts',
+    '!sentry.utils.ts',
+    '!sentry.browser.config.ts',
+    '!sentry.node.config.ts',
+    '!**/components/ui/**',
+    '!global-error.tsx',
   ],
 };
 

@@ -1,3 +1,4 @@
+import { cookieConfig } from '@/config/cookie.config';
 import { parseDuration } from '@/utils/parse-duration';
 import { Injectable } from '@nestjs/common';
 import { getRequiredEnvVar } from '@repo/env-validation';
@@ -57,24 +58,13 @@ export class CookieService {
   }
 
   /**
-   * Gets common cookie options for current environment
-   */
-  private getCookieOptions(): CookieOptions {
-    return {
-      httpOnly: true,
-      secure: this.isProd,
-      sameSite: this.isProd ? ('none' as const) : ('lax' as const),
-    };
-  }
-
-  /**
    * Sets device ID cookie
    * @param res Express response
    * @param deviceId Device ID to set
    */
   setDeviceIdCookie(res: Response, deviceId: string): void {
     const options: CookieOptions = {
-      ...this.getCookieOptions(),
+      ...cookieConfig,
       maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
     };
     res.cookie('deviceId', deviceId, options);
@@ -104,14 +94,14 @@ export class CookieService {
 
     // Set access token cookie
     const accessTokenOptions: CookieOptions = {
-      ...this.getCookieOptions(),
+      ...cookieConfig,
       maxAge: parseDuration(getRequiredEnvVar('JWT_EXPIRES_IN')),
     };
     res.cookie('accessToken', accessToken, accessTokenOptions);
 
     // Set refresh token cookie
     const refreshTokenOptions: CookieOptions = {
-      ...this.getCookieOptions(),
+      ...cookieConfig,
       maxAge: parseDuration(getRequiredEnvVar('REFRESH_TOKEN_EXPIRES_IN')),
       path: '/auth/refresh', // Restrict to only the refresh endpoint
     };
@@ -123,7 +113,7 @@ export class CookieService {
    * @param res Express response
    */
   clearAuthCookies(res: Response): void {
-    const options: CookieOptions = this.getCookieOptions();
+    const options: CookieOptions = cookieConfig;
 
     // Clear all cookies with environment-appropriate settings
     res.clearCookie('deviceId', options);

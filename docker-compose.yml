@@ -1,7 +1,23 @@
 services:
+  # Caddy HTTPS Proxy
+  caddy:
+    container_name: caddy_dev
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '443:443' # HTTPS port
+      - '80:80' # HTTP port (for redirects)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./certs:/etc/caddy/certs
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app_network_dev
+
   # PostgreSQL Database Service
   postgres:
-    container_name: postgres
+    container_name: postgres_dev
     image: postgres:17.2-alpine # Using Alpine-based image for smaller footprint
     restart: unless-stopped # Ensures container restarts on failure
     ports:
@@ -9,58 +25,103 @@ services:
     environment:
       POSTGRES_USER: postgres # Database superuser
       POSTGRES_PASSWORD: postgres # WARNING: Change in production
-      POSTGRES_DB: finance_app # Initial database name
+      POSTGRES_DB: finance_app_dev # Development database name
     volumes:
-      - postgres_data:/var/lib/postgresql/data # Persist database data
+      - postgres_dev_data:/var/lib/postgresql/data # Persist database data
     networks:
-      - app_network
+      - app_network_dev
     healthcheck: # Ensure database is ready for connections
       test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Backend API Service
-  api:
-    container_name: api
-    build:
-      context: . # Build from repository root
-      dockerfile: ./apps/api/Dockerfile
+  postgres_test:
+    container_name: postgres_test
+    image: postgres:17.2-alpine # Using Alpine-based image for smaller footprint
+    restart: unless-stopped # Ensures container restarts on failure
+    ports:
+      - '5433:5432' # Expose PostgreSQL default port
+    environment:
+      POSTGRES_USER: postgres # Database superuser
+      POSTGRES_PASSWORD: postgres # WARNING: Change in production
+      POSTGRES_DB: finance_app_test # Development database name
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data # Persist database data
+    networks:
+      - app_network_dev
+    healthcheck: # Ensure database is ready for connections
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin Database Management Interface
+  pgadmin:
+    container_name: pgadmin_dev
+    image: dpage/pgadmin4 # Web-based PostgreSQL admin tool
     restart: unless-stopped
     ports:
-      - '3001:3001' # Expose API port
+      - '5050:80' # Access pgAdmin at http://localhost:5050
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/finance_app
-      - PORT=3001
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com # Default admin login
+      PGADMIN_DEFAULT_PASSWORD: admin # WARNING: Change in production
+    networks:
+      - app_network_dev
     depends_on:
       - postgres # Ensure database is started first
-    networks:
-      - app_network
 
-  # Frontend Web Service
-  web:
-    container_name: web
+  # NestJS Backend API Service
+  api:
+    container_name: api_dev
     build:
-      context: .
-      dockerfile: ./apps/web/Dockerfile
+      context: . # Build from repository root
+      dockerfile: ./apps/api/Dockerfile.dev
     restart: unless-stopped
     ports:
-      - '3000:3000' # Expose frontend port
+      - '3001:3001' # Main API port
+      - '9229:9229' # Node.js debug port
     environment:
-      - NODE_ENV=production
-      - API_URL=http://api:3001 # Internal DNS resolution via Docker network
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres_dev:5432/finance_app_dev
+      - PORT=3001
+      - DEBUG=true # Enable debug logging
+      - CHOKIDAR_USEPOLLING=true # Enable file watching in Docker
+      - WATCHPACK_POLLING=true # Enable webpack file watching
+      - CORS_ORIGIN=http://localhost:3000 # Allow local frontend to access API
+    volumes:
+      - .:/app # Mount entire project for development
+      - /app/node_modules # Prevent mounting host node_modules
+      - /app/apps/api/node_modules # Prevent mounting host API node_modules
+      - /app/packages/eslint-config/node_modules # Prevent mounting shared package node_modules
+      - /app/packages/typescript-config/node_modules
+    command: >
+      nodemon
+        --watch apps/api/src
+        --ext ts,js
+        --delay 2500
+        --legacy-watch
+        --signal SIGTERM
+        --exec "pnpm dev:api"
     depends_on:
-      - api # Ensure API is started first
+      postgres:
+        condition: service_healthy # Wait for database to be ready
     networks:
-      - app_network
+      - app_network_dev
 
-# Named volumes for persistent data storage
+# Docker Volumes Configuration
 volumes:
-  postgres_data:
-    name: finance_app_postgres_data
+  postgres_dev_data:
+    name: finance_app_postgres_dev_data # Named volume for database persistence
+  postgres_test_data:
+    name: finance_app_postgres_test_data
+  caddy_data:
+    name: caddy_data # Added missing volume for Caddy data
+  caddy_config:
+    name: caddy_config # Added missing volume for Caddy config
 
-# Docker network configuration
+# Docker Network Configuration
 networks:
-  app_network:
+  app_network_dev:
     driver: bridge # Standard bridge network for container communication
+    name: finance_app_dev_network # Custom network name for development

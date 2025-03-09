@@ -42,4 +42,4 @@ COPY --from=build /app/apps/api/package.json /app/apps/api/package.json
 
 # Expose port and start application
 EXPOSE 3001
-CMD [ "node", "apps/api/dist/main.js" ]
+CMD [ "node", "apps/api/dist/src/main.js" ]

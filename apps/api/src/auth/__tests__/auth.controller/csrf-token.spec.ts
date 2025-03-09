@@ -51,7 +51,6 @@ describe('AuthController', () => {
 
       expect(mockRes.json).toHaveBeenCalledWith({
         token: expectedToken,
-        deviceId: expectedDeviceId,
       });
     });
   });

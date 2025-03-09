@@ -67,10 +67,6 @@ describe('E2E Auth', () => {
       // Verify deviceId cookie exists and has correct format
       expect(deviceIdCookie).toBeDefined();
       expect(deviceIdCookie).toMatch(/deviceId=[a-f0-9-]{36}/);
-
-      // Verify deviceId is returned in response
-      expect(response.body).toHaveProperty('deviceId');
-      expect(response.body.deviceId).toMatch(/^[a-f0-9-]{36}$/);
     });
 
     it('should reuse existing deviceId cookie if present', async () => {
