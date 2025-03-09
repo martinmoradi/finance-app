@@ -1,4 +1,4 @@
-import nextJest from 'next/jest';
+const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({
   dir: './',
@@ -6,7 +6,7 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
     // Handle module aliases
@@ -51,6 +51,18 @@ const customJestConfig = {
     '!postcss.config.js',
     '!tailwind.config.js',
     '!tailwind.config.ts',
+    '!jest.config.ts',
+    '!jest.setup.ts',
+    '!eslint.config.mjs',
+    '!middleware.ts',
+    '!instrumentation.ts',
+    '!sentry.client.config.ts',
+    '!sentry.server.config.ts',
+    '!sentry.utils.ts',
+    '!sentry.browser.config.ts',
+    '!sentry.node.config.ts',
+    '!**/components/ui/**',
+    '!global-error.tsx',
   ],
 };
 
