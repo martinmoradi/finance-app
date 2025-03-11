@@ -19,7 +19,7 @@ export default async function middleware(request: NextRequest) {
     sessionOptions,
   );
   if (isProtectedRoute && !session.isAuthenticated) {
-    return NextResponse.redirect(new URL('/signin', request.nextUrl));
+    return NextResponse.redirect(new URL('/signup', request.nextUrl));
   }
   if (isPublicRoute && session.isAuthenticated) {
     return NextResponse.redirect(new URL('/', request.nextUrl));
