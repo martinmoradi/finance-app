@@ -95,6 +95,7 @@ services:
       - /app/apps/api/node_modules # Prevent mounting host API node_modules
       - /app/packages/eslint-config/node_modules # Prevent mounting shared package node_modules
       - /app/packages/typescript-config/node_modules
+      - /app/packages/database/node_modules
     command: >
       nodemon
         --watch apps/api/src
