@@ -38,9 +38,12 @@ export function handleAuthFormError<T extends FieldValues>(
 
     case ErrorCode.AUTHENTICATION_ERROR:
       if (formType === 'signin') {
-        setError('root' as Path<T>, {
+        // Set errors on both email and password fields
+        setError('email' as Path<T>, {
           type: 'server',
-          message: 'Invalid email or password',
+        });
+        setError('password' as Path<T>, {
+          type: 'server',
         });
         toast.error('Invalid email or password');
       } else {
