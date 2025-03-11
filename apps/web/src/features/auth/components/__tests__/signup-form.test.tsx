@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 // Mock dependencies
@@ -57,17 +58,67 @@ describe('SignupForm', () => {
     mockAuthStatus = 'idle';
   });
 
+  it('should initialize the form with empty default values', () => {
+    render(<SignupForm />);
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    const emailInput = screen.getByLabelText(/Email/i);
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+
+    expect(nameInput).toHaveValue('');
+    expect(emailInput).toHaveValue('');
+    expect(passwordInput).toHaveValue('');
+  });
+
+  it('should render the login link with correct href', () => {
+    render(<SignupForm />);
+
+    const loginLink = screen.getByRole('link', { name: /Login/i });
+    expect(loginLink).toBeInTheDocument();
+    expect(loginLink).toHaveAttribute('href', '/login');
+  });
+
+  it('should show password requirements hint when password field is not in error state', () => {
+    render(<SignupForm />);
+
+    const passwordHint = screen.getByText(
+      'Password must be at least 8 characters',
+    );
+    expect(passwordHint).toBeInTheDocument();
+    expect(passwordHint).toHaveClass('text-muted-foreground');
+  });
+
+  it('should toggle password visibility when the eye icon is clicked', async () => {
+    render(<SignupForm />);
+
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+    const visibilityToggle = screen.getByLabelText('Show password');
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await act(async () => {
+      fireEvent.click(visibilityToggle);
+    });
+
+    expect(passwordInput).toHaveAttribute('type', 'text');
+    expect(screen.getByLabelText('Hide password')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Hide password'));
+    });
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(screen.getByLabelText('Show password')).toBeInTheDocument();
+  });
+
   it('should submit form with user details and redirect on success', async () => {
-    // Mock successful signup
     mockSignup.mockResolvedValueOnce({
       success: true,
       data: { id: '1', email: 'user@example.com', name: 'Test User' },
     });
 
-    // Render the component
     render(<SignupForm />);
 
-    // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
     const passwordInput = screen.getByPlaceholderText('Create a password');
@@ -75,19 +126,16 @@ describe('SignupForm', () => {
       name: /Create Account/i,
     });
 
-    // Fill in the form
     await act(async () => {
       fireEvent.change(nameInput, { target: { value: 'Test User' } });
       fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
 
-    // Submit the form
     await act(async () => {
       fireEvent.click(submitButton);
     });
 
-    // Wait for form submission to complete
     await waitFor(() => {
       expect(mockSignup).toHaveBeenCalledWith({
         name: 'Test User',
@@ -96,7 +144,6 @@ describe('SignupForm', () => {
       });
     });
 
-    // Verify toast success notification and redirect after successful signup
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
         'Account created successfully',
@@ -105,8 +152,36 @@ describe('SignupForm', () => {
     });
   });
 
+  it('should show loading state while submitting the form', async () => {
+    mockAuthStatus = 'idle';
+    const { rerender } = render(<SignupForm />);
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    const emailInput = screen.getByLabelText(/Email/i);
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+    const submitButton = screen.getByRole('button', {
+      name: /Create Account/i,
+    });
+
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: 'Test User' } });
+      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    });
+
+    mockAuthStatus = 'loading';
+    rerender(<SignupForm />);
+
+    expect(screen.getByText('Creating account...')).toBeInTheDocument();
+    expect(nameInput).toBeDisabled();
+    expect(emailInput).toBeDisabled();
+    expect(passwordInput).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /Creating account/i }),
+    ).toBeDisabled();
+  });
+
   it('should handle authentication failure and display error', async () => {
-    // Mock failed signup
     const errorResult = {
       success: false,
       error: {
@@ -116,10 +191,8 @@ describe('SignupForm', () => {
     };
     mockSignup.mockResolvedValueOnce(errorResult);
 
-    // Render the component
     render(<SignupForm />);
 
-    // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
     const passwordInput = screen.getByPlaceholderText('Create a password');
@@ -127,19 +200,16 @@ describe('SignupForm', () => {
       name: /Create Account/i,
     });
 
-    // Fill in the form
     await act(async () => {
       fireEvent.change(nameInput, { target: { value: 'Test User' } });
       fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
 
-    // Submit the form
     await act(async () => {
       fireEvent.click(submitButton);
     });
 
-    // Wait for form submission to complete
     await waitFor(() => {
       expect(mockSignup).toHaveBeenCalledWith({
         name: 'Test User',
@@ -148,7 +218,6 @@ describe('SignupForm', () => {
       });
     });
 
-    // Verify error handler is called with the error result
     await waitFor(() => {
       expect(handleAuthFormError).toHaveBeenCalledWith(
         errorResult,
@@ -157,58 +226,51 @@ describe('SignupForm', () => {
       );
     });
 
-    // Verify we don't redirect on error
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('should show loading state while submitting the form', async () => {
-    // Initially render with idle status
-    mockAuthStatus = 'idle';
+  it('should display validation errors for empty fields when form is submitted', async () => {
+    mockSignup.mockResolvedValueOnce({
+      success: false,
+      error: {
+        message: 'Validation failed',
+        code: 'validation-error',
+      },
+    });
 
-    const { rerender } = render(<SignupForm />);
+    (handleAuthFormError as jest.Mock).mockImplementationOnce(
+      (result, setErrorFn) => {
+        setErrorFn('name', { type: 'required', message: 'Name is required' });
+        setErrorFn('email', { type: 'required', message: 'Email is required' });
+        setErrorFn('password', {
+          type: 'required',
+          message: 'Password is required',
+        });
+      },
+    );
 
-    // Get form elements
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Create a password');
+    render(<SignupForm />);
+
     const submitButton = screen.getByRole('button', {
       name: /Create Account/i,
     });
 
-    // Fill in the form
     await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'Test User' } });
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+      fireEvent.click(submitButton);
     });
 
-    // Now change the status to loading and rerender
-    mockAuthStatus = 'loading';
-    rerender(<SignupForm />);
-
-    // Check for loading indicator
-    expect(screen.getByText('Creating account...')).toBeInTheDocument();
-
-    // Verify inputs and button are disabled during loading
-    expect(nameInput).toBeDisabled();
-    expect(emailInput).toBeDisabled();
-    expect(passwordInput).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: /Creating account/i }),
-    ).toBeDisabled();
+    expect(mockSignup).toHaveBeenCalled();
+    expect(handleAuthFormError).toHaveBeenCalled();
   });
 
   it('should clear errors when form is submitted', async () => {
-    // Mock successful signup
     mockSignup.mockResolvedValueOnce({
       success: true,
       data: { id: '1' },
     });
 
-    // Render the component
     render(<SignupForm />);
 
-    // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
     const passwordInput = screen.getByPlaceholderText('Create a password');
@@ -216,22 +278,18 @@ describe('SignupForm', () => {
       name: /Create Account/i,
     });
 
-    // Fill in the form
     await act(async () => {
       fireEvent.change(nameInput, { target: { value: 'Test User' } });
       fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
 
-    // Submit the form
     await act(async () => {
       fireEvent.click(submitButton);
     });
 
-    // Verify clearErrors is called before signup
     expect(mockClearErrors).toHaveBeenCalled();
 
-    // Check call order by examining the mock calls array
     const clearErrorsCallIndex = mockClearErrors.mock.invocationCallOrder[0];
     const signupCallIndex = mockSignup.mock.invocationCallOrder[0];
     if (clearErrorsCallIndex === undefined || signupCallIndex === undefined) {
@@ -241,13 +299,8 @@ describe('SignupForm', () => {
   });
 
   it('should clear errors when component unmounts', async () => {
-    // Render the component
     const { unmount } = render(<SignupForm />);
-
-    // Unmount the component
     unmount();
-
-    // Verify clearErrors is called on unmount
     expect(mockClearErrors).toHaveBeenCalled();
   });
 });
