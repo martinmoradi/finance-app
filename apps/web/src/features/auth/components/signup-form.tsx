@@ -1,15 +1,23 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, InputGroup, InputRightIcon } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Body,
+  BodyStrong,
+  Caption,
+  CaptionStrong,
+  Display,
+} from '@/components/ui/typography';
 import { useAuth } from '@/features/auth/store/useAuth';
 import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema } from '@repo/validation';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -19,6 +27,7 @@ type SignupFormValues = z.infer<typeof createUserSchema>;
 export function SignupForm() {
   const router = useRouter();
   const { signup, status, clearErrors } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -56,85 +65,115 @@ export function SignupForm() {
   };
 
   return (
-    <div className='w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md'>
-      <h2 className='text-2xl font-bold mb-6 text-center'>Create an account</h2>
+    <div className='max-w-[56rem] w-full rounded-xl bg-white px-8 py-8 space-y-8'>
+      <Display>Sign Up</Display>
 
-      {errors.root && (
-        <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm'>
-          {errors.root.message}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='name'>Name</Label>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className='mb-4'>
+          <Label htmlFor='name' className='block pb-1'>
+            <CaptionStrong>Name</CaptionStrong>
+          </Label>
           <Input
             id='name'
             {...register('name')}
             placeholder='Enter your name'
-            className={errors.name ? 'border-red-300 focus:border-red-500' : ''}
+            error={!!errors.name}
             disabled={status === 'loading'}
           />
-          {errors.name && (
-            <p className='text-sm text-red-500'>{errors.name.message}</p>
-          )}
+          <div className='h-2 pt-1 text-right'>
+            {errors.name && (
+              <Caption>
+                <span className='text-red'>{errors.name.message}</span>
+              </Caption>
+            )}
+          </div>
         </div>
 
-        <div className='space-y-2'>
-          <Label htmlFor='email'>Email</Label>
+        <div className='mb-4'>
+          <Label htmlFor='email' className='block pb-1'>
+            <CaptionStrong>Email</CaptionStrong>
+          </Label>
           <Input
             id='email'
             type='email'
             {...register('email')}
-            placeholder='Enter your email'
-            className={
-              errors.email ? 'border-red-300 focus:border-red-500' : ''
-            }
+            placeholder='Enter your email address'
+            error={!!errors.email}
             disabled={status === 'loading'}
           />
-          {errors.email && (
-            <p className='text-sm text-red-500'>{errors.email.message}</p>
-          )}
+          <div className='h-2 pt-1 text-right'>
+            {errors.email && (
+              <Caption>
+                <span className='text-red'>{errors.email.message}</span>
+              </Caption>
+            )}
+          </div>
         </div>
 
-        <div className='space-y-2'>
-          <Label htmlFor='password'>Password</Label>
+        <Label htmlFor='password' className='block pb-1'>
+          <CaptionStrong>Password</CaptionStrong>
+        </Label>
+        <InputGroup>
           <Input
             id='password'
-            type='password'
+            type={showPassword ? 'text' : 'password'}
             {...register('password')}
             placeholder='Create a password'
-            className={
-              errors.password ? 'border-red-300 focus:border-red-500' : ''
-            }
+            error={!!errors.password}
             disabled={status === 'loading'}
           />
-          {errors.password && (
-            <p className='text-sm text-red-500'>{errors.password.message}</p>
+          <InputRightIcon
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className='cursor-pointer'>
+            {showPassword ? (
+              <EyeOff className='h-5 w-5' />
+            ) : (
+              <Eye className='h-5 w-5' />
+            )}
+          </InputRightIcon>
+        </InputGroup>
+        <div className='h-2 pt-1 text-right mb-8'>
+          {errors.password ? (
+            <Caption>
+              <span className='text-red'>{errors.password.message}</span>
+            </Caption>
+          ) : (
+            <Caption>
+              <span className='text-muted-foreground'>
+                Password must be at least 8 characters
+              </span>
+            </Caption>
           )}
         </div>
 
         <Button
           type='submit'
-          className='w-full mt-6'
+          className='w-full'
           disabled={status === 'loading'}>
           {status === 'loading' ? (
             <>
-              <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               Creating account...
             </>
           ) : (
-            'Sign up'
+            'Create Account'
           )}
         </Button>
       </form>
 
-      <p className='mt-4 text-center text-sm text-gray-500'>
-        Already have an account?{' '}
-        <a href='/signin' className='text-blue-600 hover:underline'>
-          Sign in
-        </a>
-      </p>
+      <div className='flex flex-row items-baseline justify-center gap-4'>
+        <Body className='text-base text-muted-foreground'>
+          Already have an account?
+        </Body>
+        <Link href='/login'>
+          <BodyStrong>
+            <span className='text-base underline underline-offset-4 hover:text-muted-foreground'>
+              Login
+            </span>
+          </BodyStrong>
+        </Link>
+      </div>
     </div>
   );
 }
