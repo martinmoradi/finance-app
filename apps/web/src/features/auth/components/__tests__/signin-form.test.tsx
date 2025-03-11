@@ -57,8 +57,131 @@ describe('SigninForm', () => {
     mockAuthStatus = 'idle';
   });
 
+  it('should initialize the form with empty default values', () => {
+    render(<SigninForm />);
+
+    const emailInput = screen.getByLabelText(/Email/i);
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+
+    expect(emailInput).toHaveValue('');
+    expect(passwordInput).toHaveValue('');
+  });
+
+  it('should display proper heading and button text', () => {
+    render(<SigninForm />);
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent('Login');
+
+    const submitButton = screen.getByRole('button', { name: /Login/i });
+    expect(submitButton).toHaveTextContent('Login');
+  });
+
+  it('should render the sign up link with correct href', () => {
+    render(<SigninForm />);
+
+    const signUpLink = screen.getByRole('link', { name: /Sign up/i });
+    expect(signUpLink).toBeInTheDocument();
+    expect(signUpLink).toHaveAttribute('href', '/signup');
+  });
+
+  it('should display form with appropriate structure and styling', () => {
+    render(<SigninForm />);
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    const container = heading.closest('div.max-w-\\[56rem\\]');
+    expect(container).toHaveClass(
+      'max-w-[56rem]',
+      'w-full',
+      'rounded-xl',
+      'bg-white',
+    );
+
+    const emailInput = screen.getByPlaceholderText('Enter your email address');
+    expect(emailInput).toHaveAttribute(
+      'placeholder',
+      'Enter your email address',
+    );
+
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    expect(passwordInput).toHaveAttribute('placeholder', 'Enter your password');
+
+    expect(screen.getByText('Need to create an account?')).toBeInTheDocument();
+  });
+
+  it('should toggle password visibility when the eye icon is clicked', async () => {
+    render(<SigninForm />);
+
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    const visibilityToggle = screen.getByLabelText('Show password');
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await act(async () => {
+      fireEvent.click(visibilityToggle);
+    });
+
+    expect(passwordInput).toHaveAttribute('type', 'text');
+    expect(screen.getByLabelText('Hide password')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Hide password'));
+    });
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(screen.getByLabelText('Show password')).toBeInTheDocument();
+  });
+
+  it('should handle successful authentication and redirect', async () => {
+    mockSignin.mockResolvedValueOnce({
+      success: true,
+      data: { id: '1' },
+    });
+
+    render(<SigninForm />);
+
+    const emailInput = screen.getByLabelText(/Email/i);
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    const submitButton = screen.getByRole('button', { name: /Login/i });
+
+    await act(async () => {
+      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Signed in successfully');
+      expect(mockPush).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('should show loading state while submitting the form', async () => {
+    mockAuthStatus = 'idle';
+    const { rerender } = render(<SigninForm />);
+
+    const emailInput = screen.getByLabelText(/Email/i);
+    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    const submitButton = screen.getByRole('button', { name: /Login/i });
+
+    await act(async () => {
+      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    });
+
+    mockAuthStatus = 'loading';
+    rerender(<SigninForm />);
+
+    expect(screen.getByText('Logging in...')).toBeInTheDocument();
+    expect(emailInput).toBeDisabled();
+    expect(passwordInput).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Logging in/i })).toBeDisabled();
+  });
+
   it('should handle authentication failure and display error', async () => {
-    // Mock failed signin
     const errorResult = {
       success: false,
       error: {
@@ -68,27 +191,21 @@ describe('SigninForm', () => {
     };
     mockSignin.mockResolvedValueOnce(errorResult);
 
-    // Render the component
     render(<SigninForm />);
 
-    // Get form elements
     const emailInput = screen.getByLabelText(/Email/i);
-    // Use a more specific selector for the password input
     const passwordInput = screen.getByPlaceholderText('Enter your password');
     const submitButton = screen.getByRole('button', { name: /Login/i });
 
-    // Fill in the form
     await act(async () => {
       fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
 
-    // Submit the form
     await act(async () => {
       fireEvent.click(submitButton);
     });
 
-    // Wait for form submission to complete
     await waitFor(() => {
       expect(mockSignin).toHaveBeenCalledWith({
         email: 'user@example.com',
@@ -96,7 +213,6 @@ describe('SigninForm', () => {
       });
     });
 
-    // Verify error handler is called with the error result
     await waitFor(() => {
       expect(handleAuthFormError).toHaveBeenCalledWith(
         errorResult,
@@ -105,70 +221,32 @@ describe('SigninForm', () => {
       );
     });
 
-    // Verify we don't redirect on error
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('should show loading state while submitting the form', async () => {
-    // Initially render with idle status
-    mockAuthStatus = 'idle';
-
-    const { rerender } = render(<SigninForm />);
-
-    // Get form elements
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const submitButton = screen.getByRole('button', { name: /Login/i });
-
-    // Fill in the form
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    // Now change the status to loading and rerender
-    mockAuthStatus = 'loading';
-    rerender(<SigninForm />);
-
-    // Check for loading indicator
-    expect(screen.getByText('Logging in...')).toBeInTheDocument();
-
-    // Verify inputs and button are disabled during loading
-    expect(emailInput).toBeDisabled();
-    expect(passwordInput).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Logging in/i })).toBeDisabled();
-  });
-
   it('should clear errors when form is submitted', async () => {
-    // Mock successful signin
     mockSignin.mockResolvedValueOnce({
       success: true,
       data: { id: '1' },
     });
 
-    // Render the component
     render(<SigninForm />);
 
-    // Get form elements
     const emailInput = screen.getByLabelText(/Email/i);
     const passwordInput = screen.getByPlaceholderText('Enter your password');
     const submitButton = screen.getByRole('button', { name: /Login/i });
 
-    // Fill in the form
     await act(async () => {
       fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
 
-    // Submit the form
     await act(async () => {
       fireEvent.click(submitButton);
     });
 
-    // Verify clearErrors is called before signin
     expect(mockClearErrors).toHaveBeenCalled();
 
-    // Check call order by examining the mock calls array
     const clearErrorsCallIndex = mockClearErrors.mock.invocationCallOrder[0];
     const signinCallIndex = mockSignin.mock.invocationCallOrder[0];
     if (clearErrorsCallIndex === undefined || signinCallIndex === undefined) {
@@ -178,46 +256,8 @@ describe('SigninForm', () => {
   });
 
   it('should clear errors when component unmounts', async () => {
-    // Render the component
     const { unmount } = render(<SigninForm />);
-
-    // Unmount the component
     unmount();
-
-    // Verify clearErrors is called on unmount
     expect(mockClearErrors).toHaveBeenCalled();
-  });
-
-  it('should handle successful authentication and redirect', async () => {
-    // Mock successful signin
-    mockSignin.mockResolvedValueOnce({
-      success: true,
-      data: { id: '1' },
-    });
-
-    // Render the component
-    render(<SigninForm />);
-
-    // Get form elements
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const submitButton = screen.getByRole('button', { name: /Login/i });
-
-    // Fill in the form
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    // Submit the form
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    // Verify successful signin redirects to home page
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Signed in successfully');
-      expect(mockPush).toHaveBeenCalledWith('/');
-    });
   });
 });
