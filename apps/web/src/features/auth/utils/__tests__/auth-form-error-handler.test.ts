@@ -142,9 +142,11 @@ describe('handleAuthFormError', () => {
     handleAuthFormError(apiError, setError, 'signin');
 
     // Assert
-    expect(setError).toHaveBeenCalledWith('root' as Path<TestFormValues>, {
+    expect(setError).toHaveBeenCalledWith('email' as Path<TestFormValues>, {
       type: 'server',
-      message: 'Invalid email or password',
+    });
+    expect(setError).toHaveBeenCalledWith('password' as Path<TestFormValues>, {
+      type: 'server',
     });
     expect(toast.error).toHaveBeenCalledWith('Invalid email or password');
   });

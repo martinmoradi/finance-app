@@ -70,8 +70,10 @@ describe('SignupForm', () => {
     // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign up/i });
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+    const submitButton = screen.getByRole('button', {
+      name: /Create Account/i,
+    });
 
     // Fill in the form
     await act(async () => {
@@ -120,8 +122,10 @@ describe('SignupForm', () => {
     // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign up/i });
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+    const submitButton = screen.getByRole('button', {
+      name: /Create Account/i,
+    });
 
     // Fill in the form
     await act(async () => {
@@ -166,8 +170,10 @@ describe('SignupForm', () => {
     // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign up/i });
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+    const submitButton = screen.getByRole('button', {
+      name: /Create Account/i,
+    });
 
     // Fill in the form
     await act(async () => {
@@ -205,8 +211,10 @@ describe('SignupForm', () => {
     // Get form elements
     const nameInput = screen.getByLabelText(/Name/i);
     const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign up/i });
+    const passwordInput = screen.getByPlaceholderText('Create a password');
+    const submitButton = screen.getByRole('button', {
+      name: /Create Account/i,
+    });
 
     // Fill in the form
     await act(async () => {
