@@ -1,7 +1,5 @@
 import { SigninForm } from '@/features/auth/components/signin-form';
 
-const SigninPage = () => {
+export default function SigninPage() {
   return <SigninForm />;
-};
-
-export default SigninPage;
+}
