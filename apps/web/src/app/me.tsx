@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { getMe } from '@/features/auth/actions/get-me';
 import { refreshTokens } from '@/features/auth/actions/refresh-tokens';
 import { useAuth } from '@/features/auth/store/useAuth';
@@ -31,16 +32,8 @@ export default function Me() {
 
   return (
     <div className='p-4 flex flex-col gap-4'>
-      <button
-        onClick={handleGetMe}
-        className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'>
-        Debug: Get Me
-      </button>
-      <button
-        onClick={handleRefreshTokens}
-        className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'>
-        Debug: Refresh Tokens
-      </button>
+      <Button onClick={handleGetMe}>Debug: Get Me</Button>
+      <Button onClick={handleRefreshTokens}>Debug: Refresh Tokens</Button>
       <pre className='mt-4 p-2 bg-gray-100 rounded'>{result}</pre>
       <h1>User :</h1>
       <pre className='mt-4 p-2 bg-gray-100 rounded'>
