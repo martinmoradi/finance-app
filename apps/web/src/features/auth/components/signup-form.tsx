@@ -21,13 +21,15 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import HidePasswordIcon from '@public/icon-hide-password.svg';
+import ShowPasswordIcon from '@public/icon-show-password.svg';
 
 type SignupFormValues = z.infer<typeof createUserSchema>;
 
 export function SignupForm() {
   const router = useRouter();
   const { signup, status, clearErrors } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const {
     register,
@@ -116,21 +118,17 @@ export function SignupForm() {
         <InputGroup>
           <Input
             id='password'
-            type={showPassword ? 'text' : 'password'}
+            type={isPasswordVisible ? 'text' : 'password'}
             {...register('password')}
             placeholder='Create a password'
             error={!!errors.password}
             disabled={status === 'loading'}
           />
           <InputRightIcon
-            onClick={() => setShowPassword(!showPassword)}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+            aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
             className='cursor-pointer'>
-            {showPassword ? (
-              <EyeOff className='h-5 w-5' />
-            ) : (
-              <Eye className='h-5 w-5' />
-            )}
+            {isPasswordVisible ? <HidePasswordIcon /> : <ShowPasswordIcon />}
           </InputRightIcon>
         </InputGroup>
         <div className='h-2 pt-1 text-right mb-8'>

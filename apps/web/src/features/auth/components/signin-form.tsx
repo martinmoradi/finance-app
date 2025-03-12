@@ -13,8 +13,10 @@ import {
 import { useAuth } from '@/features/auth/store/useAuth';
 import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
 import { zodResolver } from '@hookform/resolvers/zod';
+import HidePasswordIcon from '@public/icon-hide-password.svg';
+import ShowPasswordIcon from '@public/icon-show-password.svg';
 import { signinSchema } from '@repo/validation';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -27,7 +29,7 @@ type SigninFormValues = z.infer<typeof signinSchema>;
 export function SigninForm() {
   const router = useRouter();
   const { signin, status, clearErrors } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const {
     register,
@@ -98,20 +100,22 @@ export function SigninForm() {
             <InputGroup>
               <Input
                 id='password'
-                type={showPassword ? 'text' : 'password'}
+                type={isPasswordVisible ? 'text' : 'password'}
                 {...register('password')}
                 placeholder='Enter your password'
                 error={!!errors.password}
                 disabled={status === 'loading'}
               />
               <InputRightIcon
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                aria-label={
+                  isPasswordVisible ? 'Hide password' : 'Show password'
+                }
                 className='cursor-pointer'>
-                {showPassword ? (
-                  <EyeOff className='h-5 w-5' />
+                {isPasswordVisible ? (
+                  <HidePasswordIcon />
                 ) : (
-                  <Eye className='h-5 w-5' />
+                  <ShowPasswordIcon />
                 )}
               </InputRightIcon>
             </InputGroup>
