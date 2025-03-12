@@ -7,8 +7,8 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className='min-h-screen w-full flex flex-col'>
-      {/** Mobile/Tablet navigation bar - hidden on desktop **/}
+    <div className='min-h-screen w-full mx-auto max-w-[144rem] flex flex-col'>
+      {/** Mobile/Tablet top bar - hidden on desktop **/}
       <div className='h-16 w-full bg-foreground flex items-center justify-center lg:hidden'>
         <LogoLarge className='h-8' />
       </div>
