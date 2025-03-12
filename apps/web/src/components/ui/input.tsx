@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
 import {
+  createContext,
   forwardRef,
   InputHTMLAttributes,
+  KeyboardEvent,
   ReactNode,
-  createContext,
   useContext,
   useId,
-  KeyboardEvent,
 } from 'react';
 
 // Create context for input group
@@ -34,7 +34,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         type={type}
         id={id}
         className={cn(
-          'flex h-11 w-full rounded-lg border-[1.5px] bg-transparent px-3 py-1 text-body transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-beige-500 placeholder:text-body focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-500 focus-visible:border-primary',
+          'flex h-[var(--input-height)] w-full rounded-lg border-[1.5px] bg-transparent px-3 py-1 text-body transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-beige-500 placeholder:text-body focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-500 focus-visible:border-primary',
           // Handle Chrome autofill styling
           '[&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:shadow-[0_0_0_30px_white_inset]',
           // For dark mode (if applicable)
@@ -189,7 +189,7 @@ const InputRightIcon = forwardRef<HTMLDivElement, InputIconProps>(
         role='button'
         tabIndex={0}
         className={cn(
-          'absolute right-3 flex items-center justify-center',
+          'absolute right-5 flex items-center justify-center',
           'cursor-pointer',
           className,
         )}
@@ -217,8 +217,8 @@ InputRightIcon.displayName = 'InputRightIcon';
 export {
   Input,
   InputGroup,
-  InputPrefix,
-  InputSuffix,
   InputLeftIcon,
+  InputPrefix,
   InputRightIcon,
+  InputSuffix,
 };
