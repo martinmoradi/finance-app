@@ -70,6 +70,14 @@
     /* Line heights */
     --line-height-tight: 120%;
     --line-height-normal: 150%;
+
+    /* -------------- Sizes -------------- */
+    --input-height: 4.5rem;
+    --button-height: 5.3rem;
+    --navigation-desktop-open: 30rem;
+    --navigation-desktop-closed: 8.8rem;
+    --navigation-tablet: 7.4rem;
+    --navigation-mobile: 5.2rem;
   }
   .dark {
     --background: 0 0% 3.9%;
