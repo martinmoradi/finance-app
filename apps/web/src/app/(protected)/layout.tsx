@@ -1,4 +1,7 @@
+'use client';
+
 import { Navigation } from '@/components/navigation';
+import { useActivityBasedSessionRefresh } from '@/features/auth/hooks/use-activity-based-session-refresh';
 import { cn } from '@/lib/utils';
 
 export default function ProtectedLayout({
@@ -6,6 +9,8 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useActivityBasedSessionRefresh();
+
   return (
     <div
       className={cn(
