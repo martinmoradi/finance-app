@@ -74,6 +74,7 @@ services:
   # NestJS Backend API Service
   api:
     container_name: api_dev
+    user: '${UID:-1000}:${GID:-1000}'
     build:
       context: . # Build from repository root
       dockerfile: ./apps/api/Dockerfile.dev
