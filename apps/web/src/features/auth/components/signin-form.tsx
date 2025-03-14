@@ -70,86 +70,90 @@ export function SigninForm() {
         <Display>Login</Display>
       </div>
 
-      <div className='mb-8'>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className='mb-4'>
-            <Label htmlFor='email' className='block pb-1'>
-              <CaptionStrong>Email</CaptionStrong>
-            </Label>
-            <Input
-              id='email'
-              type='email'
-              {...register('email')}
-              placeholder='Enter your email address'
-              error={!!errors.email}
-              disabled={status === 'loading'}
-            />
-            <div className='h-2 pt-1 text-right'>
-              {errors.email && (
-                <Caption>
-                  <span className='text-red'>{errors.email.message}</span>
-                </Caption>
-              )}
-            </div>
-          </div>
-
-          <div className='mb-6'>
-            <Label htmlFor='password' className='block pb-1'>
-              <CaptionStrong>Password</CaptionStrong>
-            </Label>
-            <InputGroup>
-              <Input
-                id='password'
-                type={isPasswordVisible ? 'text' : 'password'}
-                {...register('password')}
-                placeholder='Enter your password'
-                error={!!errors.password}
-                disabled={status === 'loading'}
-              />
-              <InputRightIcon
-                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                aria-label={
-                  isPasswordVisible ? 'Hide password' : 'Show password'
-                }
-                className='cursor-pointer'>
-                {isPasswordVisible ? (
-                  <HidePasswordIcon />
-                ) : (
-                  <ShowPasswordIcon />
-                )}
-              </InputRightIcon>
-            </InputGroup>
-
-            <div className='h-2 pt-1 text-right'>
-              {errors.password && (
-                <Caption>
-                  <span className='text-red'>{errors.password.message}</span>
-                </Caption>
-              )}
-            </div>
-          </div>
-
-          <Button
-            type='submit'
-            className='w-full'
-            disabled={status === 'loading'}>
-            {status === 'loading' ? (
-              <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                Logging in...
-              </>
-            ) : (
-              'Login'
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        aria-label='Login form'>
+        <div className='mb-4'>
+          <Label htmlFor='email' className='block pb-1'>
+            <CaptionStrong>Email</CaptionStrong>
+          </Label>
+          <Input
+            id='email'
+            type='email'
+            {...register('email')}
+            placeholder='Enter your email address'
+            error={!!errors.email}
+            disabled={status === 'loading'}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
+          <div className='h-2 pt-1 text-right'>
+            {errors.email && (
+              <Caption id='email-error'>
+                <span className='text-red'>{errors.email.message}</span>
+              </Caption>
             )}
-          </Button>
-        </form>
-      </div>
+          </div>
+        </div>
+
+        <div className='mb-6'>
+          <Label htmlFor='password' className='block pb-1'>
+            <CaptionStrong>Password</CaptionStrong>
+          </Label>
+          <InputGroup>
+            <Input
+              id='password'
+              type={isPasswordVisible ? 'text' : 'password'}
+              {...register('password')}
+              placeholder='Enter your password'
+              error={!!errors.password}
+              disabled={status === 'loading'}
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? 'password-error' : undefined}
+            />
+            <InputRightIcon
+              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+              aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+              className='cursor-pointer'>
+              {isPasswordVisible ? <HidePasswordIcon /> : <ShowPasswordIcon />}
+            </InputRightIcon>
+          </InputGroup>
+
+          <div className='h-2 pt-1 text-right'>
+            {errors.password && (
+              <Caption id='password-error'>
+                <span className='text-red'>{errors.password.message}</span>
+              </Caption>
+            )}
+          </div>
+        </div>
+
+        <Button
+          type='submit'
+          className='w-full'
+          disabled={status === 'loading'}
+          aria-busy={status === 'loading'}>
+          {status === 'loading' ? (
+            <>
+              <Loader2
+                className='mr-2 h-4 w-4 animate-spin'
+                aria-hidden='true'
+              />
+              <span>Logging in...</span>
+              <span className='sr-only'>Please wait while we log you in</span>
+            </>
+          ) : (
+            'Login'
+          )}
+        </Button>
+      </form>
 
       <div className='flex flex-row flex-wrap items-baseline justify-center gap-4'>
         <Body className='text-base text-muted-foreground'>
           Need to create an account?
         </Body>
-        <Link href='/signup'>
+        <Link href='/signup' prefetch={true}>
           <BodyStrong>
             <span className='text-base underline underline-offset-4 hover:text-muted-foreground'>
               Sign up
