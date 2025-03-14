@@ -32,11 +32,13 @@ export function Navigation() {
         'h-[var(--navigation-mobile)] w-full rounded-t-lg bg-foreground text-white',
         'md:h-[var(--navigation-tablet)]',
         'lg:h-full lg:flex lg:flex-col lg:rounded-tl-none lg:rounded-br-lg',
+        'lg:transition-all lg:duration-300 lg:ease-in-out',
         isMinimized
           ? 'lg:w-[var(--navigation-desktop-closed)]'
           : 'lg:w-[var(--navigation-desktop-open)]',
-      )}>
-      <div className='mb-6 hidden py-10 pl-9 lg:block'>
+      )}
+      aria-label='Main navigation'>
+      <div className='mb-6 hidden py-10 pl-9 lg:block' aria-hidden='true'>
         {isMinimized ? <LogoSmallIcon /> : <LogoLargeIcon />}
       </div>
 
@@ -56,9 +58,13 @@ export function Navigation() {
                   isActive
                     ? 'border-b-4 border-green bg-white text-primary lg:mr-3 lg:border-b-0'
                     : 'text-muted-foreground hover:text-white',
-                )}>
+                )}
+                aria-current={isActive ? 'page' : undefined}>
                 {isActive && (
-                  <span className='absolute left-0 top-0 hidden h-full w-1 bg-green lg:block'></span>
+                  <span
+                    className='absolute left-0 top-0 hidden h-full w-1 bg-green lg:block'
+                    aria-hidden='true'
+                  />
                 )}
                 <Icon
                   className={cn(
@@ -84,9 +90,12 @@ export function Navigation() {
           className={cn(
             'flex w-full flex-row gap-4 rounded-r-xl py-4 pl-[3.5rem] pr-6',
             'text-muted-foreground hover:text-white',
-          )}>
+          )}
+          aria-label={isMinimized ? 'Expand menu' : 'Minimize menu'}
+          aria-expanded={!isMinimized}>
           <MinimizeIcon
             className={cn('h-5 w-5', isMinimized && 'rotate-180')}
+            aria-hidden='true'
           />
           <div className={cn('hidden', !isMinimized && 'lg:block')}>
             <Subtitle>Minimize Menu</Subtitle>
