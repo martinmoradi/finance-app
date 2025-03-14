@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils';
-import { ReactNode } from 'react';
+import { HTMLAttributes, ReactNode } from 'react';
 
-interface TypographyProps {
+// Extend HTMLAttributes to include all possible HTML attributes
+interface TypographyProps extends HTMLAttributes<HTMLElement> {
   children: ReactNode;
   className?: string;
+  as?: React.ElementType; // Optional prop to override the element type
 }
 
 /**
@@ -12,8 +14,18 @@ interface TypographyProps {
  * @description
  * Used for main page headings and hero sections
  */
-export function Display({ children, className }: TypographyProps) {
-  return <h1 className={cn('text-display', className)}>{children}</h1>;
+export function Display({
+  children,
+  className,
+  as,
+  ...props
+}: TypographyProps) {
+  const Component = as || 'h1';
+  return (
+    <Component className={cn('text-display', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /**
@@ -23,8 +35,13 @@ export function Display({ children, className }: TypographyProps) {
  * Used for section headings and important content divisions
  *
  */
-export function Title({ children, className }: TypographyProps) {
-  return <h2 className={cn('text-heading', className)}>{children}</h2>;
+export function Title({ children, className, as, ...props }: TypographyProps) {
+  const Component = as || 'h2';
+  return (
+    <Component className={cn('text-heading', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /**
@@ -34,8 +51,18 @@ export function Title({ children, className }: TypographyProps) {
  * Used for subsections and component headings
  *
  */
-export function Subtitle({ children, className }: TypographyProps) {
-  return <h3 className={cn('text-subheading', className)}>{children}</h3>;
+export function Subtitle({
+  children,
+  className,
+  as,
+  ...props
+}: TypographyProps) {
+  const Component = as || 'h3';
+  return (
+    <Component className={cn('text-subheading', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /**
@@ -45,8 +72,13 @@ export function Subtitle({ children, className }: TypographyProps) {
  * Used for main content text and general paragraphs
  *
  */
-export function Body({ children, className }: TypographyProps) {
-  return <p className={cn('text-body', className)}>{children}</p>;
+export function Body({ children, className, as, ...props }: TypographyProps) {
+  const Component = as || 'p';
+  return (
+    <Component className={cn('text-body', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /**
@@ -56,8 +88,18 @@ export function Body({ children, className }: TypographyProps) {
  * Used for emphasized content within paragraphs or important notices
  *
  */
-export function BodyStrong({ children, className }: TypographyProps) {
-  return <p className={cn('text-body-bold', className)}>{children}</p>;
+export function BodyStrong({
+  children,
+  className,
+  as,
+  ...props
+}: TypographyProps) {
+  const Component = as || 'p';
+  return (
+    <Component className={cn('text-body-bold', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /**
@@ -67,8 +109,18 @@ export function BodyStrong({ children, className }: TypographyProps) {
  * Used for supplementary information, labels, and metadata
  *
  */
-export function Caption({ children, className }: TypographyProps) {
-  return <p className={cn('text-caption', className)}>{children}</p>;
+export function Caption({
+  children,
+  className,
+  as,
+  ...props
+}: TypographyProps) {
+  const Component = as || 'p';
+  return (
+    <Component className={cn('text-caption', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /**
@@ -78,6 +130,16 @@ export function Caption({ children, className }: TypographyProps) {
  * Used for emphasized small text, labels, and metadata that need highlighting
  *
  */
-export function CaptionStrong({ children, className }: TypographyProps) {
-  return <p className={cn('text-caption-bold', className)}>{children}</p>;
+export function CaptionStrong({
+  children,
+  className,
+  as,
+  ...props
+}: TypographyProps) {
+  const Component = as || 'p';
+  return (
+    <Component className={cn('text-caption-bold', className)} {...props}>
+      {children}
+    </Component>
+  );
 }
