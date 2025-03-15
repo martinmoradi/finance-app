@@ -5,7 +5,7 @@ import IllustrationAuthentication from '@public/illustration-authentication.svg'
 export function AuthIllustration() {
   return (
     <div className='relative'>
-      {/* Base illustration without text */}
+      {/* Base illustration */}
       <IllustrationAuthentication className='w-full h-full object-fit rounded-xl' />
 
       {/* Logo overlay */}
@@ -18,7 +18,7 @@ export function AuthIllustration() {
         <div className='mb-6'>
           <Display>
             <span className='text-white'>
-              Keep track of your money and save for your future
+              Keep track of your money <br /> and save for your future
             </span>
           </Display>
         </div>
