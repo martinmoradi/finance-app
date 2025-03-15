@@ -73,7 +73,8 @@ export function SignupForm() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        aria-label='Sign up form'>
+        aria-label='Sign up form'
+        className='mb-8'>
         <div className='mb-4'>
           <Label htmlFor='name' className='block pb-1'>
             <CaptionStrong>Name</CaptionStrong>
