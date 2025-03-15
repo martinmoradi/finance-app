@@ -10,7 +10,7 @@ export default function AuthLayout({
     <div className='min-h-screen w-full mx-auto max-w-[144rem] flex flex-col'>
       {/** Mobile/Tablet top bar - hidden on desktop **/}
       <div className='h-16 w-full bg-foreground flex items-center justify-center lg:hidden'>
-        <LogoLarge className='h-8' />
+        <LogoLarge className='h-7 mt-2' />
       </div>
 
       {/** Main content area **/}
