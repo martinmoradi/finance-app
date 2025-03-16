@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/store/useAuth';
-import Me from '../../me';
+import Me from '@/app/me';
 import { useRouter } from 'next/navigation';
 import { Display } from '@/components/ui/typography';
 
