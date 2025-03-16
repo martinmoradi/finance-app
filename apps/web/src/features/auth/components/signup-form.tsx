@@ -17,6 +17,7 @@ import HidePasswordIcon from '@public/icon-hide-password.svg';
 import ShowPasswordIcon from '@public/icon-show-password.svg';
 import { createUserSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -30,6 +31,7 @@ export function SignupForm() {
   const router = useRouter();
   const { signup, status, clearErrors } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const t = useTranslations('auth');
 
   const {
     register,
@@ -61,14 +63,14 @@ export function SignupForm() {
     if (!result.success) {
       handleAuthFormError(result, setError, 'signup');
     } else {
-      toast.success('Account created successfully');
+      toast.success(t('signup.successMessage'));
       router.push('/');
     }
   };
 
   return (
     <div className='max-w-[56rem] w-full rounded-xl bg-white px-8 py-8 space-y-8'>
-      <Display>Sign Up</Display>
+      <Display>{t('signup.title')}</Display>
 
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -77,12 +79,12 @@ export function SignupForm() {
         className='mb-8'>
         <div className='mb-4'>
           <Label htmlFor='name' className='block pb-1'>
-            <CaptionStrong>Name</CaptionStrong>
+            <CaptionStrong>{t('signup.name')}</CaptionStrong>
           </Label>
           <Input
             id='name'
             {...register('name')}
-            placeholder='Enter your name'
+            placeholder={t('signup.namePlaceholder')}
             error={!!errors.name}
             disabled={status === 'loading'}
             aria-invalid={!!errors.name}
@@ -99,13 +101,13 @@ export function SignupForm() {
 
         <div className='mb-4'>
           <Label htmlFor='email' className='block pb-1'>
-            <CaptionStrong>Email</CaptionStrong>
+            <CaptionStrong>{t('shared.email')}</CaptionStrong>
           </Label>
           <Input
             id='email'
             type='email'
             {...register('email')}
-            placeholder='Enter your email address'
+            placeholder={t('shared.emailPlaceholder')}
             error={!!errors.email}
             disabled={status === 'loading'}
             aria-invalid={!!errors.email}
@@ -122,14 +124,14 @@ export function SignupForm() {
 
         <div className='mb-8'>
           <Label htmlFor='password' className='block pb-1'>
-            <CaptionStrong>Password</CaptionStrong>
+            <CaptionStrong>{t('shared.password')}</CaptionStrong>
           </Label>
           <InputGroup>
             <Input
               id='password'
               type={isPasswordVisible ? 'text' : 'password'}
               {...register('password')}
-              placeholder='Create a password'
+              placeholder={t('signup.passwordPlaceholder')}
               error={!!errors.password}
               disabled={status === 'loading'}
               aria-invalid={!!errors.password}
@@ -139,7 +141,11 @@ export function SignupForm() {
             />
             <InputRightIcon
               onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-              aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+              aria-label={
+                isPasswordVisible
+                  ? t('shared.hidePassword')
+                  : t('shared.showPassword')
+              }
               className='cursor-pointer'>
               {isPasswordVisible ? <HidePasswordIcon /> : <ShowPasswordIcon />}
             </InputRightIcon>
@@ -152,7 +158,7 @@ export function SignupForm() {
             ) : (
               <Caption id='password-requirements'>
                 <span className='text-muted-foreground'>
-                  Password must be at least 8 characters
+                  {t('signup.passwordRequirements')}
                 </span>
               </Caption>
             )}
@@ -170,25 +176,23 @@ export function SignupForm() {
                 className='mr-2 h-4 w-4 animate-spin'
                 aria-hidden='true'
               />
-              <span>Creating account...</span>
-              <span className='sr-only'>
-                Please wait while we create your account
-              </span>
+              <span>{t('signup.loadingText')}</span>
+              <span className='sr-only'>{t('signup.loadingAction')}</span>
             </>
           ) : (
-            'Create Account'
+            t('signup.submitButton')
           )}
         </Button>
       </form>
 
       <div className='flex flex-row items-baseline justify-center gap-4'>
         <Body className='text-base text-muted-foreground'>
-          Already have an account?
+          {t('signup.signinPrompt')}
         </Body>
         <Link href='/login' prefetch={true}>
           <BodyStrong>
             <span className='text-base underline underline-offset-4 hover:text-muted-foreground'>
-              Login
+              {t('signup.signinLink')}
             </span>
           </BodyStrong>
         </Link>

@@ -17,6 +17,7 @@ import HidePasswordIcon from '@public/icon-hide-password.svg';
 import ShowPasswordIcon from '@public/icon-show-password.svg';
 import { signinSchema } from '@repo/validation';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -30,6 +31,7 @@ export function SigninForm() {
   const router = useRouter();
   const { signin, status, clearErrors } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const t = useTranslations('auth');
 
   const {
     register,
@@ -59,7 +61,7 @@ export function SigninForm() {
     if (!result.success) {
       handleAuthFormError(result, setError, 'signin');
     } else {
-      toast.success('Signed in successfully');
+      toast.success(t('signin.successMessage'));
       router.push('/');
     }
   };
@@ -67,7 +69,7 @@ export function SigninForm() {
   return (
     <div className='max-w-[56rem] w-full rounded-xl bg-white px-8 py-8'>
       <div className='mb-8'>
-        <Display>Login</Display>
+        <Display>{t('signin.title')}</Display>
       </div>
 
       <form
@@ -77,13 +79,13 @@ export function SigninForm() {
         className='mb-8'>
         <div className='mb-4'>
           <Label htmlFor='email' className='block pb-1'>
-            <CaptionStrong>Email</CaptionStrong>
+            <CaptionStrong>{t('shared.email')}</CaptionStrong>
           </Label>
           <Input
             id='email'
             type='email'
             {...register('email')}
-            placeholder='Enter your email address'
+            placeholder={t('shared.emailPlaceholder')}
             error={!!errors.email}
             disabled={status === 'loading'}
             aria-invalid={!!errors.email}
@@ -100,14 +102,14 @@ export function SigninForm() {
 
         <div className='mb-6'>
           <Label htmlFor='password' className='block pb-1'>
-            <CaptionStrong>Password</CaptionStrong>
+            <CaptionStrong>{t('shared.password')}</CaptionStrong>
           </Label>
           <InputGroup>
             <Input
               id='password'
               type={isPasswordVisible ? 'text' : 'password'}
               {...register('password')}
-              placeholder='Enter your password'
+              placeholder={t('signin.passwordPlaceholder')}
               error={!!errors.password}
               disabled={status === 'loading'}
               aria-invalid={!!errors.password}
@@ -115,7 +117,11 @@ export function SigninForm() {
             />
             <InputRightIcon
               onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-              aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+              aria-label={
+                isPasswordVisible
+                  ? t('shared.hidePassword')
+                  : t('shared.showPassword')
+              }
               className='cursor-pointer'>
               {isPasswordVisible ? <HidePasswordIcon /> : <ShowPasswordIcon />}
             </InputRightIcon>
@@ -141,23 +147,23 @@ export function SigninForm() {
                 className='mr-2 h-4 w-4 animate-spin'
                 aria-hidden='true'
               />
-              <span>Logging in...</span>
-              <span className='sr-only'>Please wait while we log you in</span>
+              <span>{t('signin.loadingText')}</span>
+              <span className='sr-only'>{t('signin.loadingAction')}</span>
             </>
           ) : (
-            'Login'
+            t('signin.submitButton')
           )}
         </Button>
       </form>
 
       <div className='flex flex-row flex-wrap items-baseline justify-center gap-4'>
         <Body className='text-base text-muted-foreground'>
-          Need to create an account?
+          {t('signin.signupPrompt')}
         </Body>
         <Link href='/signup' prefetch={true}>
           <BodyStrong>
             <span className='text-base underline underline-offset-4 hover:text-muted-foreground'>
-              Sign up
+              {t('signin.signupLink')}
             </span>
           </BodyStrong>
         </Link>
