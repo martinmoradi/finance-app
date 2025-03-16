@@ -1,0 +1,44 @@
+{
+  "auth": {
+    "shared": {
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "emailPlaceholder": "Entrez votre adresse e-mail",
+      "loading": "Veuillez patienter pendant que nous {{action}}"
+    },
+    "signin": {
+      "title": "Connexion",
+      "submitButton": "Se connecter",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "loadingText": "Connexion en cours...",
+      "loadingAction": "vous connectons",
+      "successMessage": "Connecté avec succès",
+      "signupPrompt": "Besoin de créer un compte ?",
+      "signupLink": "S'inscrire"
+    },
+    "signup": {
+      "title": "Inscription",
+      "name": "Nom",
+      "namePlaceholder": "Entrez votre nom",
+      "passwordPlaceholder": "Créez un mot de passe",
+      "passwordRequirements": "Le mot de passe doit comporter au moins 8 caractères",
+      "submitButton": "Créer mon compte",
+      "loadingText": "Création du compte en cours...",
+      "loadingAction": "créons votre compte",
+      "successMessage": "Compte créé avec succès",
+      "signinPrompt": "Vous avez déjà un compte ?",
+      "signinLink": "Se connecter"
+    },
+    "errors": {
+      "emailExists": "Un compte avec cette adresse e-mail existe déjà",
+      "invalidCredentials": "E-mail ou mot de passe invalide",
+      "formErrors": "Veuillez corriger les erreurs dans le formulaire"
+    },
+    "illustration": {
+      "headline": "Maîtrisez vos finances et construisez votre avenir",
+      "description": "Pecunia vous donne les rênes de vos finances. Suivez vos dépenses, fixez des objectifs budgétaires et alimentez votre épargne en toute simplicité."
+    }
+  }
+}

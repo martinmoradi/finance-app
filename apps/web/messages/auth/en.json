@@ -1,0 +1,44 @@
+{
+  "auth": {
+    "shared": {
+      "email": "Email",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "emailPlaceholder": "Enter your email address",
+      "loading": "Please wait while we {{action}}"
+    },
+    "signin": {
+      "title": "Login",
+      "submitButton": "Login",
+      "passwordPlaceholder": "Enter your password",
+      "loadingText": "Logging in...",
+      "loadingAction": "log you in",
+      "successMessage": "Signed in successfully",
+      "signupPrompt": "Need to create an account?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Sign Up",
+      "name": "Name",
+      "namePlaceholder": "Enter your name",
+      "passwordPlaceholder": "Create a password",
+      "passwordRequirements": "Password must be at least 8 characters",
+      "submitButton": "Create Account",
+      "loadingText": "Creating account...",
+      "loadingAction": "create your account",
+      "successMessage": "Account created successfully",
+      "signinPrompt": "Already have an account?",
+      "signinLink": "Login"
+    },
+    "errors": {
+      "emailExists": "An account with this email already exists",
+      "invalidCredentials": "Invalid email or password",
+      "formErrors": "Please correct the errors in the form"
+    },
+    "illustration": {
+      "headline": "Keep track of your money and save for your future",
+      "description": "Pecunia puts you in control of your spending. Track transactions, set budgets, and add to savings pots easily."
+    }
+  }
+}
