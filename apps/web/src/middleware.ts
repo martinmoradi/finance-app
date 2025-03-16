@@ -1,41 +1,69 @@
 import { sessionOptions } from '@/features/auth/config/session.config';
 import { SessionData } from '@repo/types';
 import { getIronSession } from 'iron-session';
+import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import { Locale, routing } from './i18n/routing';
 
-const protectedRoutes = ['/'];
-const publicRoutes = ['/signin', '/signup'];
+// Create the next-intl middleware
+const intlMiddleware = createIntlMiddleware(routing);
+
+// Protected and public routes (patterns without locale prefix)
+const protectedPaths = ['/'];
+const publicPaths = ['/signin', '/signup'];
 
 export default async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
   const path = request.nextUrl.pathname;
-  const isProtectedRoute = protectedRoutes.includes(path);
-  const isPublicRoute = publicRoutes.includes(path);
 
-  // Route authentication
+  // Extract locale from path if it exists
+  const pathParts = path.split('/');
+  const potentialLocale = pathParts.length > 1 ? pathParts[1] : '';
+  const hasLocalePrefix = routing.locales.includes(potentialLocale as Locale);
+
+  // Get session for auth check
   const session = await getIronSession<SessionData>(
     request,
-    response,
+    NextResponse.next(),
     sessionOptions,
   );
-  if (isProtectedRoute && !session.isAuthenticated) {
-    return NextResponse.redirect(new URL('/signup', request.nextUrl));
-  }
-  if (isPublicRoute && session.isAuthenticated) {
-    return NextResponse.redirect(new URL('/', request.nextUrl));
+
+  // Check if we're on a protected or public route (after locale extraction)
+  const pathWithoutLocale = hasLocalePrefix
+    ? '/' + pathParts.slice(2).join('/')
+    : path;
+  const cleanPath = pathWithoutLocale || '/';
+
+  const isProtectedPath = protectedPaths.includes(cleanPath);
+  const isPublicPath = publicPaths.includes(cleanPath);
+
+  // Get the target locale for redirects
+  const targetLocale = hasLocalePrefix
+    ? (potentialLocale as Locale)
+    : routing.defaultLocale;
+
+  // Handle authentication redirects
+  if (isProtectedPath && !session.isAuthenticated) {
+    // User not authenticated trying to access protected route
+    return NextResponse.redirect(
+      new URL(`/${targetLocale}/signup`, request.url),
+    );
   }
 
-  // Request ID
+  if (isPublicPath && session.isAuthenticated) {
+    // User already authenticated trying to access public route (login/signup)
+    return NextResponse.redirect(new URL(`/${targetLocale}`, request.url));
+  }
+
+  // If no auth redirects needed, use the intl middleware
+  // IMPORTANT: Return the response from intlMiddleware directly
+  const response = intlMiddleware(request);
+
+  // Add request ID header to the intlMiddleware response
   const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
+  response.headers.set('x-request-id', requestId);
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-request-id', requestId);
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  // Return the modified intlMiddleware response
+  return response;
 }
 
 export const config = {
