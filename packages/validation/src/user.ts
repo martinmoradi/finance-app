@@ -1,6 +1,7 @@
 import { NewUser, SigninCredentials } from '@repo/types';
 import { z } from 'zod';
 
+// Server schema
 export const createUserSchema = z.object({
   email: z
     .string()
@@ -22,7 +23,38 @@ export const createUserSchema = z.object({
     ),
 }) satisfies z.ZodType<NewUser>;
 
-export const signinSchema = z.object({
+// Frontend schema with i18n keys for messages
+export const signupFormSchema = z
+  .object({
+    email: z
+      .string()
+      .email('validation.email.invalid')
+      .min(1, 'validation.email.required')
+      .max(255, 'validation.email.maxLength')
+      .toLowerCase(),
+    name: z
+      .string()
+      .min(2, 'validation.name.minLength')
+      .max(100, 'validation.name.maxLength'),
+    password: z
+      .string()
+      .min(8, 'validation.password.minLength')
+      .max(100, 'validation.password.maxLength')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/,
+        'validation.password.pattern',
+      ),
+    confirmPassword: z
+      .string()
+      .min(8, 'validation.confirmPassword.minLength')
+      .max(100, 'validation.confirmPassword.maxLength'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'validation.passwordMatch',
+    path: ['confirmPassword'],
+  });
+
+export const signinFormSchema = z.object({
   email: z.string().email(),
-  password: z.string(),
+  password: z.string().min(8, 'validation.password.minLength'),
 }) satisfies z.ZodType<SigninCredentials>;
