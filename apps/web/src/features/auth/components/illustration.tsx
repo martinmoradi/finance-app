@@ -3,7 +3,7 @@ import IllustrationAuthentication from '@public/illustration-authentication.svg'
 import PecuniaLarge from '@public/pecunia-large.svg';
 import { useTranslations } from 'next-intl';
 
-export function AuthIllustration() {
+export function Illustration() {
   const t = useTranslations('auth.illustration');
 
   return (
