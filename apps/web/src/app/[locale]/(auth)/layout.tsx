@@ -1,4 +1,5 @@
-import { AuthIllustration } from '@/features/auth/components/auth-illustration';
+import { FormLayout } from '@/features/auth/components/form-layout';
+import { Illustration } from '@/features/auth/components/illustration';
 import LogoLarge from '@public/logo-large.svg';
 
 export default function AuthLayout({
@@ -17,12 +18,12 @@ export default function AuthLayout({
       <main className='flex-grow flex flex-col lg:flex-row'>
         {/** Left side illustration - hidden on mobile/tablet **/}
         <div className='hidden lg:flex lg:items-center lg:justify-center p-5'>
-          <AuthIllustration />
+          <Illustration />
         </div>
 
         {/** Form - centered **/}
         <div className='flex-grow flex items-center justify-center px-5 py-10'>
-          {children}
+          <FormLayout>{children}</FormLayout>
         </div>
       </main>
     </div>
