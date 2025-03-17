@@ -9,6 +9,7 @@
       "loading": "Please wait while we {{action}}"
     },
     "signin": {
+      "formAriaLabel": "Sign in form",
       "title": "Login",
       "submitButton": "Login",
       "passwordPlaceholder": "Enter your password",
@@ -19,11 +20,15 @@
       "signupLink": "Sign up"
     },
     "signup": {
+      "formAriaLabel": "Sign up form",
       "title": "Sign Up",
       "name": "Name",
       "namePlaceholder": "Enter your name",
       "passwordPlaceholder": "Create a password",
       "passwordRequirements": "Password must be at least 8 characters",
+      "confirmPassword": "Confirm your password",
+      "confirmPasswordPlaceholder": "Please enter your password again",
+      "passwordMatch": "Passwords do not match",
       "submitButton": "Create Account",
       "loadingText": "Creating account...",
       "loadingAction": "create your account",
@@ -32,9 +37,28 @@
       "signinLink": "Login"
     },
     "errors": {
-      "emailExists": "An account with this email already exists",
       "invalidCredentials": "Invalid email or password",
       "formErrors": "Please correct the errors in the form"
+    },
+    "validation": {
+      "email": {
+        "invalid": "Invalid email address",
+        "required": "Email is required",
+        "maxLength": "Email must be less than 255 characters long",
+        "alreadyExists": "An account with this email already exists"
+      },
+      "name": {
+        "minLength": "Name must be at least 2 characters long",
+        "maxLength": "Name must be less than 100 characters long"
+      },
+      "password": {
+        "minLength": "Password must be at least 8 characters long",
+        "maxLength": "Password must be less than 100 characters long",
+        "pattern": "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      },
+      "confirmPassword": {
+        "minLength": "Password must be at least 8 characters long"
+      }
     },
     "illustration": {
       "headline": "Keep track of your money and save for your future",
