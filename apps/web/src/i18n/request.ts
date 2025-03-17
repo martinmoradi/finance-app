@@ -29,7 +29,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     : routing.defaultLocale;
 
   const messagePromises = Object.values(MessageNamespace).map((namespace) =>
-    import(`@messages/${namespace}/${locale}.json`).then((module) => ({
+    import(`../../messages/${namespace}/${locale}.json`).then((module) => ({
       namespace,
       messages: module.default,
     })),
