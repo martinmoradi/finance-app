@@ -21,6 +21,7 @@
     "@repo/types": "workspace:*",
     "@repo/validation": "workspace:*",
     "@sentry/nextjs": "^9",
+    "@tanstack/react-form": "^1.0.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "iron-session": "^8.0.4",
