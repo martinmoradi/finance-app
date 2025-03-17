@@ -1,18 +1,30 @@
-import { UserRepository } from '@/user/user.repository';
-import { Controller, Get, Param } from '@nestjs/common';
-import { DatabaseUser } from '@repo/types';
+import { CsrfGuard } from '@/auth/guards/csrf.guard';
+import { UserService } from '@/user/user.service';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { DoubleCsrfUtilities } from 'csrf-csrf';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userService: UserService,
+    @Inject('CSRF_PROVIDER')
+    private readonly csrfProvider: DoubleCsrfUtilities,
+  ) {}
 
-  @Get()
-  async findAll(): Promise<DatabaseUser[] | null> {
-    return await this.userRepository.findAll();
-  }
-
-  @Get(':id')
-  async findById(@Param('id') id: string): Promise<DatabaseUser | null> {
-    return await this.userRepository.findById(id);
+  @UseGuards(CsrfGuard, ThrottlerGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('exists')
+  async checkUserExists(@Body('email') email: string): Promise<boolean> {
+    const user = await this.userService.findByEmail(email);
+    return !!user;
   }
 }

@@ -11,7 +11,7 @@ import { DatabaseModule } from '@/database/database.module';
 import { LoggerModule } from '@/logger/logger.module';
 import { SessionModule } from '@/session/session.module';
 import { UserModule } from '@/user/user.module';
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -23,7 +23,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     ConfigModule.forFeature(refreshJwtConfig),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
     SessionModule,
-    UserModule,
+    forwardRef(() => UserModule),
     DatabaseModule,
     CookieModule,
     LoggerModule.forFeature('AuthService'),
@@ -39,5 +39,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
       useFactory: createCsrfProvider,
     },
   ],
+  exports: ['CSRF_PROVIDER'],
 })
 export class AuthModule {}
