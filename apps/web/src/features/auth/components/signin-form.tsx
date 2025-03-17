@@ -3,171 +3,173 @@
 import { Button } from '@/components/ui/button';
 import { Input, InputGroup, InputRightIcon } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Body,
-  BodyStrong,
-  Caption,
-  CaptionStrong,
-  Display,
-} from '@/components/ui/typography';
+import { Caption, CaptionStrong } from '@/components/ui/typography';
+import { signinFormOpts } from '@/features/auth/config/form-options';
 import { useAuth } from '@/features/auth/store/useAuth';
-import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from '@/i18n/navigation';
 import HidePasswordIcon from '@public/icon-hide-password.svg';
 import ShowPasswordIcon from '@public/icon-show-password.svg';
-import { signinSchema } from '@repo/validation';
+import { signinFormSchema } from '@repo/validation';
+import { useForm } from '@tanstack/react-form';
 import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
-
-type SigninFormValues = z.infer<typeof signinSchema>;
 
 export function SigninForm() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const { signin, status, clearErrors } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const t = useTranslations('auth');
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setError,
-  } = useForm<SigninFormValues>({
-    resolver: zodResolver(signinSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  // Clear auth errors when component unmounts
   useEffect(() => {
     return () => {
       clearErrors();
     };
   }, [clearErrors]);
 
-  const onSubmit = async (data: SigninFormValues) => {
-    // Clear any previous errors
-    clearErrors();
+  const form = useForm({
+    ...signinFormOpts,
+    validators: {
+      onChange: signinFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      clearErrors();
 
-    const result = await signin(data);
-    if (!result.success) {
-      handleAuthFormError(result, setError, 'signin');
-    } else {
-      toast.success(t('signin.successMessage'));
-      router.push('/');
-    }
-  };
+      const { email, password } = value;
+      const response = await signin({
+        email,
+        password,
+      });
+
+      if (response.success) {
+        toast.success(t('signin.successMessage'));
+        router.push('/');
+      } else {
+        toast.error(t('errors.formErrors'));
+      }
+    },
+  });
 
   return (
-    <div className='max-w-[56rem] w-full rounded-xl bg-white px-8 py-8'>
-      <div className='mb-8'>
-        <Display>{t('signin.title')}</Display>
-      </div>
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        noValidate
-        aria-label='Login form'
-        className='mb-8'>
-        <div className='mb-4'>
-          <Label htmlFor='email' className='block pb-1'>
-            <CaptionStrong>{t('shared.email')}</CaptionStrong>
-          </Label>
-          <Input
-            id='email'
-            type='email'
-            {...register('email')}
-            placeholder={t('shared.emailPlaceholder')}
-            error={!!errors.email}
-            disabled={status === 'loading'}
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? 'email-error' : undefined}
-          />
-          <div className='h-2 pt-1 text-right'>
-            {errors.email && (
-              <Caption id='email-error'>
-                <span className='text-red'>{errors.email.message}</span>
-              </Caption>
-            )}
-          </div>
-        </div>
-
-        <div className='mb-6'>
-          <Label htmlFor='password' className='block pb-1'>
-            <CaptionStrong>{t('shared.password')}</CaptionStrong>
-          </Label>
-          <InputGroup>
-            <Input
-              id='password'
-              type={isPasswordVisible ? 'text' : 'password'}
-              {...register('password')}
-              placeholder={t('signin.passwordPlaceholder')}
-              error={!!errors.password}
-              disabled={status === 'loading'}
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? 'password-error' : undefined}
-            />
-            <InputRightIcon
-              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-              aria-label={
-                isPasswordVisible
-                  ? t('shared.hidePassword')
-                  : t('shared.showPassword')
-              }
-              className='cursor-pointer'>
-              {isPasswordVisible ? <HidePasswordIcon /> : <ShowPasswordIcon />}
-            </InputRightIcon>
-          </InputGroup>
-
-          <div className='h-2 pt-1 text-right'>
-            {errors.password && (
-              <Caption id='password-error'>
-                <span className='text-red'>{errors.password.message}</span>
-              </Caption>
-            )}
-          </div>
-        </div>
-
-        <Button
-          type='submit'
-          className='w-full'
-          disabled={status === 'loading'}
-          aria-busy={status === 'loading'}>
-          {status === 'loading' ? (
-            <>
-              <Loader2
-                className='mr-2 h-4 w-4 animate-spin'
-                aria-hidden='true'
+    <form
+      aria-label={t('signin.formAriaLabel')}
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void form.handleSubmit();
+      }}>
+      <form.Field name='email'>
+        {(field) => {
+          const isError =
+            field.state.meta.errors?.length > 0 && field.state.meta.isTouched;
+          return (
+            <div className='mb-4'>
+              <Label htmlFor={field.name}>
+                <CaptionStrong>{t('shared.email')}</CaptionStrong>
+              </Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                type='email'
+                value={field.state.value}
+                placeholder={t('shared.emailPlaceholder')}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                error={isError}
+                disabled={status === 'loading'}
+                aria-invalid={isError}
+                aria-describedby={isError ? 'email-error' : undefined}
               />
-              <span>{t('signin.loadingText')}</span>
-              <span className='sr-only'>{t('signin.loadingAction')}</span>
-            </>
-          ) : (
-            t('signin.submitButton')
-          )}
-        </Button>
-      </form>
+              <div className='h-2 pt-1 text-right'>
+                {isError && (
+                  <Caption id='email-error'>
+                    <span className='text-red'>
+                      {t(field.state.meta.errors[0]!.message)}
+                    </span>
+                  </Caption>
+                )}
+              </div>
+            </div>
+          );
+        }}
+      </form.Field>
 
-      <div className='flex flex-row flex-wrap items-baseline justify-center gap-4'>
-        <Body className='text-base text-muted-foreground'>
-          {t('signin.signupPrompt')}
-        </Body>
-        <Link href='/signup' prefetch={true}>
-          <BodyStrong>
-            <span className='text-base underline underline-offset-4 hover:text-muted-foreground'>
-              {t('signin.signupLink')}
-            </span>
-          </BodyStrong>
-        </Link>
-      </div>
-    </div>
+      <form.Field name='password'>
+        {(field) => {
+          const isError =
+            field.state.meta.errors?.length > 0 && field.state.meta.isTouched;
+          return (
+            <div className='mb-4'>
+              <Label htmlFor={field.name}>
+                <CaptionStrong>{t('shared.password')}</CaptionStrong>
+              </Label>
+              <InputGroup>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type={isPasswordVisible ? 'text' : 'password'}
+                  value={field.state.value}
+                  placeholder={t('signin.passwordPlaceholder')}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  error={isError}
+                  disabled={status === 'loading'}
+                  aria-invalid={isError}
+                  aria-describedby={isError ? 'password-error' : undefined}
+                />
+                <InputRightIcon
+                  onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                  aria-label={
+                    isPasswordVisible
+                      ? t('shared.hidePassword')
+                      : t('shared.showPassword')
+                  }
+                  className='cursor-pointer'>
+                  {isPasswordVisible ? (
+                    <HidePasswordIcon />
+                  ) : (
+                    <ShowPasswordIcon />
+                  )}
+                </InputRightIcon>
+              </InputGroup>
+              <div className='h-2 pt-1 text-right'>
+                {isError && (
+                  <Caption id='password-error'>
+                    <span className='text-red'>
+                      {t(field.state.meta.errors[0]!.message)}
+                    </span>
+                  </Caption>
+                )}
+              </div>
+            </div>
+          );
+        }}
+      </form.Field>
+
+      <form.Subscribe
+        selector={(state) => [state.canSubmit, state.isSubmitting]}>
+        {([canSubmit, isSubmitting]) => (
+          <Button
+            type='submit'
+            className='w-full'
+            disabled={!canSubmit}
+            aria-busy={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2
+                  className='mr-2 h-4 w-4 animate-spin'
+                  aria-hidden='true'
+                />
+                <span>{t('signin.loadingText')}</span>
+                <span className='sr-only'>{t('signin.loadingAction')}</span>
+              </>
+            ) : (
+              t('signin.submitButton')
+            )}
+          </Button>
+        )}
+      </form.Subscribe>
+    </form>
   );
 }
