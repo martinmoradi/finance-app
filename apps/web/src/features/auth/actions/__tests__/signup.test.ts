@@ -7,13 +7,11 @@ Object.defineProperty(global.crypto, 'randomUUID', {
 import { signup } from '@/features/auth/actions/signup';
 import { getCsrfHeaders } from '@/features/auth/actions/get-csrf-headers';
 import { handleAuthTokens } from '@/features/auth/actions/handle-auth-tokens';
-import { createErrorResponse, formatZodErrors } from '@/lib/errors';
+import { createErrorResponse } from '@/lib/errors';
 import { post } from '@/lib/request';
-import { ErrorCode, PublicUser, SignupCredentials } from '@repo/types';
-import { createUserSchema } from '@repo/validation';
+import { ErrorCode, PublicUser, Credentials } from '@repo/types';
 import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
-import { ZodError } from 'zod';
 
 // Mock dependencies
 jest.mock('@/features/auth/actions/get-csrf-headers', () => ({
@@ -34,17 +32,10 @@ jest.mock('@/lib/errors', () => ({
       details,
     },
   })),
-  formatZodErrors: jest.fn((errors) => ({ name: ['Invalid name'] })),
 }));
 
 jest.mock('@/lib/request', () => ({
   post: jest.fn(),
-}));
-
-jest.mock('@repo/validation', () => ({
-  createUserSchema: {
-    safeParse: jest.fn(),
-  },
 }));
 
 jest.mock('@sentry/nextjs', () => ({
@@ -79,17 +70,10 @@ describe('signup', () => {
     };
     (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
 
-    const mockCredentials: SignupCredentials = {
-      name: 'Test User',
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'Password123!',
     };
-
-    // Mock successful validation
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: true,
-      data: mockCredentials,
-    });
 
     const mockCsrfHeaders = {
       'x-csrf-token': 'test-csrf-token',
@@ -97,8 +81,8 @@ describe('signup', () => {
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
     const mockUser: PublicUser = {
+      name: null,
       id: 'user-123',
-      name: 'Test User',
       email: 'test@example.com',
     };
 
@@ -122,7 +106,6 @@ describe('signup', () => {
     // Assert
     expect(headers).toHaveBeenCalled();
     expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
     expect(getCsrfHeaders).toHaveBeenCalled();
     expect(post).toHaveBeenCalledWith('/auth/signup', mockCredentials, {
       headers: mockCsrfHeaders,
@@ -138,50 +121,6 @@ describe('signup', () => {
     });
   });
 
-  it('should return validation error when schema validation fails', async () => {
-    // Arrange
-    const mockRequestId = 'test-request-id';
-    const mockHeadersObj = {
-      get: jest.fn().mockReturnValue(mockRequestId),
-    };
-    (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
-
-    const mockCredentials: SignupCredentials = {
-      name: '', // Invalid name
-      email: 'test@example.com',
-      password: 'Password123!',
-    };
-
-    // Mock validation failure
-    const mockZodError = new ZodError([]);
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: false,
-      error: mockZodError,
-    });
-
-    // Act
-    const result = await signup(mockCredentials);
-
-    // Assert
-    expect(headers).toHaveBeenCalled();
-    expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
-    expect(formatZodErrors).toHaveBeenCalledWith(mockZodError.errors);
-
-    // API call should not be made when validation fails
-    expect(getCsrfHeaders).not.toHaveBeenCalled();
-    expect(post).not.toHaveBeenCalled();
-
-    expect(result).toEqual({
-      success: false,
-      error: {
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Validation failed',
-        validationErrors: { name: ['Invalid name'] },
-      },
-    });
-  });
-
   it('should return API error when signup request fails', async () => {
     // Arrange
     const mockRequestId = 'test-request-id';
@@ -190,17 +129,10 @@ describe('signup', () => {
     };
     (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
 
-    const mockCredentials: SignupCredentials = {
-      name: 'Test User',
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'Password123!',
     };
-
-    // Mock successful validation
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: true,
-      data: mockCredentials,
-    });
 
     const mockCsrfHeaders = {
       'x-csrf-token': 'test-csrf-token',
@@ -224,7 +156,6 @@ describe('signup', () => {
     // Assert
     expect(headers).toHaveBeenCalled();
     expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
     expect(getCsrfHeaders).toHaveBeenCalled();
     expect(post).toHaveBeenCalledWith('/auth/signup', mockCredentials, {
       headers: mockCsrfHeaders,
@@ -244,17 +175,10 @@ describe('signup', () => {
     };
     (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
 
-    const mockCredentials: SignupCredentials = {
-      name: 'Test User',
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'Password123!',
     };
-
-    // Mock successful validation
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: true,
-      data: mockCredentials,
-    });
 
     // Mock getCsrfHeaders to throw error
     const mockError = new Error('Failed to get CSRF headers');
@@ -266,7 +190,6 @@ describe('signup', () => {
     // Assert
     expect(headers).toHaveBeenCalled();
     expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
     expect(getCsrfHeaders).toHaveBeenCalled();
 
     expect(Sentry.captureException).toHaveBeenCalledWith(
@@ -308,17 +231,10 @@ describe('signup', () => {
     };
     (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
 
-    const mockCredentials: SignupCredentials = {
-      name: 'Test User',
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'Password123!',
     };
-
-    // Mock successful validation
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: true,
-      data: mockCredentials,
-    });
 
     const mockCsrfHeaders = {
       'x-csrf-token': 'test-csrf-token',
@@ -335,7 +251,6 @@ describe('signup', () => {
     // Assert
     expect(headers).toHaveBeenCalled();
     expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
     expect(getCsrfHeaders).toHaveBeenCalled();
     expect(post).toHaveBeenCalledWith('/auth/signup', mockCredentials, {
       headers: mockCsrfHeaders,
@@ -364,17 +279,10 @@ describe('signup', () => {
     };
     (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
 
-    const mockCredentials: SignupCredentials = {
-      name: 'Test User',
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'Password123!',
     };
-
-    // Mock successful validation
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: true,
-      data: mockCredentials,
-    });
 
     const mockCsrfHeaders = {
       'x-csrf-token': 'test-csrf-token',
@@ -382,8 +290,8 @@ describe('signup', () => {
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
     const mockUser: PublicUser = {
+      name: null,
       id: 'user-123',
-      name: 'Test User',
       email: 'test@example.com',
     };
 
@@ -408,7 +316,6 @@ describe('signup', () => {
     // Assert
     expect(headers).toHaveBeenCalled();
     expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
     expect(getCsrfHeaders).toHaveBeenCalled();
     expect(post).toHaveBeenCalledWith('/auth/signup', mockCredentials, {
       headers: mockCsrfHeaders,
@@ -427,17 +334,10 @@ describe('signup', () => {
     };
     (headers as jest.Mock).mockResolvedValue(mockHeadersObj);
 
-    const mockCredentials: SignupCredentials = {
-      name: 'Test User',
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'Password123!',
     };
-
-    // Mock successful validation
-    (createUserSchema.safeParse as jest.Mock).mockReturnValue({
-      success: true,
-      data: mockCredentials,
-    });
 
     const mockCsrfHeaders = {
       'x-csrf-token': 'test-csrf-token',
@@ -445,8 +345,8 @@ describe('signup', () => {
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
     const mockUser: PublicUser = {
+      name: null,
       id: 'user-123',
-      name: 'Test User',
       email: 'test@example.com',
     };
 
@@ -471,7 +371,6 @@ describe('signup', () => {
     expect(headers).toHaveBeenCalled();
     expect(mockHeadersObj.get).toHaveBeenCalledWith('x-request-id');
     expect(crypto.randomUUID).toHaveBeenCalled();
-    expect(createUserSchema.safeParse).toHaveBeenCalledWith(mockCredentials);
     expect(getCsrfHeaders).toHaveBeenCalled();
     expect(post).toHaveBeenCalledWith('/auth/signup', mockCredentials, {
       headers: mockCsrfHeaders,

@@ -103,7 +103,6 @@ describe('useAuth', () => {
       mockedSignup.mockResolvedValue(successResponse);
 
       const credentials: Credentials = {
-        name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
       };
@@ -133,7 +132,6 @@ describe('useAuth', () => {
       mockedSignup.mockResolvedValue(apiError);
 
       const credentials: Credentials = {
-        name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
       };
@@ -154,7 +152,6 @@ describe('useAuth', () => {
       mockedSignup.mockRejectedValue(error);
 
       const credentials: Credentials = {
-        name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
       };
@@ -258,7 +255,7 @@ describe('useAuth', () => {
         password: 'password123',
       };
 
-      const result = await useAuth.getState().signin(credentials);
+      await useAuth.getState().signin(credentials);
 
       const state = useAuth.getState();
       expect(state.user).toBeNull();
@@ -309,7 +306,7 @@ describe('useAuth', () => {
       const error = new Error('Network error');
       mockedSignout.mockRejectedValue(error);
 
-      const result = await useAuth.getState().signout();
+      await useAuth.getState().signout();
 
       const state = useAuth.getState();
       expect(state.user).toEqual(mockUser);

@@ -9,7 +9,7 @@ import { getCsrfHeaders } from '@/features/auth/actions/get-csrf-headers';
 import { handleAuthTokens } from '@/features/auth/actions/handle-auth-tokens';
 import { createErrorResponse } from '@/lib/errors';
 import { post } from '@/lib/request';
-import { ErrorCode, PublicUser, SigninCredentials } from '@repo/types';
+import { ErrorCode, PublicUser, Credentials } from '@repo/types';
 import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 
@@ -75,7 +75,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -131,7 +131,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'wrong-password',
     };
@@ -172,7 +172,7 @@ describe('signin', () => {
     const mockError = new Error('Failed to get CSRF headers');
     (getCsrfHeaders as jest.Mock).mockRejectedValue(mockError);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -232,7 +232,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -280,7 +280,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -350,7 +350,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -401,7 +401,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };

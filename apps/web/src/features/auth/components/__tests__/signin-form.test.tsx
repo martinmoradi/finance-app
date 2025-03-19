@@ -1,33 +1,42 @@
 import { SigninForm } from '@/features/auth/components/signin-form';
-import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
-import { toast } from 'sonner';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-// Mock dependencies
-const mockPush = jest.fn();
-const mockSignin = jest.fn();
-const mockClearErrors = jest.fn();
-let mockAuthStatus = 'idle';
+type TranslationFn = (key: string) => string;
+type FormField = {
+  name: string;
+  value: string;
+  setValue: jest.Mock;
+  meta: { touchedErrors: string[]; isInvalid: boolean };
+  state: { value: string };
+  handleChange: jest.Mock;
+  handleBlur: jest.Mock;
+};
 
-// Mock modules
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
+jest.mock('@/features/auth/store/useAuth', () => ({
+  useAuth: jest.fn().mockReturnValue({
+    signin: jest.fn().mockResolvedValue({ success: true }),
+    status: 'idle',
+    clearErrors: jest.fn(),
   }),
 }));
 
-jest.mock('@/features/auth/store/useAuth', () => ({
-  useAuth: () => ({
-    signin: mockSignin,
-    status: mockAuthStatus,
-    clearErrors: mockClearErrors,
+jest.mock('@/i18n/navigation', () => ({
+  useRouter: jest.fn().mockReturnValue({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
   }),
+}));
+
+jest.mock('next-intl', () => ({
+  useTranslations: jest.fn().mockImplementation(
+    (): TranslationFn =>
+      (key: string): string =>
+        key,
+  ),
 }));
 
 jest.mock('sonner', () => ({
@@ -37,227 +46,208 @@ jest.mock('sonner', () => ({
   },
 }));
 
-jest.mock('@/features/auth/utils/auth-form-error-handler', () => ({
-  handleAuthFormError: jest.fn(),
+jest.mock('@/features/auth/components/text-input-field', () => ({
+  TextInputField: jest
+    .fn()
+    .mockImplementation(({ label }: { label: string }) => (
+      <div data-testid='text-input-field'>
+        <label>{label}</label>
+        <input aria-label={label} />
+      </div>
+    )),
 }));
 
-// Mock zodResolver to avoid validation issues during testing
-jest.mock('@hookform/resolvers/zod', () => ({
-  zodResolver: () => (data: unknown) => {
-    return {
-      values: data,
-      errors: {},
-    };
+jest.mock('@/features/auth/components/password-input-field', () => ({
+  PasswordField: jest
+    .fn()
+    .mockImplementation(({ label }: { label: string }) => (
+      <div data-testid='password-field'>
+        <label>{label}</label>
+        <input type='password' aria-label={label} />
+      </div>
+    )),
+}));
+
+jest.mock('@repo/validation', () => ({
+  signinFormSchema: {
+    async: jest.fn(),
+    sync: jest.fn(),
   },
 }));
+
+jest.mock('@tanstack/react-form', () => ({
+  useForm: jest
+    .fn()
+    .mockImplementation(
+      ({ onSubmit }: { onSubmit: (arg: { value: any }) => Promise<void> }) => ({
+        Field: ({
+          name,
+          children,
+        }: {
+          name: string;
+          children: (field: FormField) => React.ReactNode;
+        }) => {
+          const field: FormField = {
+            name,
+            value: '',
+            setValue: jest.fn(),
+            meta: { touchedErrors: [], isInvalid: false },
+            state: { value: '' },
+            handleChange: jest.fn(),
+            handleBlur: jest.fn(),
+          };
+          return <div data-testid={`field-${name}`}>{children(field)}</div>;
+        },
+        Subscribe: ({
+          children,
+        }: {
+          children: (values: [boolean, boolean]) => React.ReactNode;
+        }) => {
+          return children([true, false]);
+        },
+        handleSubmit: jest.fn().mockImplementation(() =>
+          onSubmit({
+            value: { email: 'test@example.com', password: 'password123' },
+          }),
+        ),
+      }),
+    ),
+}));
+
+import { useAuth } from '@/features/auth/store/useAuth';
+import { useRouter } from '@/i18n/navigation';
+import { toast } from 'sonner';
+
+const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const mockedUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
 
 describe('SigninForm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockAuthStatus = 'idle';
   });
 
-  it('should initialize the form with empty default values', () => {
+  it('renders the form correctly', () => {
     render(<SigninForm />);
 
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
+    // Check for field rendering
+    expect(screen.getByTestId('field-email')).toBeInTheDocument();
+    expect(screen.getByTestId('field-password')).toBeInTheDocument();
 
-    expect(emailInput).toHaveValue('');
-    expect(passwordInput).toHaveValue('');
+    // Check for the submit button
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('should display proper heading and button text', () => {
-    render(<SigninForm />);
-
-    const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading).toHaveTextContent('Login');
-
-    const submitButton = screen.getByRole('button', { name: /Login/i });
-    expect(submitButton).toHaveTextContent('Login');
-  });
-
-  it('should render the sign up link with correct href', () => {
-    render(<SigninForm />);
-
-    const signUpLink = screen.getByRole('link', { name: /Sign up/i });
-    expect(signUpLink).toBeInTheDocument();
-    expect(signUpLink).toHaveAttribute('href', '/signup');
-  });
-
-  it('should display form with appropriate structure and styling', () => {
-    render(<SigninForm />);
-
-    const heading = screen.getByRole('heading', { level: 1 });
-    const container = heading.closest('div.max-w-\\[56rem\\]');
-    expect(container).toHaveClass(
-      'max-w-[56rem]',
-      'w-full',
-      'rounded-xl',
-      'bg-white',
-    );
-
-    const emailInput = screen.getByPlaceholderText('Enter your email address');
-    expect(emailInput).toHaveAttribute(
-      'placeholder',
-      'Enter your email address',
-    );
-
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    expect(passwordInput).toHaveAttribute('placeholder', 'Enter your password');
-
-    expect(screen.getByText('Need to create an account?')).toBeInTheDocument();
-  });
-
-  it('should toggle password visibility when the eye icon is clicked', async () => {
-    render(<SigninForm />);
-
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const visibilityToggle = screen.getByLabelText('Show password');
-
-    expect(passwordInput).toHaveAttribute('type', 'password');
-
-    await act(async () => {
-      fireEvent.click(visibilityToggle);
-    });
-
-    expect(passwordInput).toHaveAttribute('type', 'text');
-    expect(screen.getByLabelText('Hide password')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Hide password'));
-    });
-
-    expect(passwordInput).toHaveAttribute('type', 'password');
-    expect(screen.getByLabelText('Show password')).toBeInTheDocument();
-  });
-
-  it('should handle successful authentication and redirect', async () => {
-    mockSignin.mockResolvedValueOnce({
-      success: true,
-      data: { id: '1' },
-    });
-
-    render(<SigninForm />);
-
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const submitButton = screen.getByRole('button', { name: /Login/i });
-
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Signed in successfully');
-      expect(mockPush).toHaveBeenCalledWith('/');
-    });
-  });
-
-  it('should show loading state while submitting the form', async () => {
-    mockAuthStatus = 'idle';
-    const { rerender } = render(<SigninForm />);
-
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const submitButton = screen.getByRole('button', { name: /Login/i });
-
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    mockAuthStatus = 'loading';
-    rerender(<SigninForm />);
-
-    expect(screen.getByText('Logging in...')).toBeInTheDocument();
-    expect(emailInput).toBeDisabled();
-    expect(passwordInput).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Logging in/i })).toBeDisabled();
-  });
-
-  it('should handle authentication failure and display error', async () => {
-    const errorResult = {
-      success: false,
-      error: {
-        message: 'Invalid credentials',
-        code: 'auth/invalid-credentials',
-      },
+  it('handles form submission correctly', async () => {
+    const mockSignin = jest.fn().mockResolvedValue({ success: true });
+    const mockRouter = {
+      push: jest.fn(),
+      replace: jest.fn(),
+      prefetch: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      refresh: jest.fn(),
     };
-    mockSignin.mockResolvedValueOnce(errorResult);
+
+    // Update the mocks for this test
+    mockedUseAuth.mockReturnValue({
+      signin: mockSignin,
+      status: 'idle',
+      clearErrors: jest.fn(),
+    });
+
+    mockedUseRouter.mockReturnValue(mockRouter);
 
     render(<SigninForm />);
 
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const submitButton = screen.getByRole('button', { name: /Login/i });
+    // Submit the form
+    const submitButton = screen.getByRole('button');
+    fireEvent.click(submitButton);
 
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
+    // Wait for the form to submit
     await waitFor(() => {
       expect(mockSignin).toHaveBeenCalledWith({
-        email: 'user@example.com',
+        email: 'test@example.com',
         password: 'password123',
       });
     });
 
-    await waitFor(() => {
-      expect(handleAuthFormError).toHaveBeenCalledWith(
-        errorResult,
-        expect.any(Function),
-        'signin',
-      );
-    });
+    // Check toast was called
+    expect(toast.success).toHaveBeenCalled();
 
-    expect(mockPush).not.toHaveBeenCalled();
+    // Check router was called
+    expect(mockRouter.push).toHaveBeenCalledWith('/');
   });
 
-  it('should clear errors when form is submitted', async () => {
-    mockSignin.mockResolvedValueOnce({
-      success: true,
-      data: { id: '1' },
+  it('handles form submission failure', async () => {
+    const mockSignin = jest.fn().mockResolvedValue({ success: false });
+
+    // Update the mock for this test
+    mockedUseAuth.mockReturnValue({
+      signin: mockSignin,
+      status: 'idle',
+      clearErrors: jest.fn(),
     });
 
     render(<SigninForm />);
 
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Enter your password');
-    const submitButton = screen.getByRole('button', { name: /Login/i });
+    // Submit the form
+    const submitButton = screen.getByRole('button');
+    fireEvent.click(submitButton);
 
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    // Wait for the form to submit
+    await waitFor(() => {
+      expect(mockSignin).toHaveBeenCalled();
     });
 
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    expect(mockClearErrors).toHaveBeenCalled();
-
-    const clearErrorsCallIndex = mockClearErrors.mock.invocationCallOrder[0];
-    const signinCallIndex = mockSignin.mock.invocationCallOrder[0];
-    if (clearErrorsCallIndex === undefined || signinCallIndex === undefined) {
-      fail('Expected clearErrors to be called before signin');
-    }
-    expect(clearErrorsCallIndex).toBeLessThan(signinCallIndex);
+    // Check error toast was called
+    expect(toast.error).toHaveBeenCalled();
   });
 
-  it('should clear errors when component unmounts', async () => {
-    const { unmount } = render(<SigninForm />);
-    unmount();
-    expect(mockClearErrors).toHaveBeenCalled();
+  it('shows loading state when submitting', () => {
+    // Mock loading state
+    mockedUseAuth.mockReturnValue({
+      signin: jest.fn(),
+      status: 'loading',
+      clearErrors: jest.fn(),
+    });
+
+    // Get the mocked implementation from the module
+    const { useForm } = jest.requireMock('@tanstack/react-form');
+
+    // Override the mock for this specific test
+    useForm.mockReturnValueOnce({
+      Field: ({
+        name,
+        children,
+      }: {
+        name: string;
+        children: (field: FormField) => React.ReactNode;
+      }) => {
+        const field: FormField = {
+          name,
+          value: '',
+          setValue: jest.fn(),
+          meta: { touchedErrors: [], isInvalid: false },
+          state: { value: '' },
+          handleChange: jest.fn(),
+          handleBlur: jest.fn(),
+        };
+        return <div data-testid={`field-${name}`}>{children(field)}</div>;
+      },
+      Subscribe: ({
+        children,
+      }: {
+        children: (values: [boolean, boolean]) => React.ReactNode;
+      }) => {
+        // Return isSubmitting as true
+        return children([false, true]);
+      },
+      handleSubmit: jest.fn(),
+    });
+
+    render(<SigninForm />);
+
+    // Check for loading indicator (relies on implementation details)
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 });

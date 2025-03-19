@@ -1,34 +1,68 @@
-import { SignupForm } from '@/features/auth/components/signup-form';
-import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import React from 'react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { SignupForm } from '../signup-form';
+import type { FieldApi } from '@tanstack/react-form';
 
-// Mock dependencies
-const mockPush = jest.fn();
-const mockSignup = jest.fn();
-const mockClearErrors = jest.fn();
-let mockAuthStatus = 'idle';
+// Types for mocking TanStack Form's complex form field structure
+type FormSubmitHandler = (arg: { value: any }) => Promise<void>;
+type FieldProps = {
+  field: FormField;
+  label: string;
+  disabled?: boolean;
+  [key: string]: any;
+};
+type MockCall = [props: FieldProps, context?: any];
+type TranslationFn = (key: string) => string;
+type FormField = {
+  name: string;
+  value: string;
+  setValue: jest.Mock;
+  meta: {
+    touchedErrors: string[];
+    isInvalid: boolean;
+    errors?: unknown[] | null;
+  };
+  state: {
+    value: string;
+    meta: { errors?: unknown[] | null; isTouched: boolean };
+  };
+  handleChange: jest.Mock;
+  handleBlur: jest.Mock;
+  getFieldMeta?: jest.Mock;
+};
 
-// Mock modules
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
+jest.mock('@/features/auth/actions/check-user-exists', () => ({
+  checkUserExists: jest.fn().mockImplementation(async (email) => {
+    return { success: true, data: email === 'test@exists.com' };
   }),
 }));
 
 jest.mock('@/features/auth/store/useAuth', () => ({
-  useAuth: () => ({
-    signup: mockSignup,
-    status: mockAuthStatus,
-    clearErrors: mockClearErrors,
+  useAuth: jest.fn().mockReturnValue({
+    signup: jest.fn().mockResolvedValue({ success: true }),
+    status: 'idle',
+    clearErrors: jest.fn(),
   }),
+}));
+
+jest.mock('@/i18n/navigation', () => ({
+  useRouter: jest.fn().mockReturnValue({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  }),
+}));
+
+// Mock translation to return the key itself for easier testing
+jest.mock('next-intl', () => ({
+  useTranslations: jest.fn().mockImplementation(
+    (): TranslationFn =>
+      (key: string): string =>
+        key,
+  ),
 }));
 
 jest.mock('sonner', () => ({
@@ -38,269 +72,368 @@ jest.mock('sonner', () => ({
   },
 }));
 
-jest.mock('@/features/auth/utils/auth-form-error-handler', () => ({
-  handleAuthFormError: jest.fn(),
+jest.mock('@/features/auth/components/text-input-field', () => ({
+  TextInputField: jest
+    .fn()
+    .mockImplementation(({ label }: { label: string }) => (
+      <div data-testid='text-input-field'>
+        <label>{label}</label>
+        <input aria-label={label} />
+      </div>
+    )),
 }));
 
-// Mock zodResolver to avoid validation issues during testing
-jest.mock('@hookform/resolvers/zod', () => ({
-  zodResolver: () => (data: unknown) => {
-    return {
-      values: data,
-      errors: {},
-    };
+jest.mock('@/features/auth/components/password-input-field', () => ({
+  PasswordField: jest
+    .fn()
+    .mockImplementation(({ label }: { label: string }) => (
+      <div data-testid='password-field'>
+        <label>{label}</label>
+        <input type='password' aria-label={label} />
+      </div>
+    )),
+}));
+
+jest.mock('@repo/validation', () => ({
+  signupFormSchema: {
+    async: jest.fn(),
+    sync: jest.fn(),
   },
 }));
+
+// Stateful mock storage for TanStack form fields
+const formFieldMocks = new Map<string, FormField>();
+const formGetFieldMeta = jest.fn().mockImplementation((fieldName) => {
+  return { errors: [] };
+});
+
+// Complex mock of TanStack form to simulate form state and field management
+jest.mock('@tanstack/react-form', () => ({
+  useForm: jest
+    .fn()
+    .mockImplementation(
+      ({ onSubmit }: { onSubmit: (arg: { value: any }) => Promise<void> }) => {
+        formFieldMocks.clear();
+
+        return {
+          Field: ({
+            name,
+            children,
+            validators,
+          }: {
+            name: string;
+            validators?: any;
+            children: (field: FormField) => React.ReactNode;
+          }) => {
+            if (!formFieldMocks.has(name)) {
+              const field: FormField = {
+                name,
+                value: '',
+                setValue: jest.fn(),
+                meta: { touchedErrors: [], isInvalid: false, errors: null },
+                state: {
+                  value: '',
+                  meta: { errors: null, isTouched: false },
+                },
+                handleChange: jest.fn(),
+                handleBlur: jest.fn(),
+              };
+              formFieldMocks.set(name, field);
+            }
+
+            const field = formFieldMocks.get(name)!;
+            return <div data-testid={`field-${name}`}>{children(field)}</div>;
+          },
+          Subscribe: ({
+            children,
+          }: {
+            children: (values: [boolean, boolean]) => React.ReactNode;
+          }) => {
+            return children([true, false]);
+          },
+          handleSubmit: jest.fn().mockImplementation(() =>
+            onSubmit({
+              value: {
+                email: 'test@example.com',
+                password: 'Password123!',
+                confirmPassword: 'Password123!',
+              },
+            }),
+          ),
+          getFieldMeta: formGetFieldMeta,
+        };
+      },
+    ),
+}));
+
+import { useAuth } from '@/features/auth/store/useAuth';
+import { useRouter } from '@/i18n/navigation';
+import { toast } from 'sonner';
+import { checkUserExists } from '@/features/auth/actions/check-user-exists';
+
+const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const mockedUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
+const mockedCheckUserExists = checkUserExists as jest.MockedFunction<
+  typeof checkUserExists
+>;
 
 describe('SignupForm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockAuthStatus = 'idle';
+    formFieldMocks.clear();
+    formGetFieldMeta.mockReturnValue({ errors: [] });
   });
 
-  it('should initialize the form with empty default values', () => {
+  it('renders all form fields correctly', () => {
     render(<SignupForm />);
-
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Create a password');
-
-    expect(nameInput).toHaveValue('');
-    expect(emailInput).toHaveValue('');
-    expect(passwordInput).toHaveValue('');
+    expect(screen.getByTestId('field-email')).toBeInTheDocument();
+    expect(screen.getByTestId('field-password')).toBeInTheDocument();
+    expect(screen.getByTestId('field-confirmPassword')).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('should render the login link with correct href', () => {
-    render(<SignupForm />);
-
-    const loginLink = screen.getByRole('link', { name: /Login/i });
-    expect(loginLink).toBeInTheDocument();
-    expect(loginLink).toHaveAttribute('href', '/login');
-  });
-
-  it('should show password requirements hint when password field is not in error state', () => {
-    render(<SignupForm />);
-
-    const passwordHint = screen.getByText(
-      'Password must be at least 8 characters',
-    );
-    expect(passwordHint).toBeInTheDocument();
-    expect(passwordHint).toHaveClass('text-muted-foreground');
-  });
-
-  it('should toggle password visibility when the eye icon is clicked', async () => {
-    render(<SignupForm />);
-
-    const passwordInput = screen.getByPlaceholderText('Create a password');
-    const visibilityToggle = screen.getByLabelText('Show password');
-
-    expect(passwordInput).toHaveAttribute('type', 'password');
-
-    await act(async () => {
-      fireEvent.click(visibilityToggle);
-    });
-
-    expect(passwordInput).toHaveAttribute('type', 'text');
-    expect(screen.getByLabelText('Hide password')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Hide password'));
-    });
-
-    expect(passwordInput).toHaveAttribute('type', 'password');
-    expect(screen.getByLabelText('Show password')).toBeInTheDocument();
-  });
-
-  it('should submit form with user details and redirect on success', async () => {
-    mockSignup.mockResolvedValueOnce({
-      success: true,
-      data: { id: '1', email: 'user@example.com', name: 'Test User' },
-    });
-
-    render(<SignupForm />);
-
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Create a password');
-    const submitButton = screen.getByRole('button', {
-      name: /Create Account/i,
-    });
-
-    await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'Test User' } });
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    await waitFor(() => {
-      expect(mockSignup).toHaveBeenCalledWith({
-        name: 'Test User',
-        email: 'user@example.com',
-        password: 'password123',
-      });
-    });
-
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(
-        'Account created successfully',
-      );
-      expect(mockPush).toHaveBeenCalledWith('/');
-    });
-  });
-
-  it('should show loading state while submitting the form', async () => {
-    mockAuthStatus = 'idle';
-    const { rerender } = render(<SignupForm />);
-
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Create a password');
-    const submitButton = screen.getByRole('button', {
-      name: /Create Account/i,
-    });
-
-    await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'Test User' } });
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    mockAuthStatus = 'loading';
-    rerender(<SignupForm />);
-
-    expect(screen.getByText('Creating account...')).toBeInTheDocument();
-    expect(nameInput).toBeDisabled();
-    expect(emailInput).toBeDisabled();
-    expect(passwordInput).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: /Creating account/i }),
-    ).toBeDisabled();
-  });
-
-  it('should handle authentication failure and display error', async () => {
-    const errorResult = {
-      success: false,
-      error: {
-        message: 'Email already in use',
-        code: 'auth/email-already-in-use',
-      },
+  it('handles successful form submission', async () => {
+    const mockSignup = jest.fn().mockResolvedValue({ success: true });
+    const mockRouter = {
+      push: jest.fn(),
+      replace: jest.fn(),
+      prefetch: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      refresh: jest.fn(),
     };
-    mockSignup.mockResolvedValueOnce(errorResult);
+
+    mockedUseAuth.mockReturnValue({
+      signup: mockSignup,
+      status: 'idle',
+      clearErrors: jest.fn(),
+    });
+
+    mockedUseRouter.mockReturnValue(mockRouter);
 
     render(<SignupForm />);
 
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Create a password');
-    const submitButton = screen.getByRole('button', {
-      name: /Create Account/i,
-    });
-
-    await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'Test User' } });
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
+    fireEvent.click(screen.getByRole('button'));
 
     await waitFor(() => {
       expect(mockSignup).toHaveBeenCalledWith({
-        name: 'Test User',
-        email: 'user@example.com',
-        password: 'password123',
+        email: 'test@example.com',
+        password: 'Password123!',
       });
     });
 
+    expect(toast.success).toHaveBeenCalled();
+    expect(mockRouter.push).toHaveBeenCalledWith('/');
+  });
+
+  it('handles form submission failure', async () => {
+    const mockSignup = jest.fn().mockResolvedValue({ success: false });
+
+    mockedUseAuth.mockReturnValue({
+      signup: mockSignup,
+      status: 'idle',
+      clearErrors: jest.fn(),
+    });
+
+    render(<SignupForm />);
+    fireEvent.click(screen.getByRole('button'));
+
     await waitFor(() => {
-      expect(handleAuthFormError).toHaveBeenCalledWith(
-        errorResult,
-        expect.any(Function),
-        'signup',
-      );
+      expect(mockSignup).toHaveBeenCalled();
     });
 
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalled();
   });
 
-  it('should display validation errors for empty fields when form is submitted', async () => {
-    mockSignup.mockResolvedValueOnce({
-      success: false,
-      error: {
-        message: 'Validation failed',
-        code: 'validation-error',
-      },
+  it('shows loading state when submitting', () => {
+    mockedUseAuth.mockReturnValue({
+      signup: jest.fn(),
+      status: 'loading',
+      clearErrors: jest.fn(),
     });
 
-    (handleAuthFormError as jest.Mock).mockImplementationOnce(
-      (result, setErrorFn) => {
-        setErrorFn('name', { type: 'required', message: 'Name is required' });
-        setErrorFn('email', { type: 'required', message: 'Email is required' });
-        setErrorFn('password', {
-          type: 'required',
-          message: 'Password is required',
-        });
+    const { useForm } = jest.requireMock('@tanstack/react-form');
+
+    // Override Subscribe to simulate form submission state
+    useForm.mockReturnValueOnce({
+      Field: ({
+        name,
+        children,
+        validators,
+      }: {
+        name: string;
+        validators?: any;
+        children: (field: FormField) => React.ReactNode;
+      }) => {
+        if (!formFieldMocks.has(name)) {
+          const field: FormField = {
+            name,
+            value: '',
+            setValue: jest.fn(),
+            meta: { touchedErrors: [], isInvalid: false, errors: null },
+            state: {
+              value: '',
+              meta: { errors: null, isTouched: false },
+            },
+            handleChange: jest.fn(),
+            handleBlur: jest.fn(),
+          };
+          formFieldMocks.set(name, field);
+        }
+
+        const field = formFieldMocks.get(name)!;
+        return <div data-testid={`field-${name}`}>{children(field)}</div>;
       },
-    );
+      Subscribe: ({
+        children,
+      }: {
+        children: (values: [boolean, boolean]) => React.ReactNode;
+      }) => {
+        return children([false, true]); // [isValidating, isSubmitting]
+      },
+      handleSubmit: jest.fn(),
+      getFieldMeta: formGetFieldMeta,
+    });
 
     render(<SignupForm />);
-
-    const submitButton = screen.getByRole('button', {
-      name: /Create Account/i,
-    });
-
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    expect(mockSignup).toHaveBeenCalled();
-    expect(handleAuthFormError).toHaveBeenCalled();
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 
-  it('should clear errors when form is submitted', async () => {
-    mockSignup.mockResolvedValueOnce({
-      success: true,
-      data: { id: '1' },
+  it('clears errors on component unmount', () => {
+    const mockClearErrors = jest.fn();
+    mockedUseAuth.mockReturnValue({
+      signup: jest.fn(),
+      status: 'idle',
+      clearErrors: mockClearErrors,
     });
 
-    render(<SignupForm />);
-
-    const nameInput = screen.getByLabelText(/Name/i);
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByPlaceholderText('Create a password');
-    const submitButton = screen.getByRole('button', {
-      name: /Create Account/i,
-    });
-
-    await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'Test User' } });
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    expect(mockClearErrors).toHaveBeenCalled();
-
-    const clearErrorsCallIndex = mockClearErrors.mock.invocationCallOrder[0];
-    const signupCallIndex = mockSignup.mock.invocationCallOrder[0];
-    if (clearErrorsCallIndex === undefined || signupCallIndex === undefined) {
-      fail('Expected clearErrors to be called before signup');
-    }
-    expect(clearErrorsCallIndex).toBeLessThan(signupCallIndex);
-  });
-
-  it('should clear errors when component unmounts', async () => {
     const { unmount } = render(<SignupForm />);
     unmount();
     expect(mockClearErrors).toHaveBeenCalled();
+  });
+
+  it('checks if user exists during email validation', async () => {
+    // Complex test setup to capture and test the email validator
+    const { useForm } = jest.requireMock('@tanstack/react-form');
+    let capturedValidator: any;
+
+    useForm.mockImplementationOnce(
+      ({ onSubmit }: { onSubmit: FormSubmitHandler }) => {
+        return {
+          Field: ({
+            name,
+            children,
+            validators,
+          }: {
+            name: string;
+            validators?: any;
+            children: (field: FormField) => React.ReactNode;
+          }) => {
+            if (name === 'email' && validators) {
+              capturedValidator = validators.onBlurAsync;
+            }
+
+            if (!formFieldMocks.has(name)) {
+              const field: FormField = {
+                name,
+                value: '',
+                setValue: jest.fn(),
+                meta: { touchedErrors: [], isInvalid: false, errors: null },
+                state: {
+                  value: '',
+                  meta: { errors: null, isTouched: false },
+                },
+                handleChange: jest.fn(),
+                handleBlur: jest.fn(),
+              };
+              formFieldMocks.set(name, field);
+            }
+
+            const field = formFieldMocks.get(name)!;
+            return <div data-testid={`field-${name}`}>{children(field)}</div>;
+          },
+          Subscribe: ({
+            children,
+          }: {
+            children: (values: [boolean, boolean]) => React.ReactNode;
+          }) => children([true, false]),
+          handleSubmit: jest
+            .fn()
+            .mockImplementation(() => onSubmit({ value: {} })),
+          getFieldMeta: formGetFieldMeta,
+        };
+      },
+    );
+
+    render(<SignupForm />);
+    expect(capturedValidator).toBeDefined();
+
+    // Test validation scenarios
+    formGetFieldMeta.mockReturnValue({ errors: [] });
+    const resultForNewEmail = await capturedValidator({
+      value: 'new@example.com',
+    });
+    expect(resultForNewEmail).toBeUndefined();
+    expect(mockedCheckUserExists).toHaveBeenCalledWith('new@example.com');
+
+    formGetFieldMeta.mockReturnValue({ errors: [] });
+    const resultForExistingEmail = await capturedValidator({
+      value: 'test@exists.com',
+    });
+    expect(resultForExistingEmail).toEqual({
+      message: 'validation.email.alreadyExists',
+    });
+    expect(mockedCheckUserExists).toHaveBeenCalledWith('test@exists.com');
+
+    // Skip validation if field already has errors
+    formGetFieldMeta.mockReturnValue({ errors: ['Some error'] });
+    const resultWithExistingErrors = await capturedValidator({
+      value: 'any@email.com',
+    });
+    expect(resultWithExistingErrors).toBeUndefined();
+    expect(mockedCheckUserExists).not.toHaveBeenCalledWith('any@email.com');
+  });
+
+  it('disables form fields when loading', () => {
+    mockedUseAuth.mockReturnValue({
+      signup: jest.fn(),
+      status: 'loading',
+      clearErrors: jest.fn(),
+    });
+
+    const { TextInputField } = jest.requireMock(
+      '@/features/auth/components/text-input-field',
+    );
+    const { PasswordField } = jest.requireMock(
+      '@/features/auth/components/password-input-field',
+    );
+
+    render(<SignupForm />);
+
+    TextInputField.mock.calls.forEach((call: MockCall) => {
+      expect(call[0].disabled).toBe(true);
+    });
+
+    PasswordField.mock.calls.forEach((call: MockCall) => {
+      expect(call[0].disabled).toBe(true);
+    });
+  });
+
+  it('passes showRequirements to password field', () => {
+    const { PasswordField } = jest.requireMock(
+      '@/features/auth/components/password-input-field',
+    );
+
+    render(<SignupForm />);
+
+    const passwordFieldCalls = PasswordField.mock.calls.filter(
+      (call: MockCall) => call[0].field.name === 'password',
+    );
+    expect(passwordFieldCalls[0][0].showRequirements).toBe(true);
+
+    const confirmPasswordFieldCalls = PasswordField.mock.calls.filter(
+      (call: MockCall) => call[0].field.name === 'confirmPassword',
+    );
+    expect(confirmPasswordFieldCalls[0][0].showRequirements).toBeFalsy();
   });
 });
