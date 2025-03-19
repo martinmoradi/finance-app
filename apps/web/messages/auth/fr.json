@@ -6,7 +6,8 @@
       "showPassword": "Afficher le mot de passe",
       "hidePassword": "Masquer le mot de passe",
       "emailPlaceholder": "Entrez votre adresse e-mail",
-      "loading": "Veuillez patienter pendant que nous {{action}}"
+      "loading": "Veuillez patienter pendant que nous {{action}}",
+      "testAccountButton": "Explorer avec un compte de test"
     },
     "signin": {
       "formAriaLabel": "Formulaire de connexion",
@@ -48,16 +49,20 @@
         "alreadyExists": "Un compte avec cette adresse e-mail existe déjà"
       },
       "name": {
+        "required": "Le nom est requis",
         "minLength": "Le nom doit comporter au moins 2 caractères",
         "maxLength": "Le nom doit comporter moins de 100 caractères"
       },
       "password": {
+        "required": "Le mot de passe est requis",
         "minLength": "Le mot de passe doit comporter au moins 8 caractères",
         "maxLength": "Le mot de passe doit comporter moins de 100 caractères",
         "pattern": "Le mot de passe doit contenir au moins une lettre majuscule, une lettre minuscule et un chiffre"
       },
       "confirmPassword": {
-        "minLength": "Le mot de passe doit comporter au moins 8 caractères"
+        "required": "La confirmation du mot de passe est requise",
+        "minLength": "Le mot de passe doit comporter au moins 8 caractères",
+        "match": "Les mots de passe ne correspondent pas"
       }
     },
     "illustration": {

@@ -6,7 +6,8 @@
       "showPassword": "Show password",
       "hidePassword": "Hide password",
       "emailPlaceholder": "Enter your email address",
-      "loading": "Please wait while we {{action}}"
+      "loading": "Please wait while we {{action}}",
+      "testAccountButton": "Explore with a test account"
     },
     "signin": {
       "formAriaLabel": "Sign in form",
@@ -48,16 +49,20 @@
         "alreadyExists": "An account with this email already exists"
       },
       "name": {
+        "required": "Name is required",
         "minLength": "Name must be at least 2 characters long",
         "maxLength": "Name must be less than 100 characters long"
       },
       "password": {
+        "required": "Password is required",
         "minLength": "Password must be at least 8 characters long",
         "maxLength": "Password must be less than 100 characters long",
         "pattern": "Password must contain at least one uppercase letter, one lowercase letter, and one number"
       },
       "confirmPassword": {
-        "minLength": "Password must be at least 8 characters long"
+        "required": "Confirm password is required",
+        "minLength": "Password must be at least 8 characters long",
+        "match": "Passwords do not match"
       }
     },
     "illustration": {
