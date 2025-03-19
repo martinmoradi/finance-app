@@ -10,7 +10,7 @@ const intlMiddleware = createIntlMiddleware(routing);
 
 // Protected and public routes (patterns without locale prefix)
 const protectedPaths = ['/'];
-const publicPaths = ['/signin', '/signup'];
+const publicPaths = ['/login', '/signup'];
 
 export default async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -55,7 +55,6 @@ export default async function middleware(request: NextRequest) {
   }
 
   // If no auth redirects needed, use the intl middleware
-  // IMPORTANT: Return the response from intlMiddleware directly
   const response = intlMiddleware(request);
 
   // Add request ID header to the intlMiddleware response
