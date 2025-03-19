@@ -17,3 +17,8 @@ jest.mock('jwt-decode', () => ({
     exp: Math.floor(Date.now() / 1000) + 900, // 15 minutes from now
   })),
 }));
+
+jest.mock('next-intl', () => ({
+  useTranslations: jest.fn().mockImplementation((key: string) => key),
+  useFormatter: jest.fn(),
+}));
