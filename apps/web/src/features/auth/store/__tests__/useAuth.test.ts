@@ -13,8 +13,7 @@ import {
   ApiResponse,
   ErrorCode,
   PublicUser,
-  SigninCredentials,
-  SignupCredentials,
+  Credentials,
 } from '@repo/types';
 
 jest.mock('@/features/auth/actions/signin', () => ({
@@ -103,7 +102,7 @@ describe('useAuth', () => {
 
       mockedSignup.mockResolvedValue(successResponse);
 
-      const credentials: SignupCredentials = {
+      const credentials: Credentials = {
         name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
@@ -133,7 +132,7 @@ describe('useAuth', () => {
 
       mockedSignup.mockResolvedValue(apiError);
 
-      const credentials: SignupCredentials = {
+      const credentials: Credentials = {
         name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
@@ -154,7 +153,7 @@ describe('useAuth', () => {
       const error = new Error('Network error');
       mockedSignup.mockRejectedValue(error);
 
-      const credentials: SignupCredentials = {
+      const credentials: Credentials = {
         name: 'Test User',
         email: 'test@example.com',
         password: 'password123',
@@ -206,7 +205,7 @@ describe('useAuth', () => {
 
       mockedSignin.mockResolvedValue(successResponse);
 
-      const credentials: SigninCredentials = {
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
@@ -234,7 +233,7 @@ describe('useAuth', () => {
 
       mockedSignin.mockResolvedValue(apiError);
 
-      const credentials: SigninCredentials = {
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
@@ -254,7 +253,7 @@ describe('useAuth', () => {
       const error = new Error('Network error');
       mockedSignin.mockRejectedValue(error);
 
-      const credentials: SigninCredentials = {
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };

@@ -8,8 +8,13 @@ export class AuthUserResponse implements PublicUser {
   @ApiProperty({ example: 'user@example.com' })
   declare email: string;
 
-  @ApiProperty({ example: 'John Doe' })
-  declare name: string;
+  @ApiProperty({
+    example: 'John Doe',
+    required: false,
+    nullable: true,
+    description: "User's name, can be null",
+  })
+  declare name: string | null;
 
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',

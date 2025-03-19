@@ -22,7 +22,7 @@ export const mockCreateUserDto: CreateUserDto = {
 export const mockDatabaseUser: DatabaseUser = {
   id: 'user-123',
   email: mockCreateUserDto.email,
-  name: mockCreateUserDto.name,
+  name: mockCreateUserDto.name ?? null,
   password: mockCreateUserDto.password,
   createdAt: new Date(),
   updatedAt: new Date(),

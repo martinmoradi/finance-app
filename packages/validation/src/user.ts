@@ -1,4 +1,4 @@
-import { NewUser, SigninCredentials } from '@repo/types';
+import { NewUser, Credentials } from '@repo/types';
 import { z } from 'zod';
 
 // Server schema
@@ -12,7 +12,8 @@ export const createUserSchema = z.object({
   name: z
     .string()
     .min(2, 'Name must be at least 2 characters long')
-    .max(100, 'Name must be less than 100 characters long'),
+    .max(100, 'Name must be less than 100 characters long')
+    .nullish(),
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters long')
@@ -28,16 +29,18 @@ export const signupFormSchema = z
   .object({
     email: z
       .string()
+      .nonempty('validation.email.required')
       .email('validation.email.invalid')
-      .min(1, 'validation.email.required')
       .max(255, 'validation.email.maxLength')
       .toLowerCase(),
     name: z
       .string()
       .min(2, 'validation.name.minLength')
-      .max(100, 'validation.name.maxLength'),
+      .max(100, 'validation.name.maxLength')
+      .optional(),
     password: z
       .string()
+      .nonempty('validation.password.required')
       .min(8, 'validation.password.minLength')
       .max(100, 'validation.password.maxLength')
       .regex(
@@ -46,15 +49,16 @@ export const signupFormSchema = z
       ),
     confirmPassword: z
       .string()
+      .nonempty('validation.confirmPassword.required')
       .min(8, 'validation.confirmPassword.minLength')
       .max(100, 'validation.confirmPassword.maxLength'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'validation.passwordMatch',
+    message: 'validation.confirmPassword.match',
     path: ['confirmPassword'],
   });
 
 export const signinFormSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8, 'validation.password.minLength'),
-}) satisfies z.ZodType<SigninCredentials>;
+  password: z.string(),
+}) satisfies z.ZodType<Credentials>;
