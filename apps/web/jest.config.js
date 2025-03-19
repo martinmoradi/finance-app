@@ -53,8 +53,8 @@ const customJestConfig = {
     '!jest.config.ts',
     '!jest.setup.ts',
     '!eslint.config.mjs',
-    '**/!middleware.ts',
-    '**/!instrumentation.ts',
+    '!**/middleware.ts',
+    '!**/instrumentation.ts',
     '!sentry.client.config.ts',
     '!sentry.server.config.ts',
     '!sentry.utils.ts',
@@ -63,6 +63,7 @@ const customJestConfig = {
     '!**/components/ui/**',
     '!**/global-error.tsx',
     '!**/fonts.ts',
+    '!**/i18n/**',
   ],
 };
 
