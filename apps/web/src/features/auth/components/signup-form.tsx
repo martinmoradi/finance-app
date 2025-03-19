@@ -1,29 +1,22 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Input, InputGroup, InputRightIcon } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Caption, CaptionStrong } from '@/components/ui/typography';
-import { checkUserExists } from '@/features/auth/actions/checkUserExists';
-import { signupFormOpts } from '@/features/auth/config/form-options';
+import { checkUserExists } from '@/features/auth/actions/check-user-exists';
+import { PasswordField } from '@/features/auth/components/password-input-field';
+import { TextInputField } from '@/features/auth/components/text-input-field';
 import { useAuth } from '@/features/auth/store/useAuth';
 import { useRouter } from '@/i18n/navigation';
-import HidePasswordIcon from '@public/icon-hide-password.svg';
-import ShowPasswordIcon from '@public/icon-show-password.svg';
 import { signupFormSchema } from '@repo/validation';
 import { useForm } from '@tanstack/react-form';
 import { Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 export function SignupForm() {
   const router = useRouter();
   const t = useTranslations('auth');
   const { signup, status, clearErrors } = useAuth();
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
-    useState(false);
 
   useEffect(() => {
     return () => {
@@ -32,17 +25,19 @@ export function SignupForm() {
   }, [clearErrors]);
 
   const form = useForm({
-    ...signupFormOpts,
-
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
     validators: {
       onChange: signupFormSchema,
     },
     onSubmit: async ({ value }) => {
       clearErrors();
 
-      const { name, email, password } = value;
+      const { email, password } = value;
       const response = await signup({
-        name,
         email,
         password,
       });
@@ -65,41 +60,6 @@ export function SignupForm() {
         e.stopPropagation();
         void form.handleSubmit();
       }}>
-      <form.Field name='name'>
-        {(field) => {
-          const isError =
-            field.state.meta.errors?.length > 0 && field.state.meta.isTouched;
-          return (
-            <div className='mb-4'>
-              <Label htmlFor={field.name}>
-                <CaptionStrong>{t('signup.name')}</CaptionStrong>
-              </Label>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                placeholder={t('signup.namePlaceholder')}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                error={isError}
-                disabled={status === 'loading'}
-                aria-invalid={isError}
-                aria-describedby={isError ? 'name-error' : undefined}
-              />
-              <div className='h-2 pt-1 text-right'>
-                {isError && (
-                  <Caption id='name-error'>
-                    <span className='text-red'>
-                      {t(field.state.meta.errors[0]!.message)}
-                    </span>
-                  </Caption>
-                )}
-              </div>
-            </div>
-          );
-        }}
-      </form.Field>
-
       <form.Field
         name='email'
         validators={{
@@ -117,153 +77,45 @@ export function SignupForm() {
             }
           },
         }}>
-        {(field) => {
-          const isError =
-            field.state.meta.errors?.length > 0 && field.state.meta.isTouched;
-          return (
-            <div className='mb-4'>
-              <Label htmlFor={field.name}>
-                <CaptionStrong>{t('shared.email')}</CaptionStrong>
-              </Label>
-              <Input
-                id={field.name}
-                name={field.name}
-                type='email'
-                value={field.state.value}
-                placeholder={t('shared.emailPlaceholder')}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                error={isError}
-                disabled={status === 'loading'}
-                aria-invalid={isError}
-                aria-describedby={isError ? 'email-error' : undefined}
-              />
-              <div className='h-2 pt-1 text-right'>
-                {isError && (
-                  <Caption id='email-error'>
-                    <span className='text-red'>
-                      {t(field.state.meta.errors[0]!.message)}
-                    </span>
-                  </Caption>
-                )}
-              </div>
-            </div>
-          );
-        }}
+        {(field) => (
+          <TextInputField
+            field={field}
+            label={t('shared.email')}
+            placeholder={t('shared.emailPlaceholder')}
+            type='email'
+            required
+            disabled={status === 'loading'}
+            autoComplete='email'
+          />
+        )}
       </form.Field>
 
       <form.Field name='password'>
-        {(field) => {
-          const isError =
-            field.state.meta.errors?.length > 0 && field.state.meta.isTouched;
-          return (
-            <div className='mb-4'>
-              <Label htmlFor={field.name}>
-                <CaptionStrong>{t('shared.password')}</CaptionStrong>
-              </Label>
-              <InputGroup>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type={isPasswordVisible ? 'text' : 'password'}
-                  value={field.state.value}
-                  placeholder={t('signup.passwordPlaceholder')}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={isError}
-                  disabled={status === 'loading'}
-                  aria-invalid={isError}
-                  aria-describedby={isError ? 'password-error' : undefined}
-                />
-                <InputRightIcon
-                  onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                  aria-label={
-                    isPasswordVisible
-                      ? t('shared.hidePassword')
-                      : t('shared.showPassword')
-                  }
-                  className='cursor-pointer'>
-                  {isPasswordVisible ? (
-                    <HidePasswordIcon />
-                  ) : (
-                    <ShowPasswordIcon />
-                  )}
-                </InputRightIcon>
-              </InputGroup>
-              <div className='h-2 pt-1 text-right'>
-                {isError ? (
-                  <Caption id='password-error'>
-                    <span className='text-red'>
-                      {t(field.state.meta.errors[0]!.message)}
-                    </span>
-                  </Caption>
-                ) : (
-                  <Caption id='password-requirements'>
-                    <span className='text-muted-foreground'>
-                      {t('signup.passwordRequirements')}
-                    </span>
-                  </Caption>
-                )}
-              </div>
-            </div>
-          );
-        }}
+        {(field) => (
+          <PasswordField
+            field={field}
+            label={t('shared.password')}
+            placeholder={t('signup.passwordPlaceholder')}
+            required
+            disabled={status === 'loading'}
+            showRequirements={true}
+            helpText={t('signup.passwordRequirements')}
+            autoComplete='new-password'
+          />
+        )}
       </form.Field>
 
       <form.Field name='confirmPassword'>
-        {(field) => {
-          const isError =
-            field.state.meta.errors?.length > 0 && field.state.meta.isTouched;
-          return (
-            <div className='mb-8'>
-              <Label htmlFor={field.name}>
-                <CaptionStrong>{t('signup.confirmPassword')}</CaptionStrong>
-              </Label>
-              <InputGroup>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type={isConfirmPasswordVisible ? 'text' : 'password'}
-                  value={field.state.value}
-                  placeholder={t('signup.confirmPasswordPlaceholder')}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={isError}
-                  disabled={status === 'loading'}
-                  aria-invalid={isError}
-                  aria-describedby={
-                    isError ? 'confirmPassword-error' : undefined
-                  }
-                />
-                <InputRightIcon
-                  onClick={() =>
-                    setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
-                  }
-                  aria-label={
-                    isConfirmPasswordVisible
-                      ? t('shared.hidePassword')
-                      : t('shared.showPassword')
-                  }
-                  className='cursor-pointer'>
-                  {isConfirmPasswordVisible ? (
-                    <HidePasswordIcon />
-                  ) : (
-                    <ShowPasswordIcon />
-                  )}
-                </InputRightIcon>
-              </InputGroup>
-              <div className='h-2 pt-1 text-right'>
-                {isError && (
-                  <Caption id='confirmPassword-error'>
-                    <span className='text-red'>
-                      {t(field.state.meta.errors[0]!.message)}
-                    </span>
-                  </Caption>
-                )}
-              </div>
-            </div>
-          );
-        }}
+        {(field) => (
+          <PasswordField
+            field={field}
+            label={t('signup.confirmPassword')}
+            placeholder={t('signup.confirmPasswordPlaceholder')}
+            required
+            disabled={status === 'loading'}
+            autoComplete='new-password'
+          />
+        )}
       </form.Field>
 
       <form.Subscribe
