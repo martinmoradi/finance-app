@@ -13,7 +13,7 @@ export default function Overview() {
   const handleSignout = async () => {
     const response = await signout();
     if (response.success) {
-      router.push('/signin');
+      router.push('/login');
     }
   };
 
