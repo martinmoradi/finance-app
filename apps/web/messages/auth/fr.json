@@ -1,0 +1,73 @@
+{
+  "auth": {
+    "shared": {
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "emailPlaceholder": "Entrez votre adresse e-mail",
+      "loading": "Veuillez patienter pendant que nous {{action}}",
+      "testAccountButton": "Explorer avec un compte de test"
+    },
+    "signin": {
+      "formAriaLabel": "Formulaire de connexion",
+      "title": "Connexion",
+      "submitButton": "Se connecter",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "loadingText": "Connexion en cours...",
+      "loadingAction": "vous connectons",
+      "successMessage": "Connecté avec succès",
+      "signupPrompt": "Besoin de créer un compte ?",
+      "signupLink": "S'inscrire"
+    },
+    "signup": {
+      "formAriaLabel": "Formulaire d'inscription",
+      "title": "Inscription",
+      "name": "Nom",
+      "namePlaceholder": "Entrez votre nom",
+      "passwordPlaceholder": "Créez un mot de passe",
+      "passwordRequirements": "Le mot de passe doit comporter au moins 8 caractères",
+      "confirmPassword": "Confirmez votre mot de passe",
+      "confirmPasswordPlaceholder": "Veuillez saisir à nouveau votre mot de passe",
+      "passwordMatch": "Les mots de passe ne correspondent pas",
+      "submitButton": "Créer mon compte",
+      "loadingText": "Création du compte en cours...",
+      "loadingAction": "créons votre compte",
+      "successMessage": "Compte créé avec succès",
+      "signinPrompt": "Vous avez déjà un compte ?",
+      "signinLink": "Se connecter"
+    },
+    "errors": {
+      "invalidCredentials": "E-mail ou mot de passe invalide",
+      "formErrors": "Veuillez corriger les erreurs dans le formulaire"
+    },
+    "validation": {
+      "email": {
+        "invalid": "Adresse e-mail invalide",
+        "required": "L'adresse e-mail est requise",
+        "maxLength": "L'adresse e-mail doit comporter moins de 255 caractères",
+        "alreadyExists": "Un compte avec cette adresse e-mail existe déjà"
+      },
+      "name": {
+        "required": "Le nom est requis",
+        "minLength": "Le nom doit comporter au moins 2 caractères",
+        "maxLength": "Le nom doit comporter moins de 100 caractères"
+      },
+      "password": {
+        "required": "Le mot de passe est requis",
+        "minLength": "Le mot de passe doit comporter au moins 8 caractères",
+        "maxLength": "Le mot de passe doit comporter moins de 100 caractères",
+        "pattern": "Le mot de passe doit contenir au moins une lettre majuscule, une lettre minuscule et un chiffre"
+      },
+      "confirmPassword": {
+        "required": "La confirmation du mot de passe est requise",
+        "minLength": "Le mot de passe doit comporter au moins 8 caractères",
+        "match": "Les mots de passe ne correspondent pas"
+      }
+    },
+    "illustration": {
+      "headline": "Maîtrisez vos finances et construisez votre avenir",
+      "description": "Pecunia vous donne les rênes de vos finances. Suivez vos dépenses, fixez des objectifs budgétaires et alimentez votre épargne en toute simplicité."
+    }
+  }
+}

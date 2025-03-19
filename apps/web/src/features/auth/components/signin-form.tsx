@@ -1,125 +1,107 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { PasswordField } from '@/features/auth/components/password-input-field';
+import { TextInputField } from '@/features/auth/components/text-input-field';
 import { useAuth } from '@/features/auth/store/useAuth';
-import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { signinSchema } from '@repo/validation';
+import { useRouter } from '@/i18n/navigation';
+import { signinFormSchema } from '@repo/validation';
+import { useForm } from '@tanstack/react-form';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
-
-type SigninFormValues = z.infer<typeof signinSchema>;
 
 export function SigninForm() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const { signin, status, clearErrors } = useAuth();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setError,
-  } = useForm<SigninFormValues>({
-    resolver: zodResolver(signinSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  // Clear auth errors when component unmounts
   useEffect(() => {
     return () => {
       clearErrors();
     };
   }, [clearErrors]);
 
-  const onSubmit = async (data: SigninFormValues) => {
-    // Clear any previous errors
-    clearErrors();
+  const form = useForm({
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    validators: {
+      onChange: signinFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      clearErrors();
 
-    const result = await signin(data);
+      const response = await signin(value);
 
-    if (!result.success) {
-      handleAuthFormError(result, setError, 'signin');
-    } else {
-      toast.success('Signed in successfully');
-      router.push('/');
-    }
-  };
+      if (response.success) {
+        toast.success(t('signin.successMessage'));
+        router.push('/');
+      } else {
+        toast.error(t('errors.formErrors'));
+      }
+    },
+  });
 
   return (
-    <div className='w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md'>
-      <h2 className='text-2xl font-bold mb-6 text-center'>Sign in</h2>
-
-      {errors.root && (
-        <div className='mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm'>
-          {errors.root.message}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='email'>Email</Label>
-          <Input
-            id='email'
+    <form
+      aria-label={t('signin.formAriaLabel')}
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void form.handleSubmit();
+      }}>
+      <form.Field name='email'>
+        {(field) => (
+          <TextInputField
+            field={field}
+            label={t('shared.email')}
+            placeholder={t('shared.emailPlaceholder')}
             type='email'
-            {...register('email')}
-            placeholder='Enter your email'
-            className={
-              errors.email ? 'border-red-300 focus:border-red-500' : ''
-            }
+            required
+            disabled={status === 'loading'}
+            autoComplete='email'
+          />
+        )}
+      </form.Field>
+
+      <form.Field name='password'>
+        {(field) => (
+          <PasswordField
+            field={field}
+            label={t('shared.password')}
+            placeholder={t('signin.passwordPlaceholder')}
+            required
             disabled={status === 'loading'}
           />
-          {errors.email && (
-            <p className='text-sm text-red-500'>{errors.email.message}</p>
-          )}
-        </div>
+        )}
+      </form.Field>
 
-        <div className='space-y-2'>
-          <Label htmlFor='password'>Password</Label>
-          <Input
-            id='password'
-            type='password'
-            {...register('password')}
-            placeholder='Enter your password'
-            className={
-              errors.password ? 'border-red-300 focus:border-red-500' : ''
-            }
-            disabled={status === 'loading'}
-          />
-          {errors.password && (
-            <p className='text-sm text-red-500'>{errors.password.message}</p>
-          )}
-        </div>
-
-        <Button
-          type='submit'
-          className='w-full mt-6'
-          disabled={status === 'loading'}>
-          {status === 'loading' ? (
-            <>
-              <Loader2 className='h-4 w-4 mr-2 animate-spin' />
-              Signing in...
-            </>
-          ) : (
-            'Sign in'
-          )}
-        </Button>
-      </form>
-
-      <p className='mt-4 text-center text-sm text-gray-500'>
-        Don&apos;t have an account?{' '}
-        <a href='/signup' className='text-blue-600 hover:underline'>
-          Sign up
-        </a>
-      </p>
-    </div>
+      <form.Subscribe
+        selector={(state) => [state.canSubmit, state.isSubmitting]}>
+        {([canSubmit, isSubmitting]) => (
+          <Button
+            type='submit'
+            className='w-full'
+            disabled={!canSubmit}
+            aria-busy={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2
+                  className='mr-2 h-4 w-4 animate-spin'
+                  aria-hidden='true'
+                />
+                <span>{t('signin.loadingText')}</span>
+                <span className='sr-only'>{t('signin.loadingAction')}</span>
+              </>
+            ) : (
+              t('signin.submitButton')
+            )}
+          </Button>
+        )}
+      </form.Subscribe>
+    </form>
   );
 }

@@ -9,7 +9,7 @@ import { getCsrfHeaders } from '@/features/auth/actions/get-csrf-headers';
 import { handleAuthTokens } from '@/features/auth/actions/handle-auth-tokens';
 import { createErrorResponse } from '@/lib/errors';
 import { post } from '@/lib/request';
-import { ErrorCode, PublicUser, SigninCredentials } from '@repo/types';
+import { ErrorCode, PublicUser, Credentials } from '@repo/types';
 import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 
@@ -21,40 +21,6 @@ jest.mock('@/features/auth/actions/get-csrf-headers', () => ({
 jest.mock('@/features/auth/actions/handle-auth-tokens', () => ({
   handleAuthTokens: jest.fn(),
 }));
-
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('@/lib/request', () => ({
-  post: jest.fn(),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  headers: jest.fn(),
-}));
-
-// Mock console.error to prevent logs during tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
 
 describe('signin', () => {
   // Clear all mocks before each test
@@ -75,7 +41,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -131,7 +97,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'wrong-password',
     };
@@ -172,7 +138,7 @@ describe('signin', () => {
     const mockError = new Error('Failed to get CSRF headers');
     (getCsrfHeaders as jest.Mock).mockRejectedValue(mockError);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -232,7 +198,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -280,7 +246,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -350,7 +316,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };
@@ -401,7 +367,7 @@ describe('signin', () => {
     };
     (getCsrfHeaders as jest.Mock).mockResolvedValue(mockCsrfHeaders);
 
-    const mockCredentials: SigninCredentials = {
+    const mockCredentials: Credentials = {
       email: 'test@example.com',
       password: 'password123',
     };

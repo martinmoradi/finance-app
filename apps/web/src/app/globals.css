@@ -5,39 +5,60 @@
 @layer base {
   :root {
     /* -------------- Colors -------------- */
-    /* Required shadcn variables */
-    --background: 30 36% 96%; /* beige-100 */
-    --foreground: 252 7% 13%; /* grey-900 */
-    --card: 0 0% 100%; /* white */
-    --card-foreground: 252 7% 13%; /* grey-900 */
-    --border: 0 0% 70%; /* grey-300 */
-    --input: 0 0% 70%; /* grey-300 */
-    --ring: 252 7% 13%; /* grey-900 */
-    --radius: 0.5rem;
-
     /* Actual color palette */
-    --beige-500: 23 6% 57%;
-    --beige-100: 30 36% 96%;
-    --grey-900: 252 7% 13%;
-    --grey-500: 0 0% 41%;
-    --grey-300: 0 0% 70%;
-    --grey-100: 0 0% 95%;
-    --green: 177 52% 32%;
-    --yellow: 28 73% 81%;
-    --cyan: 190 52% 68%;
-    --navy: 248 8% 41%;
-    --red: 7 58% 50%;
-    --purple: 259 30% 56%;
-    --purple-alt: 288 29% 62%;
-    --turquoise: 180 16% 42%;
-    --brown: 21 30% 44%;
-    --magenta: 332 30% 44%;
-    --blue: 205 48% 47%;
-    --navy-grey: 214 11% 63%;
-    --army-green: 83 20% 47%;
-    --gold: 47 50% 59%;
-    --orange: 18 47% 52%;
-    --white: 0 0% 100%;
+    --white: 0 0% 100%; /* #FFFFFF */
+    --beige-500: 23 6% 57%; /* #98908B */
+    --beige-100: 30 36% 96%; /* #F8F4F0 */
+    --grey-900: 252 7% 13%; /* #201f24 */
+    --grey-500: 0 0% 41%; /* #696868 */
+    --grey-300: 0 0% 70%; /* #B3B3B3 */
+    --grey-100: 0 0% 95%; /* #F2F2F2 */
+    /* Secondary colors */
+    --green: 177 52% 32%; /* #277C78 */
+    --yellow: 28 73% 81%; /* #F2CDAC */
+    --cyan: 190 52% 68%; /* #82C9D7 */
+    --navy: 248 8% 41%; /* #626070 */
+    --red: 7 58% 50%; /* #C94736 */
+    --purple: 259 30% 56%; /* #826CB0 */
+    /* Other colors */
+    --purple-alt: 288 29% 62%; /* #AF81BA */
+    --turquoise: 180 16% 42%; /* #597C7C */
+    --brown: 21 30% 44%; /* #93674F */
+    --magenta: 332 30% 44%; /* #934F6F */
+    --blue: 205 48% 47%; /* #3F82B2 */
+    --navy-grey: 214 11% 63%; /* #97A0AC */
+    --army-green: 83 20% 47%; /* #7F9161 */
+    --gold: 47 50% 59%; /* #CAB361 */
+    --orange: 18 47% 52%; /* #BE6C49 */
+
+    /* Semantic variables */
+    --background: var(--beige-100); /* #F8F4F0 */
+    --foreground: var(--grey-900); /* #201f24 */
+    --popover: var(--white); /* #FFFFFF */
+    --popover-foreground: var(--grey-900); /* #201f24 */
+    --primary: var(--grey-900); /* #201f24 */
+    --primary-foreground: var(--white); /* #FFFFFF */
+    --secondary: var(--beige-100); /* #F8F4F0 */
+    --secondary-foreground: var(--grey-900); /* #201f24 */
+    --muted: var(--grey-900); /* #201f24 */
+    --muted-foreground: var(--grey-500); /* #696868 */
+    --accent: var(--beige-100); /* #F8F4F0 */
+    --accent-foreground: var(--green); /* #277C78 */
+    --destructive: var(--red); /* #C94736 */
+    --destructive-foreground: var(--white); /* #FFFFFF */
+    --border: var(--beige-500); /* #98908B */
+    --border-active: var(--grey-900); /* #201f24 */
+    --border-hover: var(--grey-500); /* #696868 */
+    --border-error: var(--red); /* #C94736 */
+    --input: var(--white); /* #FFFFFF */
+    --ring: var(--beige-500); /* #98908B */
+    --chart-1: var(--green); /* #277C78 */
+    --chart-2: var(--blue); /* #3F82B2 */
+    --chart-3: var(--yellow); /* #F2CDAC */
+    --chart-4: var(--navy); /* #626070 */
+    --chart-5: var(--purple); /* #826CB0 */
+
+    --radius: 0.8rem;
 
     /* -------------- Typography -------------- */
     /* Font sizes */
@@ -49,6 +70,14 @@
     /* Line heights */
     --line-height-tight: 120%;
     --line-height-normal: 150%;
+
+    /* -------------- Sizes -------------- */
+    --input-height: 4.5rem;
+    --button-height: 5.3rem;
+    --navigation-desktop-open: 30rem;
+    --navigation-desktop-closed: 8.8rem;
+    --navigation-tablet: 7.4rem;
+    --navigation-mobile: 5.2rem;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -90,4 +119,5 @@
 
 body {
   @apply bg-background text-foreground font-sans;
+  font-size: 1.6rem;
 }

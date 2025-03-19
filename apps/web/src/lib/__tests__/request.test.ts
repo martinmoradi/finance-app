@@ -1,27 +1,18 @@
 /**
- * This must be the first import to ensure the mock is set up before any
- * other imports that might use crypto.randomUUID
+ * First, ensure the module we're testing isn't auto-mocked
  */
-// Mock crypto.randomUUID
-Object.defineProperty(global.crypto, 'randomUUID', {
-  value: jest.fn().mockReturnValue('test-uuid'),
-  configurable: true,
-});
+jest.unmock('@/lib/request');
 
-// Regular imports
-import { request, get, post, put, del } from '@/lib/request';
-import { createErrorResponse, mapHttpStatusToErrorCode } from '@/lib/errors';
-import * as Sentry from '@sentry/nextjs';
-import { ErrorCode } from '@repo/types';
-
-// Mock dependencies
+/**
+ * Mock dependencies with complete implementation
+ */
 jest.mock('@/lib/errors', () => ({
   createErrorResponse: jest
     .fn()
-    .mockImplementation((errorCode, message, requestId, details) => ({
+    .mockImplementation((code, message, requestId, details) => ({
       success: false,
       error: {
-        code: errorCode,
+        code,
         message,
         requestId,
         details,
@@ -30,10 +21,17 @@ jest.mock('@/lib/errors', () => ({
   mapHttpStatusToErrorCode: jest.fn().mockReturnValue('UNKNOWN_ERROR'),
 }));
 
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-}));
+// Mock crypto.randomUUID
+Object.defineProperty(global.crypto, 'randomUUID', {
+  value: jest.fn().mockReturnValue('test-uuid'),
+  configurable: true,
+});
+
+// Now import the module under test and its dependencies
+import { request, get, post, put, del } from '@/lib/request';
+import { createErrorResponse, mapHttpStatusToErrorCode } from '@/lib/errors';
+import * as Sentry from '@sentry/nextjs';
+import { ErrorCode } from '@repo/types';
 
 // Mock fetch globally
 const mockFetch = jest.fn();
@@ -60,6 +58,8 @@ describe('request.ts', () => {
     mockFetch.mockReset();
     mockAbort.mockReset();
     (global.crypto.randomUUID as jest.Mock).mockReturnValue('test-uuid');
+    (createErrorResponse as jest.Mock).mockClear();
+    (mapHttpStatusToErrorCode as jest.Mock).mockReturnValue('UNKNOWN_ERROR');
 
     // Set environment for testing
     process.env = {

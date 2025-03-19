@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "authorizationError": "Vous n'avez pas la permission d'effectuer cette action",
+    "networkError": "Erreur de réseau. Veuillez vérifier votre connexion",
+    "serverError": "Erreur de serveur. Veuillez réessayer plus tard",
+    "unexpectedError": "Une erreur inattendue est survenue"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  }
+}

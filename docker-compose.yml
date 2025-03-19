@@ -74,6 +74,7 @@ services:
   # NestJS Backend API Service
   api:
     container_name: api_dev
+    user: '${UID:-1000}:${GID:-1000}'
     build:
       context: . # Build from repository root
       dockerfile: ./apps/api/Dockerfile.dev
@@ -95,6 +96,7 @@ services:
       - /app/apps/api/node_modules # Prevent mounting host API node_modules
       - /app/packages/eslint-config/node_modules # Prevent mounting shared package node_modules
       - /app/packages/typescript-config/node_modules
+      - /app/packages/database/node_modules
     command: >
       nodemon
         --watch apps/api/src

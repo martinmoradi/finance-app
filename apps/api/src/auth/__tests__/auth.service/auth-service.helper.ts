@@ -40,7 +40,7 @@ export const mockDatabaseUser: DatabaseUser = {
   id: 'user123',
   email: mockUserDto.email,
   password: 'hashed_password123',
-  name: mockUserDto.name,
+  name: mockUserDto.name ?? null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

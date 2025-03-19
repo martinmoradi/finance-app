@@ -4,12 +4,7 @@ import { getCsrfHeaders } from '@/features/auth/actions/get-csrf-headers';
 import { handleAuthTokens } from '@/features/auth/actions/handle-auth-tokens';
 import { createErrorResponse } from '@/lib/errors';
 import { post } from '@/lib/request';
-import {
-  ApiResponse,
-  ErrorCode,
-  PublicUser,
-  SigninCredentials,
-} from '@repo/types';
+import { ApiResponse, ErrorCode, PublicUser, Credentials } from '@repo/types';
 import * as Sentry from '@sentry/nextjs';
 import { headers } from 'next/headers';
 
@@ -17,7 +12,7 @@ import { headers } from 'next/headers';
  * Server action to handle user signin
  */
 export async function signin(
-  credentials: SigninCredentials,
+  credentials: Credentials,
 ): Promise<ApiResponse<PublicUser>> {
   const requestId =
     (await headers()).get('x-request-id') || crypto.randomUUID();

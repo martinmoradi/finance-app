@@ -7,8 +7,7 @@ import {
   ApiResponse,
   ErrorCode,
   PublicUser,
-  SigninCredentials,
-  SignupCredentials,
+  Credentials,
 } from '@repo/types';
 import * as Sentry from '@sentry/nextjs';
 import { create } from 'zustand';
@@ -22,8 +21,8 @@ interface AuthState {
 }
 
 interface AuthActions {
-  signup: (credentials: SignupCredentials) => Promise<ApiResponse<PublicUser>>;
-  signin: (credentials: SigninCredentials) => Promise<ApiResponse<PublicUser>>;
+  signup: (credentials: Credentials) => Promise<ApiResponse<PublicUser>>;
+  signin: (credentials: Credentials) => Promise<ApiResponse<PublicUser>>;
   signout: () => Promise<ApiResponse<void>>;
   clearErrors: () => void;
 }
@@ -39,7 +38,7 @@ export const useAuth = create<AuthState & AuthActions>()(
 
       clearErrors: () => set({ error: null, status: 'idle' }),
 
-      signup: async (credentials: SignupCredentials) => {
+      signup: async (credentials: Credentials) => {
         set({ status: 'loading', error: null });
         try {
           const response = await signup(credentials);
@@ -81,7 +80,7 @@ export const useAuth = create<AuthState & AuthActions>()(
         }
       },
 
-      signin: async (credentials: SigninCredentials) => {
+      signin: async (credentials: Credentials) => {
         set({ status: 'loading', error: null });
         try {
           const response = await signin(credentials);

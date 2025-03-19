@@ -6,7 +6,7 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.tsx'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
     // Handle module aliases
@@ -20,8 +20,7 @@ const customJestConfig = {
   },
   // Very permissive transformIgnorePatterns to handle ES modules in PNPM
   transformIgnorePatterns: [
-    // This is much more permissive, allowing almost all node_modules to be transformed
-    'node_modules/.pnpm/(?!(uncrypto|iron-session)@)',
+    'node_modules/(?!(\\.pnpm/uncrypto@|.pnpm/iron-session@))',
   ],
   collectCoverageFrom: [
     '**/*.{js,jsx,ts,tsx}',
@@ -54,16 +53,17 @@ const customJestConfig = {
     '!jest.config.ts',
     '!jest.setup.ts',
     '!eslint.config.mjs',
-    '!middleware.ts',
-    '!instrumentation.ts',
+    '!**/middleware.ts',
+    '!**/instrumentation.ts',
     '!sentry.client.config.ts',
     '!sentry.server.config.ts',
     '!sentry.utils.ts',
     '!sentry.browser.config.ts',
     '!sentry.node.config.ts',
     '!**/components/ui/**',
-    '!global-error.tsx',
-    '!fonts.ts',
+    '!**/global-error.tsx',
+    '!**/fonts.ts',
+    '!**/i18n/**',
   ],
 };
 

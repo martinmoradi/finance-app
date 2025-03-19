@@ -20,7 +20,6 @@ describe('Database Schema', () => {
       it('should define name column correctly', () => {
         const nameColumn = users.name;
         expect(nameColumn.name).toBe('name');
-        expect(nameColumn.notNull).toBe(true);
         expect(nameColumn.columnType).toBe('PgText');
       });
 
@@ -85,7 +84,7 @@ describe('Database Schema', () => {
       it('should define correct type structure for DbUserInsert', () => {
         type ExpectedInsertType = {
           id?: string;
-          name: string;
+          name?: string | null;
           email: string;
           password: string;
           createdAt?: Date;

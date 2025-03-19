@@ -16,40 +16,6 @@ jest.mock('@/features/auth/utils/cookies', () => ({
   parseAndSetCookies: jest.fn().mockReturnValue({}),
 }));
 
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('@/lib/request', () => ({
-  post: jest.fn(),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
-  headers: jest.fn(),
-}));
-
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
-
 describe('fetchCsrfToken', () => {
   // Clear all mocks before each test
   beforeEach(() => {

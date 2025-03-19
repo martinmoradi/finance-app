@@ -1,8 +1,3 @@
-Object.defineProperty(global.crypto, 'randomUUID', {
-  value: jest.fn().mockReturnValue('test-uuid-1234-abcd-5678-efghijklmnop'),
-  configurable: true,
-});
-
 import { useAuth } from '@/features/auth/store/useAuth';
 import { signin } from '@/features/auth/actions/signin';
 import { signout } from '@/features/auth/actions/signout';
@@ -13,8 +8,7 @@ import {
   ApiResponse,
   ErrorCode,
   PublicUser,
-  SigninCredentials,
-  SignupCredentials,
+  Credentials,
 } from '@repo/types';
 
 jest.mock('@/features/auth/actions/signin', () => ({
@@ -28,19 +22,6 @@ jest.mock('@/features/auth/actions/signout', () => ({
 jest.mock('@/features/auth/actions/signup', () => ({
   signup: jest.fn(),
 }));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-}));
-
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
 
 const mockedSignin = signin as jest.MockedFunction<typeof signin>;
 const mockedSignout = signout as jest.MockedFunction<typeof signout>;
@@ -81,6 +62,18 @@ describe('useAuth', () => {
     });
 
     localStorage.clear();
+
+    jest
+      .spyOn(require('@/lib/errors'), 'createErrorResponse')
+      .mockImplementation((code, message, requestId, details) => ({
+        success: false,
+        error: {
+          code,
+          message,
+          requestId,
+          details,
+        },
+      }));
   });
 
   describe('initial state', () => {
@@ -103,8 +96,7 @@ describe('useAuth', () => {
 
       mockedSignup.mockResolvedValue(successResponse);
 
-      const credentials: SignupCredentials = {
-        name: 'Test User',
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
@@ -133,8 +125,7 @@ describe('useAuth', () => {
 
       mockedSignup.mockResolvedValue(apiError);
 
-      const credentials: SignupCredentials = {
-        name: 'Test User',
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
@@ -154,13 +145,12 @@ describe('useAuth', () => {
       const error = new Error('Network error');
       mockedSignup.mockRejectedValue(error);
 
-      const credentials: SignupCredentials = {
-        name: 'Test User',
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
 
-      const result = await useAuth.getState().signup(credentials);
+      await useAuth.getState().signup(credentials);
 
       const state = useAuth.getState();
       expect(state.user).toBeNull();
@@ -206,7 +196,7 @@ describe('useAuth', () => {
 
       mockedSignin.mockResolvedValue(successResponse);
 
-      const credentials: SigninCredentials = {
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
@@ -234,7 +224,7 @@ describe('useAuth', () => {
 
       mockedSignin.mockResolvedValue(apiError);
 
-      const credentials: SigninCredentials = {
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
@@ -254,12 +244,12 @@ describe('useAuth', () => {
       const error = new Error('Network error');
       mockedSignin.mockRejectedValue(error);
 
-      const credentials: SigninCredentials = {
+      const credentials: Credentials = {
         email: 'test@example.com',
         password: 'password123',
       };
 
-      const result = await useAuth.getState().signin(credentials);
+      await useAuth.getState().signin(credentials);
 
       const state = useAuth.getState();
       expect(state.user).toBeNull();
@@ -310,7 +300,7 @@ describe('useAuth', () => {
       const error = new Error('Network error');
       mockedSignout.mockRejectedValue(error);
 
-      const result = await useAuth.getState().signout();
+      await useAuth.getState().signout();
 
       const state = useAuth.getState();
       expect(state.user).toEqual(mockUser);

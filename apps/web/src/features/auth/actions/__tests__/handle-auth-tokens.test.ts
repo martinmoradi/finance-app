@@ -26,38 +26,6 @@ jest.mock('@/features/auth/utils/cookies', () => ({
   setCookiesFromParsedData: jest.fn().mockReturnValue({}),
 }));
 
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
-  headers: jest.fn(),
-}));
-
-// Mock console.error to prevent logs during tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
-
 describe('handleAuthTokens', () => {
   // Clear all mocks before each test
   beforeEach(() => {

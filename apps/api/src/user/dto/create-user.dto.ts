@@ -23,9 +23,9 @@ export class CreateUserDto extends createZodDto(createUserSchema) {
     example: 'John Doe',
     minLength: 2,
     maxLength: 100,
-    required: true,
+    required: false,
   })
-  declare name: string;
+  declare name: string | null;
 
   @ApiProperty({
     description: 'User password',

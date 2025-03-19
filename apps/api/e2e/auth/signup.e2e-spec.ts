@@ -55,6 +55,49 @@ describe('E2E Auth', () => {
       expect(createdUser?.name).toBe(validName);
     });
 
+    it('should register a new user with valid credentials when name is missing', async () => {
+      // Get the app and userService from testUtils for this test
+      app = testUtils.getApp();
+      userService = testUtils.getUserService();
+
+      // Generate unique email for this test
+      const testEmail = generateUniqueEmail();
+      const validPassword = 'Password123!';
+
+      // First, get CSRF token and deviceId
+      const csrfResponse = await request(app.getHttpServer())
+        .post('/auth/csrf-token')
+        .expect(200);
+
+      const csrfToken = csrfResponse.body.token;
+      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
+      expect(Array.isArray(cookies)).toBe(true);
+
+      // Register new user
+      const response = await request(app.getHttpServer())
+        .post('/auth/signup')
+        .set('Cookie', cookies)
+        .set('x-csrf-token', csrfToken)
+        .send({
+          email: testEmail,
+          password: validPassword,
+        })
+        .expect(201);
+
+      // Verify the response contains the created user
+      expect(response.body).toMatchObject({
+        id: expect.any(String),
+        email: testEmail,
+        name: null,
+      });
+
+      // Verify the user was actually created in the database
+      const createdUser = await userService.findByEmail(testEmail);
+      expect(createdUser).toBeDefined();
+      expect(createdUser?.email).toBe(testEmail);
+      expect(createdUser?.name).toBeNull();
+    });
+
     it('should set access and refresh token cookies with correct attributes', async () => {
       // Get the app and userService from testUtils for this test
       app = testUtils.getApp();
@@ -394,47 +437,6 @@ describe('E2E Auth', () => {
           email: testEmail,
           name: validName,
           // password intentionally omitted
-        })
-        .expect(400);
-
-      // Verify the error response structure
-      expect(response.body).toMatchObject({
-        statusCode: 400,
-        message: 'Validation failed',
-      });
-
-      // Verify no user was created in the database
-      const user = await userService.findByEmail(testEmail);
-      expect(user).toBeNull();
-    });
-
-    it('should return 400 when name is missing', async () => {
-      // Get the app and userService from testUtils for this test
-      app = testUtils.getApp();
-      userService = testUtils.getUserService();
-
-      // Setup test data
-      const testEmail = generateUniqueEmail();
-      const validPassword = 'Password123!';
-
-      // First, get CSRF token and deviceId
-      const csrfResponse = await request(app.getHttpServer())
-        .post('/auth/csrf-token')
-        .expect(200);
-
-      const csrfToken = csrfResponse.body.token;
-      const cookies = csrfResponse.headers['set-cookie'] as unknown as string[];
-      expect(Array.isArray(cookies)).toBe(true);
-
-      // Attempt to register user without name
-      const response = await request(app.getHttpServer())
-        .post('/auth/signup')
-        .set('Cookie', cookies)
-        .set('x-csrf-token', csrfToken)
-        .send({
-          email: testEmail,
-          password: validPassword,
-          // name intentionally omitted
         })
         .expect(400);
 

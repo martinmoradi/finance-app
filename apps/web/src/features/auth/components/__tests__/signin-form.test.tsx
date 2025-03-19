@@ -1,239 +1,226 @@
 import { SigninForm } from '@/features/auth/components/signin-form';
-import { handleAuthFormError } from '@/features/auth/utils/auth-form-error-handler';
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-// Mock dependencies
-const mockPush = jest.fn();
-const mockSignin = jest.fn();
-const mockClearErrors = jest.fn();
-let mockAuthStatus = 'idle';
-
-// Mock modules
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
-}));
+type FormField = {
+  name: string;
+  value: string;
+  setValue: jest.Mock;
+  meta: { touchedErrors: string[]; isInvalid: boolean };
+  state: { value: string };
+  handleChange: jest.Mock;
+  handleBlur: jest.Mock;
+};
 
 jest.mock('@/features/auth/store/useAuth', () => ({
-  useAuth: () => ({
-    signin: mockSignin,
-    status: mockAuthStatus,
-    clearErrors: mockClearErrors,
+  useAuth: jest.fn().mockReturnValue({
+    signin: jest.fn().mockResolvedValue({ success: true }),
+    status: 'idle',
+    clearErrors: jest.fn(),
   }),
 }));
 
-jest.mock('sonner', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
+jest.mock('@/features/auth/components/text-input-field', () => ({
+  TextInputField: jest
+    .fn()
+    .mockImplementation(({ label }: { label: string }) => (
+      <div data-testid='text-input-field'>
+        <label>{label}</label>
+        <input aria-label={label} />
+      </div>
+    )),
+}));
+
+jest.mock('@/features/auth/components/password-input-field', () => ({
+  PasswordField: jest
+    .fn()
+    .mockImplementation(({ label }: { label: string }) => (
+      <div data-testid='password-field'>
+        <label>{label}</label>
+        <input type='password' aria-label={label} />
+      </div>
+    )),
+}));
+
+jest.mock('@repo/validation', () => ({
+  signinFormSchema: {
+    async: jest.fn(),
+    sync: jest.fn(),
   },
 }));
 
-jest.mock('@/features/auth/utils/auth-form-error-handler', () => ({
-  handleAuthFormError: jest.fn(),
+jest.mock('@tanstack/react-form', () => ({
+  useForm: jest
+    .fn()
+    .mockImplementation(
+      ({ onSubmit }: { onSubmit: (arg: { value: any }) => Promise<void> }) => ({
+        Field: ({
+          name,
+          children,
+        }: {
+          name: string;
+          children: (field: FormField) => React.ReactNode;
+        }) => {
+          const field: FormField = {
+            name,
+            value: '',
+            setValue: jest.fn(),
+            meta: { touchedErrors: [], isInvalid: false },
+            state: { value: '' },
+            handleChange: jest.fn(),
+            handleBlur: jest.fn(),
+          };
+          return <div data-testid={`field-${name}`}>{children(field)}</div>;
+        },
+        Subscribe: ({
+          children,
+        }: {
+          children: (values: [boolean, boolean]) => React.ReactNode;
+        }) => {
+          return children([true, false]);
+        },
+        handleSubmit: jest.fn().mockImplementation(() =>
+          onSubmit({
+            value: { email: 'test@example.com', password: 'password123' },
+          }),
+        ),
+      }),
+    ),
 }));
 
-// Mock zodResolver to avoid validation issues during testing
-jest.mock('@hookform/resolvers/zod', () => ({
-  zodResolver: () => (data: unknown) => {
-    return {
-      values: data,
-      errors: {},
-    };
-  },
-}));
+import { useAuth } from '@/features/auth/store/useAuth';
+import { useRouter } from '@/i18n/navigation';
+import { toast } from 'sonner';
+
+const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const mockedUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
 
 describe('SigninForm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockAuthStatus = 'idle';
   });
 
-  it('should handle authentication failure and display error', async () => {
-    // Mock failed signin
-    const errorResult = {
-      success: false,
-      error: {
-        message: 'Invalid credentials',
-        code: 'auth/invalid-credentials',
-      },
-    };
-    mockSignin.mockResolvedValueOnce(errorResult);
-
-    // Render the component
+  it('renders the form correctly', () => {
     render(<SigninForm />);
 
-    // Get form elements
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
+    // Check for field rendering
+    expect(screen.getByTestId('field-email')).toBeInTheDocument();
+    expect(screen.getByTestId('field-password')).toBeInTheDocument();
 
-    // Fill in the form
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    // Check for the submit button
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('handles form submission correctly', async () => {
+    const mockSignin = jest.fn().mockResolvedValue({ success: true });
+    const mockRouter = {
+      push: jest.fn(),
+      replace: jest.fn(),
+      prefetch: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      refresh: jest.fn(),
+    };
+
+    // Update the mocks for this test
+    mockedUseAuth.mockReturnValue({
+      signin: mockSignin,
+      status: 'idle',
+      clearErrors: jest.fn(),
     });
+
+    mockedUseRouter.mockReturnValue(mockRouter);
+
+    render(<SigninForm />);
 
     // Submit the form
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
+    const submitButton = screen.getByRole('button');
+    fireEvent.click(submitButton);
 
-    // Wait for form submission to complete
+    // Wait for the form to submit
     await waitFor(() => {
       expect(mockSignin).toHaveBeenCalledWith({
-        email: 'user@example.com',
+        email: 'test@example.com',
         password: 'password123',
       });
     });
 
-    // Verify error handler is called with the error result
-    await waitFor(() => {
-      expect(handleAuthFormError).toHaveBeenCalledWith(
-        errorResult,
-        expect.any(Function),
-        'signin',
-      );
-    });
+    // Check toast was called
+    expect(toast.success).toHaveBeenCalled();
 
-    // Verify we don't redirect on error
-    expect(mockPush).not.toHaveBeenCalled();
+    // Check router was called
+    expect(mockRouter.push).toHaveBeenCalledWith('/');
   });
 
-  it('should show loading state while submitting the form', async () => {
-    // Initially render with idle status
-    mockAuthStatus = 'idle';
+  it('handles form submission failure', async () => {
+    const mockSignin = jest.fn().mockResolvedValue({ success: false });
 
-    const { rerender } = render(<SigninForm />);
-
-    // Get form elements
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
-
-    // Fill in the form
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    // Update the mock for this test
+    mockedUseAuth.mockReturnValue({
+      signin: mockSignin,
+      status: 'idle',
+      clearErrors: jest.fn(),
     });
 
-    // Now change the status to loading and rerender
-    mockAuthStatus = 'loading';
-    rerender(<SigninForm />);
-
-    // Check for loading indicator
-    expect(screen.getByText('Signing in...')).toBeInTheDocument();
-
-    // Verify inputs and button are disabled during loading
-    expect(emailInput).toBeDisabled();
-    expect(passwordInput).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Signing in/i })).toBeDisabled();
-  });
-
-  it('should clear errors when form is submitted', async () => {
-    // Mock successful signin
-    mockSignin.mockResolvedValueOnce({
-      success: true,
-      data: { id: '1' },
-    });
-
-    // Render the component
     render(<SigninForm />);
 
-    // Get form elements
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
-
-    // Fill in the form
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
     // Submit the form
-    await act(async () => {
-      fireEvent.click(submitButton);
+    const submitButton = screen.getByRole('button');
+    fireEvent.click(submitButton);
+
+    // Wait for the form to submit
+    await waitFor(() => {
+      expect(mockSignin).toHaveBeenCalled();
     });
 
-    // Verify clearErrors is called before signin
-    expect(mockClearErrors).toHaveBeenCalled();
-
-    // Check call order by examining the mock calls array
-    const clearErrorsCallIndex = mockClearErrors.mock.invocationCallOrder[0];
-    const signinCallIndex = mockSignin.mock.invocationCallOrder[0];
-    if (clearErrorsCallIndex === undefined || signinCallIndex === undefined) {
-      fail('Expected clearErrors to be called before signin');
-    }
-    expect(clearErrorsCallIndex).toBeLessThan(signinCallIndex);
+    // Check error toast was called
+    expect(toast.error).toHaveBeenCalled();
   });
 
-  it('should clear errors when component unmounts', async () => {
-    // Render the component
-    const { unmount } = render(<SigninForm />);
+  it('shows loading state when submitting', () => {
+    // Mock loading state
+    mockedUseAuth.mockReturnValue({
+      signin: jest.fn(),
+      status: 'loading',
+      clearErrors: jest.fn(),
+    });
 
-    // Unmount the component
-    unmount();
+    // Get the mocked implementation from the module
+    const { useForm } = jest.requireMock('@tanstack/react-form');
 
-    // Verify clearErrors is called on unmount
-    expect(mockClearErrors).toHaveBeenCalled();
-  });
-
-  it('should handle authentication failure and display error', async () => {
-    // Mock failed signin
-    const errorResult = {
-      success: false,
-      error: {
-        message: 'Invalid credentials',
-        code: 'auth/invalid-credentials',
+    // Override the mock for this specific test
+    useForm.mockReturnValueOnce({
+      Field: ({
+        name,
+        children,
+      }: {
+        name: string;
+        children: (field: FormField) => React.ReactNode;
+      }) => {
+        const field: FormField = {
+          name,
+          value: '',
+          setValue: jest.fn(),
+          meta: { touchedErrors: [], isInvalid: false },
+          state: { value: '' },
+          handleChange: jest.fn(),
+          handleBlur: jest.fn(),
+        };
+        return <div data-testid={`field-${name}`}>{children(field)}</div>;
       },
-    };
-    mockSignin.mockResolvedValueOnce(errorResult);
+      Subscribe: ({
+        children,
+      }: {
+        children: (values: [boolean, boolean]) => React.ReactNode;
+      }) => {
+        // Return isSubmitting as true
+        return children([false, true]);
+      },
+      handleSubmit: jest.fn(),
+    });
 
-    // Render the component
     render(<SigninForm />);
 
-    // Get form elements
-    const emailInput = screen.getByLabelText(/Email/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
-
-    // Fill in the form
-    await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    });
-
-    // Submit the form
-    await act(async () => {
-      fireEvent.click(submitButton);
-    });
-
-    // Wait for form submission to complete
-    await waitFor(() => {
-      expect(mockSignin).toHaveBeenCalledWith({
-        email: 'user@example.com',
-        password: 'password123',
-      });
-    });
-
-    // Verify error handler is called with the error result
-    await waitFor(() => {
-      expect(handleAuthFormError).toHaveBeenCalledWith(
-        errorResult,
-        expect.any(Function),
-        'signin',
-      );
-    });
-
-    // Verify we don't redirect on error
-    expect(mockPush).not.toHaveBeenCalled();
+    // Check for loading indicator (relies on implementation details)
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 });

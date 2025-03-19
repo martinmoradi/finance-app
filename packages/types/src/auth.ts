@@ -2,13 +2,7 @@ import { PublicUser } from '@/user';
 
 export type AuthTokens = [accessToken: string, refreshToken: string];
 
-export type SigninCredentials = {
-  email: string;
-  password: string;
-};
-
-export type SignupCredentials = {
-  name: string;
+export type Credentials = {
   email: string;
   password: string;
 };
