@@ -20,7 +20,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "jest.config.js",
-    "jest.setup.ts",
+    "jest.setup.tsx",
     "eslint.config.mjs"
   ],
   "exclude": ["node_modules"]
