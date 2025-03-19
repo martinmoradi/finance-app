@@ -18,11 +18,6 @@ jest.mock('@/features/auth/utils/cookies', () => ({
   buildCookieHeader: jest.fn().mockReturnValue('cookie-header-string'),
 }));
 
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
-  headers: jest.fn(),
-}));
-
 const originalEnv = process.env;
 
 describe('getCsrfHeaders', () => {

@@ -1,9 +1,3 @@
-// Mock crypto.randomUUID at the top before imports
-Object.defineProperty(global.crypto, 'randomUUID', {
-  value: jest.fn().mockReturnValue('123e4567-e89b-12d3-a456-426614174000'),
-  configurable: true,
-});
-
 import { getAuthHeaders } from '@/features/auth/actions/get-auth-headers';
 import { getSession } from '@/features/auth/actions/get-session';
 import { refreshTokens } from '@/features/auth/actions/refresh-tokens';
@@ -25,36 +19,6 @@ jest.mock('@/features/auth/actions/get-session', () => ({
 jest.mock('@/features/auth/actions/refresh-tokens', () => ({
   refreshTokens: jest.fn(),
 }));
-
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  headers: jest.fn(),
-}));
-
-// Mock console.error to prevent logs during tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
 
 describe('withAuth', () => {
   // Clear all mocks before each test

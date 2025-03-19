@@ -5,23 +5,6 @@ import { getIronSession } from 'iron-session';
 import { jwtDecode } from 'jwt-decode';
 import { cookies } from 'next/headers';
 
-// Mock dependencies
-jest.mock('iron-session', () => ({
-  getIronSession: jest.fn().mockImplementation(() => {
-    return Promise.resolve({
-      user: null,
-      isAuthenticated: false,
-      expiresSoon: false,
-      refreshToken: '',
-      expiresAt: 0,
-      save: jest.fn().mockResolvedValue(undefined),
-      destroy: jest.fn(),
-      updateConfig: jest.fn(),
-    });
-  }),
-}));
-jest.mock('jwt-decode');
-jest.mock('next/headers');
 jest.mock('@/features/auth/config/session.config');
 
 describe('createSessionCookie', () => {

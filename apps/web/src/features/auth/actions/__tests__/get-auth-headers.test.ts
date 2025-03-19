@@ -20,22 +20,6 @@ jest.mock('@/features/auth/utils/cookies', () => ({
   buildCookieHeader: jest.fn().mockReturnValue('cookie-header-string'),
 }));
 
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-    },
-  })),
-}));
-
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
-  headers: jest.fn(),
-}));
-
 const originalEnv = process.env;
 
 describe('getAuthHeaders', () => {

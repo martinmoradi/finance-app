@@ -1,7 +1,6 @@
 import { SigninForm } from '@/features/auth/components/signin-form';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-type TranslationFn = (key: string) => string;
 type FormField = {
   name: string;
   value: string;
@@ -18,32 +17,6 @@ jest.mock('@/features/auth/store/useAuth', () => ({
     status: 'idle',
     clearErrors: jest.fn(),
   }),
-}));
-
-jest.mock('@/i18n/navigation', () => ({
-  useRouter: jest.fn().mockReturnValue({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-  }),
-}));
-
-jest.mock('next-intl', () => ({
-  useTranslations: jest.fn().mockImplementation(
-    (): TranslationFn =>
-      (key: string): string =>
-        key,
-  ),
-}));
-
-jest.mock('sonner', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
 }));
 
 jest.mock('@/features/auth/components/text-input-field', () => ({

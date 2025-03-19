@@ -22,40 +22,6 @@ jest.mock('@/features/auth/actions/handle-auth-tokens', () => ({
   handleAuthTokens: jest.fn(),
 }));
 
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('@/lib/request', () => ({
-  post: jest.fn(),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  headers: jest.fn(),
-}));
-
-// Mock console.error to prevent logs during tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
-
 describe('signin', () => {
   // Clear all mocks before each test
   beforeEach(() => {

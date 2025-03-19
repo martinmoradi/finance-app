@@ -36,62 +36,9 @@ jest.mock('@/features/auth/config/session.config', () => ({
   }),
 }));
 
-jest.mock('@/lib/request', () => ({
-  post: jest.fn(),
-}));
-
 jest.mock('@/features/auth/utils/cookies', () => ({
   parseAndSetCookies: jest.fn(),
 }));
-
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('iron-session', () => ({
-  getIronSession: jest.fn(),
-}));
-
-jest.mock('jwt-decode', () => ({
-  jwtDecode: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
-  headers: jest.fn(),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-}));
-
-// Mock Date.now for consistent time-based tests
-const mockNow = 1620000000000; // Fixed timestamp
-const realDateNow = Date.now.bind(global.Date);
-
-// Mock console.error to prevent logs during tests
-const originalConsoleError = console.error;
-const originalConsoleLog = console.log;
-beforeAll(() => {
-  console.error = jest.fn();
-  console.log = jest.fn();
-  global.Date.now = jest.fn(() => mockNow);
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-  console.log = originalConsoleLog;
-  global.Date.now = realDateNow;
-});
 
 describe('refreshTokens', () => {
   // Clear all mocks before each test
@@ -157,7 +104,7 @@ describe('refreshTokens', () => {
     });
 
     // Mock JWT decode
-    const expiresIn30Minutes = mockNow / 1000 + 30 * 60; // 30 minutes from now in seconds
+    const expiresIn30Minutes = Date.now() / 1000 + 30 * 60; // 30 minutes from now in seconds
     (jwtDecode as jest.Mock).mockReturnValue({
       sub: 'user-123',
       exp: expiresIn30Minutes,
@@ -248,7 +195,7 @@ describe('refreshTokens', () => {
     });
 
     // Mock JWT decode - expires in 3 minutes (less than 5)
-    const expiresIn3Minutes = mockNow / 1000 + 3 * 60;
+    const expiresIn3Minutes = Date.now() / 1000 + 3 * 60;
     (jwtDecode as jest.Mock).mockReturnValue({
       sub: 'user-123',
       exp: expiresIn3Minutes,

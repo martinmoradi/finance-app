@@ -17,40 +17,6 @@ jest.mock('@/features/auth/actions/get-csrf-headers', () => ({
   getCsrfHeaders: jest.fn(),
 }));
 
-jest.mock('@/lib/request', () => ({
-  post: jest.fn(),
-}));
-
-jest.mock('@/lib/errors', () => ({
-  createErrorResponse: jest.fn((code, message, requestId, details) => ({
-    success: false,
-    error: {
-      code,
-      message,
-      requestId,
-      details,
-    },
-  })),
-}));
-
-jest.mock('@sentry/nextjs', () => ({
-  captureException: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  headers: jest.fn(),
-}));
-
-// Mock console.error to prevent logs during tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-  console.error = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-});
-
 describe('checkUserExists', () => {
   // Clear all mocks before each test
   beforeEach(() => {

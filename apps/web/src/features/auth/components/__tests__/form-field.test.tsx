@@ -6,11 +6,6 @@ import {
 } from '@/features/auth/components/form-field';
 import '@testing-library/jest-dom';
 
-// Mock the next-intl hook
-jest.mock('next-intl', () => ({
-  useTranslations: () => jest.fn((key) => key),
-}));
-
 // Create spy mocks for the components
 const LabelMock = jest.fn(
   ({ children, ...props }: React.PropsWithChildren<{ htmlFor?: string }>) => (

@@ -12,34 +12,14 @@ jest.mock('@/features/auth/config/session.config', () => ({
   },
 }));
 
-jest.mock('iron-session', () => ({
-  getIronSession: jest.fn(),
-}));
-
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(),
-}));
-
-// Mock Date.now() for consistent testing of time-based logic
-const mockNow = 1620000000000; // Fixed timestamp for testing
-const realDateNow = Date.now.bind(global.Date);
-
 describe('getSession', () => {
   // Setup before each test
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Mock Date.now
-    global.Date.now = jest.fn(() => mockNow);
-
     // Setup basic cookie store mock
     const mockCookieStore = {};
     (cookies as jest.Mock).mockResolvedValue(mockCookieStore);
-  });
-
-  // Restore original Date.now after tests
-  afterAll(() => {
-    global.Date.now = realDateNow;
   });
 
   it('should return unauthenticated session when isAuthenticated is false', async () => {
@@ -87,7 +67,7 @@ describe('getSession', () => {
 
   it('should return authenticated session with expired flag when token is expired', async () => {
     // Arrange
-    const expiredTimestamp = mockNow - 60000; // 1 minute in the past
+    const expiredTimestamp = Date.now() - 60000; // 1 minute in the past
 
     const mockSession: SessionData = {
       isAuthenticated: true,
@@ -113,7 +93,7 @@ describe('getSession', () => {
 
   it('should return authenticated session with expiresSoon flag when token expires soon', async () => {
     // Arrange
-    const expiresInFourMinutes = mockNow + 4 * 60 * 1000; // 4 minutes in the future (less than 5 min)
+    const expiresInFourMinutes = Date.now() + 4 * 60 * 1000; // 4 minutes in the future (less than 5 min)
 
     const mockSession: SessionData = {
       isAuthenticated: true,
@@ -139,7 +119,7 @@ describe('getSession', () => {
 
   it('should return authenticated session without flags when token does not expire soon', async () => {
     // Arrange
-    const expiresInTenMinutes = mockNow + 10 * 60 * 1000; // 10 minutes in the future
+    const expiresInTenMinutes = Date.now() + 10 * 60 * 1000; // 10 minutes in the future
 
     const mockSession: SessionData = {
       isAuthenticated: true,

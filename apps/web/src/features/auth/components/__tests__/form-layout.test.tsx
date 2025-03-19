@@ -4,28 +4,6 @@ import { FormLayout } from '@/features/auth/components/form-layout';
 import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 
-// Mock the next-intl and navigation modules
-jest.mock('next-intl', () => ({
-  useTranslations: jest.fn(),
-}));
-
-jest.mock('@/i18n/navigation', () => ({
-  Link: ({
-    children,
-    href,
-    prefetch,
-  }: {
-    children: React.ReactNode;
-    href: string;
-    prefetch?: boolean;
-  }) => (
-    <a href={href} data-testid='navigation-link'>
-      {children}
-    </a>
-  ),
-  usePathname: jest.fn(),
-}));
-
 describe('FormLayout Component', () => {
   // Mock translation function
   const mockT = jest.fn((key: string) => {
